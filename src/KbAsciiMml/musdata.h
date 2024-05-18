@@ -92,6 +92,9 @@ namespace MusicCom
             Unit = 64;
             Env.push_back(15);
         }
+        SSGEnv(unsigned char initial_value) : Unit(64), Env(1, initial_value)
+        {
+        }
         int Unit;
         std::vector<unsigned char> Env;
     };
@@ -185,6 +188,12 @@ namespace MusicCom
         }
         const SSGEnv& GetSSGEnv(int no)
         {
+            // 存在しないnoが指定された場合は無音とする
+            if (ssgenvs.find(no) == ssgenvs.end())
+            {
+                SSGEnv ssgenv(0);
+                ssgenvs[no] = ssgenv;
+            }
             return ssgenvs[no];
         }
         void SetTempo(int t) { tempo = t; }
