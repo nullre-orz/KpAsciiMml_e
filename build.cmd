@@ -5,7 +5,7 @@ set SCRIPT_DIR=%~dp0
 
 if "%VSINSTALLDIR%"=="" (
     echo Run VsDevCmd.bat beforehand. Probably at:
-    echo "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\Tools\VsDevCmd.bat"
+    echo "C:\Program Files (x86)\Microsoft Visual Studio\2022\Professional\Common7\Tools\VsDevCmd.bat"
     goto error
 )
 
