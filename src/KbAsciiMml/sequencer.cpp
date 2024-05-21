@@ -273,14 +273,7 @@ namespace MusicCom
                 part.NoteEndFrame = currentFrame + length;
 
                 // '&' がついているか
-                {
-                    optional<CommandList::const_iterator> ret = ProcessLoop(part, ptr);
-                    if (!ret)
-                        return;
-                    ptr = *ret;
-                }
-
-                if (ptr->GetType() == '&')
+                if (FindTie(part, CommandList::const_iterator(ptr)))
                 {
                     part.Tied = true;
                     part.KeyOffFrame = part.NoteEndFrame;
@@ -293,16 +286,33 @@ namespace MusicCom
                 break;
             }
             case 'R':
-                KeyOnOff(ch, false);
             case 'W':
             {
+                // 共通
                 int length = command.GetArg(0);
                 if (length == 0)
                     length = part.DefaultNoteLength;
                 part.NoteEndFrame = currentFrame + length;
-                part.Tied = false;
+
+                if (command.GetType() == 'R' && !part.Tied)
+                {
+                    KeyOnOff(ch, false);
+                }
+                else
+                {
+                    if (FindTie(part, CommandList::const_iterator(ptr)))
+                    {
+                        part.Tied = true;
+                        part.KeyOffFrame = part.NoteEndFrame;
+                    }
+                    else
+                    {
+                        part.Tied = false;
+                        part.KeyOffFrame = currentFrame + max(length * part.GateTime / 8, 1);
+                    }
+                }
+                break;
             }
-            break;
             case 'L':
                 part.DefaultNoteLength = command.GetArg(0);
                 break;
@@ -491,6 +501,83 @@ namespace MusicCom
         {
             ssgwrap.KeyOnOff(ch - 3, on);
         }
+    }
+
+    bool Sequencer::FindTie(const PartData& part, CommandList::const_iterator ptr)
+    {
+        // 次の音符/休符より前に & が存在するかを先読みして確認
+        // ProcessLoop同様にマクロ/ループは展開するが、本体に影響しないようコピーで処理する
+
+        bool infinite_looping = false;
+        auto macro_call_stack(part.CallStack);
+        auto loop_stack(part.LoopStack);
+        while (1)
+        {
+            const Command& command = *ptr++;
+            switch (command.GetType())
+            {
+            case '$':
+                if (!musicdata.IsMacroPresent(command.GetStrArg()))
+                {
+                    continue;
+                }
+                macro_call_stack.push(CommandList::const_iterator(ptr));
+                ptr = musicdata.GetMacroHead(command.GetStrArg());
+                break;
+            case Command::TYPE_RET:
+                if (macro_call_stack.empty())
+                {
+                    return false;
+                }
+                ptr = macro_call_stack.top();
+                macro_call_stack.pop();
+                break;
+            case '{':
+                loop_stack.push(pair<CommandList::const_iterator, int>(CommandList::const_iterator(ptr), command.GetArg(0)));
+                break;
+            case '}':
+            {
+                if (loop_stack.empty())
+                {
+                    return false;
+                }
+                pair<CommandList::const_iterator, int>& p = loop_stack.top();
+                if (p.second != 0)
+                {
+                    p.second--;
+                    // ループ脱出
+                    if (p.second == 0)
+                    {
+                        loop_stack.pop();
+                    }
+                    else
+                    {
+                        ptr = p.first;
+                    }
+                }
+                // 無限ループ
+                else
+                {
+                    // 音符の入っていない無限ループ検出
+                    if (infinite_looping)
+                    {
+                        return false;
+                    }
+                    infinite_looping = true;
+                    ptr = p.first;
+                }
+            }
+                continue;
+            case '&':
+                return true;
+            case Command::TYPE_NOTE:
+            case 'R':
+            case 'W':
+                return false;
+            }
+        }
+
+        return false;
     }
 
     Sequencer::PartData::PartData()

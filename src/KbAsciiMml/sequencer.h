@@ -72,6 +72,7 @@ namespace MusicCom
         boost::optional<CommandList::const_iterator> ProcessLoop(PartData& part, CommandList::const_iterator ptr);
         void ProcessCommand(int ch);
         void ProcessEffect(int ch);
+        bool FindTie(const PartData& part, CommandList::const_iterator ptr);
 
         static const int* const FNumber;
         static const int FNumberBase[14];
