@@ -32,6 +32,7 @@ namespace MusicCom
             std::stack<std::pair<CommandList::const_iterator, int>> LoopStack;
             CommandList::const_iterator CommandPtr;
 
+            int NoteBeginFrame;
             int NoteEndFrame;
             int KeyOnFrame;
             int KeyOffFrame;

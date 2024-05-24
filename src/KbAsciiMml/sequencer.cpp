@@ -183,11 +183,14 @@ namespace MusicCom
         if (!part.Playing)
             return;
 
-        if (part.NoteEndFrame <= currentFrame && !part.Tied)
+        if (part.NoteEndFrame <= currentFrame)
         {
             part.LastOctave = part.Octave;
             part.LastTone = part.Tone;
-            KeyOnOff(ch, false);
+            if (!part.Tied)
+            {
+                KeyOnOff(ch, false);
+            }
         }
 
         ProcessCommand(ch);
@@ -224,6 +227,7 @@ namespace MusicCom
             {
             case Command::TYPE_NOTE:
             {
+                part.NoteBeginFrame = currentFrame;
                 if (!part.Tied)
                 {
                     part.KeyOnFrame = currentFrame;
@@ -259,6 +263,7 @@ namespace MusicCom
                     ssgwrap.SetTone(ssgch, tone);
                     part.Tone = tone;
                 }
+
                 KeyOnOff(ch, true);
 
                 if (part.LastTone == 0)
@@ -292,11 +297,14 @@ namespace MusicCom
                 int length = command.GetArg(0);
                 if (length == 0)
                     length = part.DefaultNoteLength;
+                part.NoteBeginFrame = currentFrame;
                 part.NoteEndFrame = currentFrame + length;
 
                 if (command.GetType() == 'R' && !part.Tied)
                 {
                     KeyOnOff(ch, false);
+                    part.LastTone = 0;
+                    part.Tone = 0;
                 }
                 else
                 {
@@ -354,8 +362,6 @@ namespace MusicCom
                 part.Detune = command.GetArg(0);
                 break;
             case 'P':
-                part.LastOctave = part.Octave;
-                part.LastTone = part.Tone;
                 part.PLength = max(command.GetArg(0), 0);
 
                 part.ILength = part.ULength = 0;
@@ -408,6 +414,9 @@ namespace MusicCom
         int ssgch = ch - 3;
 
         // エフェクト等の処理
+        // ディレイはKeyOnFrameを基準とする
+
+        // ゲートタイム(Q)でのキーオフ
         if (part.KeyOffFrame <= currentFrame)
         {
             KeyOnOff(ch, false);
@@ -445,9 +454,11 @@ namespace MusicCom
         }
 
         // Tone
-        if (part.PLength != 0)
+        if (part.PLength != 0 && part.Tone != 0)
         {
-            int d = currentFrame - part.KeyOnFrame;
+            // ポルタメントは音程が変わった時点で適用する
+            // KeyOnFrameではなくNoteBeginFrameを基準とする
+            int d = currentFrame - part.NoteBeginFrame;
             if (d <= part.PLength)
             {
                 if (fm)
@@ -582,6 +593,7 @@ namespace MusicCom
 
     Sequencer::PartData::PartData()
     {
+        NoteBeginFrame = 0;
         NoteEndFrame = 0;
         KeyOnFrame = 0;
         KeyOffFrame = 0;
