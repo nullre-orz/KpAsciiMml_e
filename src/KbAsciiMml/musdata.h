@@ -104,6 +104,7 @@ namespace MusicCom
     public:
         static const char TYPE_NOTE = '#'; // args = {Note, Length, Tied};
         static const char TYPE_RET = '%'; // macro return
+        static const char TYPE_END = '\0'; // part end
 
         Command()
         {

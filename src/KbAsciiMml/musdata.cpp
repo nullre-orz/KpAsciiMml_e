@@ -31,9 +31,8 @@ namespace MusicCom
         CommandList& cl = channels[index];
         if (!IsChannelPresent(index))
         {
-            // 暗黙の無限ループを追加
-            cl.push_back(Command('{', 0));
-            cl.push_back(Command('}'));
+            // 終了検知のためパート終端を追加
+            cl.push_back(Command(Command::TYPE_END));
             channel_present[index] = true;
         }
 

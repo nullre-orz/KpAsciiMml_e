@@ -104,6 +104,21 @@ namespace MusicCom
 
     void Sequencer::NextFrame()
     {
+        // 全パートが終了していた場合、先頭から再開させる
+        if (std::none_of(partData, partData + 6, [](const PartData& part) { return part.Playing; }))
+        {
+            for (int ch = 0; ch < 6; ch++) {
+                partData[ch].Playing = musicdata.IsChannelPresent(ch);
+                if (partData[ch].Playing)
+                {
+                    partData[ch].CommandPtr = musicdata.GetChannelHead(ch);
+                    // スタックはクリアしておく
+                    partData[ch].CallStack = std::stack<CommandList::const_iterator>();
+                    partData[ch].LoopStack = std::stack<std::pair<CommandList::const_iterator, int>>();
+                }
+            }
+        }
+
         for (int ch = 0; ch < 6; ch++)
         {
             PartData& part = partData[ch];
@@ -122,6 +137,9 @@ namespace MusicCom
 
             switch (command.GetType())
             {
+            case Command::TYPE_END:
+                part.Playing = false;
+                return optional<CommandList::const_iterator>();
             case '$':
                 if (!musicdata.IsMacroPresent(command.GetStrArg()))
                 {
@@ -525,6 +543,8 @@ namespace MusicCom
             const Command& command = *ptr++;
             switch (command.GetType())
             {
+            case Command::TYPE_END:
+                return boost::none;
             case '$':
                 if (!musicdata.IsMacroPresent(command.GetStrArg()))
                 {
