@@ -187,7 +187,8 @@ namespace MusicCom
         {
             part.LastOctave = part.Octave;
             part.LastTone = part.Tone;
-            if (!part.Tied)
+            // 前回のコマンド先読みで & や W が検出された場合はキーオフせず継続
+            if (!part.LinkedItem)
             {
                 KeyOnOff(ch, false);
             }
@@ -228,7 +229,7 @@ namespace MusicCom
             case Command::TYPE_NOTE:
             {
                 part.NoteBeginFrame = currentFrame;
-                if (!part.Tied)
+                if (!part.LinkedItem)
                 {
                     part.KeyOnFrame = currentFrame;
                 }
@@ -278,14 +279,12 @@ namespace MusicCom
                 part.NoteEndFrame = currentFrame + length;
 
                 // '&' がついているか
-                if (FindTie(part, CommandList::const_iterator(ptr)))
+                if ((part.LinkedItem = FindLinkedItem(part, CommandList::const_iterator(ptr))) == '&')
                 {
-                    part.Tied = true;
                     part.KeyOffFrame = part.NoteEndFrame;
                 }
                 else
                 {
-                    part.Tied = false;
                     part.KeyOffFrame = currentFrame + max(length * part.GateTime / 8, 1);
                 }
                 break;
@@ -300,22 +299,27 @@ namespace MusicCom
                 part.NoteBeginFrame = currentFrame;
                 part.NoteEndFrame = currentFrame + length;
 
-                if (command.GetType() == 'R' && !part.Tied)
+                if (command.GetType() == 'R' && part.LinkedItem != '&')
                 {
+                    // &R でなければキーオフ
                     KeyOnOff(ch, false);
                     part.LastTone = 0;
                     part.Tone = 0;
                 }
+                else if (command.GetType() == 'W' && part.LinkedItem == '&')
+                {
+                    // &W は後方にも & があるとみなす (music.comのバグ?)
+                    // LinkedItemは更新不要
+                    part.KeyOffFrame = part.NoteEndFrame;
+                }
                 else
                 {
-                    if (FindTie(part, CommandList::const_iterator(ptr)))
+                    if ((part.LinkedItem = FindLinkedItem(part, CommandList::const_iterator(ptr))) == '&')
                     {
-                        part.Tied = true;
                         part.KeyOffFrame = part.NoteEndFrame;
                     }
                     else
                     {
-                        part.Tied = false;
                         part.KeyOffFrame = currentFrame + max(length * part.GateTime / 8, 1);
                     }
                 }
@@ -514,11 +518,10 @@ namespace MusicCom
         }
     }
 
-    bool Sequencer::FindTie(const PartData& part, CommandList::const_iterator ptr)
+    boost::optional<char> Sequencer::FindLinkedItem(const PartData& part, CommandList::const_iterator ptr)
     {
-        // 次の音符/休符より前に & が存在するかを先読みして確認
+        // 後方にタイ(&)やキーオフなし休符(W)が存在するかどうかを先読みして確認
         // ProcessLoop同様にマクロ/ループは展開するが、本体に影響しないようコピーで処理する
-
         bool infinite_looping = false;
         auto macro_call_stack(part.CallStack);
         auto loop_stack(part.LoopStack);
@@ -538,7 +541,7 @@ namespace MusicCom
             case Command::TYPE_RET:
                 if (macro_call_stack.empty())
                 {
-                    return false;
+                    return boost::none;
                 }
                 ptr = macro_call_stack.top();
                 macro_call_stack.pop();
@@ -550,7 +553,7 @@ namespace MusicCom
             {
                 if (loop_stack.empty())
                 {
-                    return false;
+                    return boost::none;
                 }
                 pair<CommandList::const_iterator, int>& p = loop_stack.top();
                 if (p.second != 0)
@@ -572,7 +575,7 @@ namespace MusicCom
                     // 音符の入っていない無限ループ検出
                     if (infinite_looping)
                     {
-                        return false;
+                        return boost::none;
                     }
                     infinite_looping = true;
                     ptr = p.first;
@@ -580,15 +583,16 @@ namespace MusicCom
             }
                 continue;
             case '&':
-                return true;
+                return '&';
+            case 'W':
+                return 'W';
             case Command::TYPE_NOTE:
             case 'R':
-            case 'W':
-                return false;
+                return boost::none;
             }
         }
 
-        return false;
+        return boost::none;
     }
 
     Sequencer::PartData::PartData()
@@ -620,7 +624,7 @@ namespace MusicCom
         UDepth = 0;
         UDelay = 0;
 
-        Tied = false;
+        LinkedItem = boost::none;
         Playing = false;
         InfiniteLooping = false;
     }

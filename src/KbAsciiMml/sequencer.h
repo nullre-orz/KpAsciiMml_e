@@ -60,7 +60,7 @@ namespace MusicCom
             int UDepth;
             int UDelay;
 
-            bool Tied;
+            boost::optional<char> LinkedItem;
             bool Playing;
             // 無限ループ検出
             bool InfiniteLooping;
@@ -73,7 +73,7 @@ namespace MusicCom
         boost::optional<CommandList::const_iterator> ProcessLoop(PartData& part, CommandList::const_iterator ptr);
         void ProcessCommand(int ch);
         void ProcessEffect(int ch);
-        bool FindTie(const PartData& part, CommandList::const_iterator ptr);
+        boost::optional<char> FindLinkedItem(const PartData& part, CommandList::const_iterator ptr);
 
         static const int* const FNumber;
         static const int FNumberBase[14];
