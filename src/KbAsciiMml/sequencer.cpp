@@ -11,6 +11,8 @@ using namespace boost;
 
 namespace MusicCom
 {
+    const int TONE_KEY_OFF = -1;
+
     const int* const Sequencer::FNumber = &FNumberBase[1];
 
     // clang-format off
@@ -57,7 +59,19 @@ namespace MusicCom
         {
             partData[ch].Playing = musicdata.IsChannelPresent(ch);
             if (partData[ch].Playing)
+            {
                 partData[ch].CommandPtr = musicdata.GetChannelHead(ch);
+                // 初手ポルタメント対応
+                // 初期値として低音をセットしておく
+                if (ch < 3)
+                {
+                    partData[ch].Tone = GetFmTone(1, 0);
+                }
+                else
+                {
+                    partData[ch].Tone = GetSsgTone(1, 1, 0);
+                }
+            }
         }
 
         // 効果音モード on
@@ -237,37 +251,18 @@ namespace MusicCom
                 // Tone
                 if (fm)
                 {
-                    int tone = FNumber[command.GetArg(0)];
-                    if (part.Detune != 0)
-                    {
-                        tone = (int)(tone * pow(2.0, part.Detune / (255.0 * 12.0)) + 0.5);
-                    }
-                    fmwrap.SetTone(fmch, part.Octave, tone);
-                    part.Tone = tone;
+                    part.Tone = GetFmTone(command.GetArg(0), part.Detune);
+                    fmwrap.SetTone(fmch, part.Octave, part.Tone);
                 }
                 else
                 {
-                    int tone = SSGToneNum[part.Octave][command.GetArg(0)];
-                    if (part.Detune != 0)
-                    {
-                        int tone2 = (int)(tone * pow(0.5, part.Detune / (255.0 * 12.0)) + 0.5);
-                        if (tone == tone2)
-                        {
-                            if (part.Detune < 0)
-                                tone = tone + 1;
-                            else
-                                tone = tone - 1;
-                        }
-                        else
-                            tone = tone2;
-                    }
-                    ssgwrap.SetTone(ssgch, tone);
-                    part.Tone = tone;
+                    part.Tone = GetSsgTone(part.Octave, command.GetArg(0), part.Detune);
+                    ssgwrap.SetTone(ssgch, part.Tone);
                 }
 
                 KeyOnOff(ch, true);
 
-                if (part.LastTone == 0)
+                if (part.LastTone == TONE_KEY_OFF)
                 {
                     part.LastOctave = part.Octave;
                     part.LastTone = part.Tone;
@@ -303,8 +298,8 @@ namespace MusicCom
                 {
                     // &R でなければキーオフ
                     KeyOnOff(ch, false);
-                    part.LastTone = 0;
-                    part.Tone = 0;
+                    part.LastTone = TONE_KEY_OFF;
+                    part.Tone = TONE_KEY_OFF;
                 }
                 else if (command.GetType() == 'W' && part.LinkedItem == '&')
                 {
@@ -458,7 +453,7 @@ namespace MusicCom
         }
 
         // Tone
-        if (part.PLength != 0 && part.Tone != 0)
+        if (part.PLength != 0 && part.Tone != TONE_KEY_OFF)
         {
             // ポルタメントは音程が変わった時点で適用する
             // KeyOnFrameではなくNoteBeginFrameを基準とする
@@ -593,6 +588,35 @@ namespace MusicCom
         }
 
         return boost::none;
+    }
+
+    int Sequencer::GetFmTone(int base_tone, int detune) const
+    {
+        int tone = FNumber[base_tone];
+        if (detune != 0)
+        {
+            tone = (int)(tone * pow(2.0, detune / (255.0 * 12.0)) + 0.5);
+        }
+        return tone;
+    }
+
+    int Sequencer::GetSsgTone(int base_octave, int base_tone, int detune) const
+    {
+        int tone = SSGToneNum[base_octave][base_tone];
+        if (detune != 0)
+        {
+            int tone2 = (int)(tone * pow(0.5, detune / (255.0 * 12.0)) + 0.5);
+            if (tone == tone2)
+            {
+                if (detune < 0)
+                    tone = tone + 1;
+                else
+                    tone = tone - 1;
+            }
+            else
+                tone = tone2;
+        }
+        return tone;
     }
 
     Sequencer::PartData::PartData()

@@ -74,6 +74,8 @@ namespace MusicCom
         void ProcessCommand(int ch);
         void ProcessEffect(int ch);
         boost::optional<char> FindLinkedItem(const PartData& part, CommandList::const_iterator ptr);
+        int GetFmTone(int base_tone, int detune) const;
+        int GetSsgTone(int base_octave, int base_tone, int detune) const;
 
         static const int* const FNumber;
         static const int FNumberBase[14];
