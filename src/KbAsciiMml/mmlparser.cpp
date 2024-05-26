@@ -490,7 +490,7 @@ namespace MusicCom
                 ssgenv_line =
                     (as_lower_d[str_p("ssgenv")] >> ch_p(':'))[BeginLine<SSGENV>(s)]
                     >> !ch_p('@')
-                    >> ((int_p | eps_p)[PushArg(s)] % ((eol_p[Increment<int>(s.LineNumber)] >> str_p("->") | ch_p(','))))[ProcessSSGEnv(s)];
+                    >> ((int_p | eps_p)[PushArg(s)] % (((eol_p[Increment<int>(s.LineNumber)] % !(comment | blank_line)) >> str_p("->") | ch_p(','))))[ProcessSSGEnv(s)];
                 str_line =
                     (as_lower_d[str_p("str")] >> ch_p(':'))[BeginLine<STR>(s)]
                     >> macro_name[SetMacroName(s)]
