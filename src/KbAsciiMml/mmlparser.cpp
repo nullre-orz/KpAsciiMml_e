@@ -434,8 +434,8 @@ namespace MusicCom
                     >> (eol_p[Increment<int>(self.state.LineNumber)] | end_p | ch_p(0x1a));
 
                 args =
-                    arg % !ch_p(',') // !: スペースで区切るMML対策
-                    >> !ch_p(',');
+                    arg % *ch_p(',') // !: スペースで区切るMML対策
+                    >> *ch_p(',');
                 arg =
                     (int_p || ch_p('.'))[PushArg(s)];
 
@@ -446,11 +446,14 @@ namespace MusicCom
                 mml_note =
                     as_lower_d[range_p('a', 'g')][BeginCommand(s)]
                     >> (ch_p('+') | ch_p('-') | eps_p)[PushArg(s)]
-                    >> (arg | eps_p[PushArg(s)]);
+                    >> *ch_p(',') // 引数の前にカンマを置くMML対策
+                    >> (arg | eps_p[PushArg(s)])
+                    >> *ch_p(','); // 引数の後にカンマを置くMML対策
                 // '&' はコマンドとして扱う
                 //				>> (ch_p('&') | eps_p)[PushArg(s)];
                 mml_ctrl =
                     as_lower_d[chset<>("h-z@{}<>&")][BeginCommand(s)]
+                    >> *ch_p(',') // 第1引数の前にカンマを置くMML対策
                     >> !args;
                 //				>> !ch_p('&');	// 変なところに&を置くMML対策
                 mml_call =
