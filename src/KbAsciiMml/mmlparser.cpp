@@ -429,7 +429,7 @@ namespace MusicCom
 
                 // 0x1a = [EOF]
                 line =
-                    (ch_line | drum_line | sound_line | lfo_line | op_line | ssgenv_line | str_line | blank_line)
+                    (ch_line | drum_line | sound_line | lfo_line | op_line | ssgenv_line | str_line | arrow_line | blank_line)
                     >> !comment
                     >> (eol_p[Increment<int>(self.state.LineNumber)] | end_p | ch_p(0x1a));
 
@@ -496,10 +496,14 @@ namespace MusicCom
                     >> macro_name[SetMacroName(s)]
                     >> !ch_p('$') >> ch_p('=')
                     >> *mml_Command;
+                // SSGENV外の -> は無視する
+                arrow_line =
+                    str_p("->")
+                    >> *(anychar_p - eol_p);
             }
 
             rule<ScannerT> line;
-            rule<ScannerT> blank_line, ch_line, drum_line, sound_line, lfo_line, op_line, ssgenv_line, str_line;
+            rule<ScannerT> blank_line, ch_line, drum_line, sound_line, lfo_line, op_line, ssgenv_line, str_line, arrow_line;
             rule<ScannerT> mml_Command, mml_note, mml_ctrl, mml_call;
             rule<ScannerT> args, arg, macro_name, comment;
 
