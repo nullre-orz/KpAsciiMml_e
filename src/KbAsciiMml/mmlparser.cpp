@@ -48,6 +48,26 @@ namespace MusicCom
         }
     }
 
+    // LFO/OP用
+    vector<int> ParseSoundArgs(vector<string>& args, int num)
+    {
+        vector<int> container(args.size());
+        try
+        {
+            transform(args.begin(), args.end(), container.begin(), [](std::string& s) {
+                return lexical_cast<int>(s);
+            });
+        }
+        catch (bad_lexical_cast)
+        {
+            // 数値以外が含まれていた場合は処理を中断
+            // 以降の値はすべて 0 として扱う
+        }
+        container.resize(num, 0);
+
+        return container;
+    }
+
     struct MMLParser : public grammar<MMLParser>
     {
         enum MMLLineType
@@ -186,9 +206,7 @@ namespace MusicCom
             template<typename IteratorT>
             void operator()(IteratorT first, IteratorT last) const
             {
-                vector<int> a;
-                transform(state.args.begin(), state.args.end(), back_inserter(a), StringToInt);
-                a.resize(5, 0);
+                auto a = ParseSoundArgs(state.args, 5);
 
                 // LFO:	WF,SPEED,DEPTH,ALG,FB
                 FMSound& sound = state.Sound;
@@ -208,10 +226,7 @@ namespace MusicCom
             void operator()(IteratorT first, IteratorT last) const
             {
                 int op = state.ChNumber;
-
-                vector<int> a;
-                transform(state.args.begin(), state.args.end(), back_inserter(a), StringToInt);
-                a.resize(10, 0);
+                auto a = ParseSoundArgs(state.args, 10);
 
                 // OP1:	AR,DR,SR,RR,SL,TL,KS,ML,DT,DT2
                 FMSound& sound = state.Sound;
@@ -438,6 +453,15 @@ namespace MusicCom
                     >> *ch_p(',');
                 arg =
                     (int_p || ch_p('.'))[PushArg(s)];
+                // LFO/OP用
+                sound_args =
+                    sound_arg % *ch_p(',') // !: スペースで区切るMML対策
+                    >> *ch_p(',');
+                sound_arg =
+                    ((sound_invalid_arg | int_p) >> eps_p)[PushArg(s)]
+                    >> *sound_invalid_arg[PushArg(s)];
+                sound_invalid_arg =
+                    lexeme_d[+(~digit_p - sign_p - blank_p - cntrl_p - ch_p(','))];
 
                 macro_name =
                     +chset<>("a-zA-Z0-9_");
@@ -485,11 +509,11 @@ namespace MusicCom
                     >> int_p[assign(s.SoundNumber)];
                 lfo_line =
                     (as_lower_d[str_p("lfo")] >> ch_p(':'))[BeginLine<LFO>(s)]
-                    >> args[ProcessLFO(s)];
+                    >> sound_args[ProcessLFO(s)];
                 op_line =
                     (as_lower_d[str_p("op")]
-                     >> range_p('1', '4')[SetChNumber(s)] >> ch_p(':'))[BeginLine<OP>(s)]
-                    >> args[ProcessOP(s)];
+                    >> range_p('1', '4')[SetChNumber(s)] >> ch_p(':'))[BeginLine<OP>(s)]
+                    >> sound_args[ProcessOP(s)];
                 ssgenv_line =
                     (as_lower_d[str_p("ssgenv")] >> ch_p(':'))[BeginLine<SSGENV>(s)]
                     >> !ch_p('@')
@@ -508,7 +532,7 @@ namespace MusicCom
             rule<ScannerT> line;
             rule<ScannerT> blank_line, ch_line, drum_line, sound_line, lfo_line, op_line, ssgenv_line, str_line, arrow_line;
             rule<ScannerT> mml_Command, mml_note, mml_ctrl, mml_call;
-            rule<ScannerT> args, arg, macro_name, comment;
+            rule<ScannerT> args, arg, sound_args, sound_arg, sound_invalid_arg, macro_name, comment;
 
             rule<ScannerT> const&
             start() const { return line; }
