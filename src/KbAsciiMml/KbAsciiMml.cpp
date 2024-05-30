@@ -64,7 +64,7 @@ BOOL KbAsciiMml::Open(const char* cszFileName, SOUNDINFO* pInfo)
 
     if (pInfo->dwSamplesPerSec == 0)
     {
-        pInfo->dwSamplesPerSec = 44100;
+        pInfo->dwSamplesPerSec = 55466;
     }
     pInfo->dwBitsPerSample = 16;
     pInfo->dwLength = 0xFFFFFFFF;
