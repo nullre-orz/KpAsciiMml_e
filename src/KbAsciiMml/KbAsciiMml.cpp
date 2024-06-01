@@ -10,8 +10,8 @@ using namespace boost;
 HMODULE hDllModule;
 
 #define KMPPLUGIN_VERSION 1
-#define KMPPLUGIN_COPYRIGHT "Copyright (C) asmichi, cisc"
-#define KMPPLUGIN_DESCRIPTION "ASCII music.com MML player (powered by cisc's fmgen library)"
+#define KMPPLUGIN_COPYRIGHT "KpAsciiMml_e: Copyright (C) 2024 nullre-orz\nKbAsciiMml: Copyright (C) asmichi\nfmgen: Copyright (C) 1998-2003 cisc"
+#define KMPPLUGIN_DESCRIPTION "ASCII music.com MML player [Extended Edition] (powered by cisc's fmgen library)"
 
 class KbAsciiMml
 {
