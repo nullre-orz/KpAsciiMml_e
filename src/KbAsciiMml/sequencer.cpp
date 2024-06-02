@@ -11,6 +11,8 @@ using namespace boost;
 
 namespace MusicCom
 {
+    const int TONE_KEY_OFF = -1;
+
     const int* const Sequencer::FNumber = &FNumberBase[1];
 
     // clang-format off
@@ -57,7 +59,19 @@ namespace MusicCom
         {
             partData[ch].Playing = musicdata.IsChannelPresent(ch);
             if (partData[ch].Playing)
+            {
                 partData[ch].CommandPtr = musicdata.GetChannelHead(ch);
+                // 初手ポルタメント対応
+                // 初期値として低音をセットしておく
+                if (ch < 3)
+                {
+                    partData[ch].Tone = GetFmTone(1, 0);
+                }
+                else
+                {
+                    partData[ch].Tone = GetSsgTone(1, 1, 0);
+                }
+            }
         }
 
         // 効果音モード on
@@ -90,6 +104,21 @@ namespace MusicCom
 
     void Sequencer::NextFrame()
     {
+        // 全パートが終了していた場合、先頭から再開させる
+        if (std::none_of(partData, partData + 6, [](const PartData& part) { return part.Playing; }))
+        {
+            for (int ch = 0; ch < 6; ch++) {
+                partData[ch].Playing = musicdata.IsChannelPresent(ch);
+                if (partData[ch].Playing)
+                {
+                    partData[ch].CommandPtr = musicdata.GetChannelHead(ch);
+                    // スタックはクリアしておく
+                    partData[ch].CallStack = std::stack<CommandList::const_iterator>();
+                    partData[ch].LoopStack = std::stack<std::pair<CommandList::const_iterator, int>>();
+                }
+            }
+        }
+
         for (int ch = 0; ch < 6; ch++)
         {
             PartData& part = partData[ch];
@@ -108,6 +137,9 @@ namespace MusicCom
 
             switch (command.GetType())
             {
+            case Command::TYPE_END:
+                part.Playing = false;
+                return optional<CommandList::const_iterator>();
             case '$':
                 if (!musicdata.IsMacroPresent(command.GetStrArg()))
                 {
@@ -183,11 +215,15 @@ namespace MusicCom
         if (!part.Playing)
             return;
 
-        if (part.NoteEndFrame <= currentFrame && !part.Tied)
+        if (part.NoteEndFrame <= currentFrame)
         {
             part.LastOctave = part.Octave;
             part.LastTone = part.Tone;
-            KeyOnOff(ch, false);
+            // 前回のコマンド先読みで & や W が検出された場合はキーオフせず継続
+            if (!part.LinkedItem)
+            {
+                KeyOnOff(ch, false);
+            }
         }
 
         ProcessCommand(ch);
@@ -224,7 +260,8 @@ namespace MusicCom
             {
             case Command::TYPE_NOTE:
             {
-                if (!part.Tied)
+                part.NoteBeginFrame = currentFrame;
+                if (!part.LinkedItem)
                 {
                     part.KeyOnFrame = currentFrame;
                 }
@@ -232,36 +269,18 @@ namespace MusicCom
                 // Tone
                 if (fm)
                 {
-                    int tone = FNumber[command.GetArg(0)];
-                    if (part.Detune != 0)
-                    {
-                        tone = (int)(tone * pow(2.0, part.Detune / (255.0 * 12.0)) + 0.5);
-                    }
-                    fmwrap.SetTone(fmch, part.Octave, tone);
-                    part.Tone = tone;
+                    part.Tone = GetFmTone(command.GetArg(0), part.Detune);
+                    fmwrap.SetTone(fmch, part.Octave, part.Tone);
                 }
                 else
                 {
-                    int tone = SSGToneNum[part.Octave][command.GetArg(0)];
-                    if (part.Detune != 0)
-                    {
-                        int tone2 = (int)(tone * pow(0.5, part.Detune / (255.0 * 12.0)) + 0.5);
-                        if (tone == tone2)
-                        {
-                            if (part.Detune < 0)
-                                tone = tone + 1;
-                            else
-                                tone = tone - 1;
-                        }
-                        else
-                            tone = tone2;
-                    }
-                    ssgwrap.SetTone(ssgch, tone);
-                    part.Tone = tone;
+                    part.Tone = GetSsgTone(part.Octave, command.GetArg(0), part.Detune);
+                    ssgwrap.SetTone(ssgch, part.Tone);
                 }
+
                 KeyOnOff(ch, true);
 
-                if (part.LastTone == 0)
+                if (part.LastTone == TONE_KEY_OFF)
                 {
                     part.LastOctave = part.Octave;
                     part.LastTone = part.Tone;
@@ -273,36 +292,52 @@ namespace MusicCom
                 part.NoteEndFrame = currentFrame + length;
 
                 // '&' がついているか
+                if ((part.LinkedItem = FindLinkedItem(part, CommandList::const_iterator(ptr))) == '&')
                 {
-                    optional<CommandList::const_iterator> ret = ProcessLoop(part, ptr);
-                    if (!ret)
-                        return;
-                    ptr = *ret;
-                }
-
-                if (ptr->GetType() == '&')
-                {
-                    part.Tied = true;
                     part.KeyOffFrame = part.NoteEndFrame;
                 }
                 else
                 {
-                    part.Tied = false;
                     part.KeyOffFrame = currentFrame + max(length * part.GateTime / 8, 1);
                 }
                 break;
             }
             case 'R':
-                KeyOnOff(ch, false);
             case 'W':
             {
+                // 共通
                 int length = command.GetArg(0);
                 if (length == 0)
                     length = part.DefaultNoteLength;
+                part.NoteBeginFrame = currentFrame;
                 part.NoteEndFrame = currentFrame + length;
-                part.Tied = false;
+
+                if (command.GetType() == 'R' && part.LinkedItem != '&')
+                {
+                    // &R でなければキーオフ
+                    KeyOnOff(ch, false);
+                    part.LastTone = TONE_KEY_OFF;
+                    part.Tone = TONE_KEY_OFF;
+                }
+                else if (command.GetType() == 'W' && part.LinkedItem == '&')
+                {
+                    // &W は後方にも & があるとみなす (music.comのバグ?)
+                    // LinkedItemは更新不要
+                    part.KeyOffFrame = part.NoteEndFrame;
+                }
+                else
+                {
+                    if ((part.LinkedItem = FindLinkedItem(part, CommandList::const_iterator(ptr))) == '&')
+                    {
+                        part.KeyOffFrame = part.NoteEndFrame;
+                    }
+                    else
+                    {
+                        part.KeyOffFrame = currentFrame + max(length * part.GateTime / 8, 1);
+                    }
+                }
+                break;
             }
-            break;
             case 'L':
                 part.DefaultNoteLength = command.GetArg(0);
                 break;
@@ -344,8 +379,6 @@ namespace MusicCom
                 part.Detune = command.GetArg(0);
                 break;
             case 'P':
-                part.LastOctave = part.Octave;
-                part.LastTone = part.Tone;
                 part.PLength = max(command.GetArg(0), 0);
 
                 part.ILength = part.ULength = 0;
@@ -398,6 +431,9 @@ namespace MusicCom
         int ssgch = ch - 3;
 
         // エフェクト等の処理
+        // ディレイはKeyOnFrameを基準とする
+
+        // ゲートタイム(Q)でのキーオフ
         if (part.KeyOffFrame <= currentFrame)
         {
             KeyOnOff(ch, false);
@@ -435,9 +471,11 @@ namespace MusicCom
         }
 
         // Tone
-        if (part.PLength != 0)
+        if (part.PLength != 0 && part.Tone != TONE_KEY_OFF)
         {
-            int d = currentFrame - part.KeyOnFrame;
+            // ポルタメントは音程が変わった時点で適用する
+            // KeyOnFrameではなくNoteBeginFrameを基準とする
+            int d = currentFrame - part.NoteBeginFrame;
             if (d <= part.PLength)
             {
                 if (fm)
@@ -493,8 +531,117 @@ namespace MusicCom
         }
     }
 
+    boost::optional<char> Sequencer::FindLinkedItem(const PartData& part, CommandList::const_iterator ptr)
+    {
+        // 後方にタイ(&)やキーオフなし休符(W)が存在するかどうかを先読みして確認
+        // ProcessLoop同様にマクロ/ループは展開するが、本体に影響しないようコピーで処理する
+        bool infinite_looping = false;
+        auto macro_call_stack(part.CallStack);
+        auto loop_stack(part.LoopStack);
+        while (1)
+        {
+            const Command& command = *ptr++;
+            switch (command.GetType())
+            {
+            case Command::TYPE_END:
+                return boost::none;
+            case '$':
+                if (!musicdata.IsMacroPresent(command.GetStrArg()))
+                {
+                    continue;
+                }
+                macro_call_stack.push(CommandList::const_iterator(ptr));
+                ptr = musicdata.GetMacroHead(command.GetStrArg());
+                break;
+            case Command::TYPE_RET:
+                if (macro_call_stack.empty())
+                {
+                    return boost::none;
+                }
+                ptr = macro_call_stack.top();
+                macro_call_stack.pop();
+                break;
+            case '{':
+                loop_stack.push(pair<CommandList::const_iterator, int>(CommandList::const_iterator(ptr), command.GetArg(0)));
+                break;
+            case '}':
+            {
+                if (loop_stack.empty())
+                {
+                    return boost::none;
+                }
+                pair<CommandList::const_iterator, int>& p = loop_stack.top();
+                if (p.second != 0)
+                {
+                    p.second--;
+                    // ループ脱出
+                    if (p.second == 0)
+                    {
+                        loop_stack.pop();
+                    }
+                    else
+                    {
+                        ptr = p.first;
+                    }
+                }
+                // 無限ループ
+                else
+                {
+                    // 音符の入っていない無限ループ検出
+                    if (infinite_looping)
+                    {
+                        return boost::none;
+                    }
+                    infinite_looping = true;
+                    ptr = p.first;
+                }
+            }
+                continue;
+            case '&':
+                return '&';
+            case 'W':
+                return 'W';
+            case Command::TYPE_NOTE:
+            case 'R':
+                return boost::none;
+            }
+        }
+
+        return boost::none;
+    }
+
+    int Sequencer::GetFmTone(int base_tone, int detune) const
+    {
+        int tone = FNumber[base_tone];
+        if (detune != 0)
+        {
+            tone = (int)(tone * pow(2.0, detune / (255.0 * 12.0)) + 0.5);
+        }
+        return tone;
+    }
+
+    int Sequencer::GetSsgTone(int base_octave, int base_tone, int detune) const
+    {
+        int tone = SSGToneNum[base_octave][base_tone];
+        if (detune != 0)
+        {
+            int tone2 = (int)(tone * pow(0.5, detune / (255.0 * 12.0)) + 0.5);
+            if (tone == tone2)
+            {
+                if (detune < 0)
+                    tone = tone + 1;
+                else
+                    tone = tone - 1;
+            }
+            else
+                tone = tone2;
+        }
+        return tone;
+    }
+
     Sequencer::PartData::PartData()
     {
+        NoteBeginFrame = 0;
         NoteEndFrame = 0;
         KeyOnFrame = 0;
         KeyOffFrame = 0;
@@ -521,7 +668,7 @@ namespace MusicCom
         UDepth = 0;
         UDelay = 0;
 
-        Tied = false;
+        LinkedItem = boost::none;
         Playing = false;
         InfiniteLooping = false;
     }

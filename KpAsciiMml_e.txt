@@ -1,0 +1,24 @@
+-------------------------------------------------------------------------------
+【  名  称  】 ASCII music.com MML Player (Extended Edition)
+【ファイル名】 KbAsciiMml.kpi
+【バージョン】 0.9.1
+【対応拡張子】 .mml
+【 Platform 】 x86(32bit)/x64(64bit)
+【 公 開 日 】 2024/06/02
+-------------------------------------------------------------------------------
+【概要】
+
+  PC-9801 シリーズ上の ASCII ツクールシリーズを中心に使用されていた
+  ASCII music.com の MML ファイルを再生するためのプラグインです。
+  asmichi 氏の ASCII music.com MML Player (KbAsciiMml) を元に、
+  再現性を高めています。
+
+  FM音源エミュレーションに、 cisc 氏の fmgen ライブラリを使用しています。
+  ----
+  FM Sound Generator with OPN/OPM interface
+  Copyright (C) by cisc 1998, 2003.
+  ----
+
+  詳細は https://github.com/nullre-orz/KpAsciiMml_e を参照してください。
+
+-------------------------------------------------------------------------------
