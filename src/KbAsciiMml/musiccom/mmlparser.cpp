@@ -5,6 +5,7 @@
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_file_iterator.hpp>
 #include <boost/spirit/include/classic_utility.hpp>
+#include <memory>
 #include <string>
 
 using namespace std;
@@ -546,9 +547,9 @@ namespace MusicCom
 
     MusicData* ParseMML(const char* filename)
     {
-        MusicData* pMusicData = new MusicData();
+        auto pMusicData = std::make_unique<MusicData>();
         MMLParser::MMLParserState state;
-        state.pMusicData = pMusicData;
+        state.pMusicData = pMusicData.get();
         MMLParser mmlparser(state);
 
         typedef file_iterator<char> iterator_t;
@@ -572,7 +573,7 @@ namespace MusicCom
                 if (!info.hit)
                 {
                     ostringstream ss;
-                    ss << filename << "(" << state.LineNumber << ") : parse error at \"";
+                    ss << "parse error at \"";
                     iterator_t i = find_if(
                         info.stop,
                         last,
@@ -582,24 +583,22 @@ namespace MusicCom
                         });
                     copy(info.stop, i, ostream_iterator<char>(ss));
                     ss << "\"" << endl;
-                    MessageBoxA(NULL, ss.str().c_str(), "エラー", MB_OK);
-                    delete pMusicData;
-                    return 0;
+                    throw std::runtime_error(ss.str());
+                    return nullptr;
                 }
             }
             catch (exception& e)
             {
                 ostringstream ss;
                 ss << filename << "(" << state.LineNumber << ") : " << e.what() << endl;
-                MessageBoxA(NULL, ss.str().c_str(), "エラー", MB_OK);
-                delete pMusicData;
-                return 0;
+                throw std::runtime_error(ss.str());
+                return nullptr;
             }
 
             first = info.stop;
         }
 
-        return pMusicData;
+        return pMusicData.release();
     }
 
 } // namespace MusicCom

@@ -75,8 +75,19 @@ BOOL KbAsciiMml::Open(const char* cszFileName, SOUNDINFO* pInfo)
     pInfo->dwReserved1 = 0xFFFFFFFF;
     pInfo->dwReserved2 = 0;
 
-    if (!musicCom.Load(cszFileName))
+    try
+    {
+        if (!musicCom.Load(cszFileName))
+        {
+            return FALSE;
+        }
+    }
+    catch (std::exception& e)
+    {
+        MessageBoxA(NULL, e.what(), "エラー", MB_OK);
         return FALSE;
+    }
+
     if (!musicCom.PrepareMix(pInfo->dwSamplesPerSec))
         return FALSE;
 
