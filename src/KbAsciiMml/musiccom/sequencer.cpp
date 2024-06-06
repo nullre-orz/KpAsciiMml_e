@@ -1,6 +1,6 @@
-﻿#include "pch.h"
-#include "sequencer.h"
+﻿#include "sequencer.h"
 #include "musdata.h"
+#include <algorithm>
 #include <fmgen/opna.h>
 
 // KeyOff したあと、音量レベルが低下するまでMixしてからOnしないとタイになってしまう

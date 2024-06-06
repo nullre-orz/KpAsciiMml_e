@@ -2,6 +2,7 @@
 
 #include "fmwrap.h"
 #include "musdata.h"
+#include <boost/optional.hpp>
 #include <stack>
 
 namespace FM

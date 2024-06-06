@@ -1,9 +1,10 @@
 ﻿#pragma once
 
 #include <cassert>
-#include <cstring>
 #include <list>
 #include <map>
+#include <string>
+#include <vector>
 
 namespace MusicCom
 {

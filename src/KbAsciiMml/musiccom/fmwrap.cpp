@@ -1,5 +1,4 @@
-﻿#include "pch.h"
-#include "fmwrap.h"
+﻿#include "fmwrap.h"
 #include "musdata.h"
 #include <fmgen/opna.h>
 

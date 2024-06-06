@@ -1,8 +1,6 @@
-﻿#include "pch.h"
-#include "musdata.h"
+﻿#include "musdata.h"
 
 using namespace std;
-using namespace boost;
 
 namespace MusicCom
 {

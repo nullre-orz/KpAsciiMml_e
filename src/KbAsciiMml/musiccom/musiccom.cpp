@@ -1,8 +1,6 @@
-﻿#include "pch.h"
-
+﻿#include "musiccom.h"
 #include "mmlparser.h"
 #include "musdata.h"
-#include "musiccom.h"
 #include "sequencer.h"
 
 namespace MusicCom

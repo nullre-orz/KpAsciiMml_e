@@ -1,5 +1,11 @@
-﻿#include "pch.h"
-#include "musdata.h"
+﻿#include "musdata.h"
+
+#include <algorithm>
+#include <boost/lexical_cast.hpp>
+#include <boost/spirit/include/classic_core.hpp>
+#include <boost/spirit/include/classic_file_iterator.hpp>
+#include <boost/spirit/include/classic_utility.hpp>
+#include <string>
 
 using namespace std;
 using namespace boost::spirit::classic;
@@ -54,9 +60,8 @@ namespace MusicCom
         vector<int> container(args.size());
         try
         {
-            transform(args.begin(), args.end(), container.begin(), [](std::string& s) {
-                return lexical_cast<int>(s);
-            });
+            transform(args.begin(), args.end(), container.begin(), [](std::string& s)
+                      { return lexical_cast<int>(s); });
         }
         catch (bad_lexical_cast)
         {
@@ -512,7 +517,7 @@ namespace MusicCom
                     >> sound_args[ProcessLFO(s)];
                 op_line =
                     (as_lower_d[str_p("op")]
-                    >> range_p('1', '4')[SetChNumber(s)] >> ch_p(':'))[BeginLine<OP>(s)]
+                     >> range_p('1', '4')[SetChNumber(s)] >> ch_p(':'))[BeginLine<OP>(s)]
                     >> sound_args[ProcessOP(s)];
                 ssgenv_line =
                     (as_lower_d[str_p("ssgenv")] >> ch_p(':'))[BeginLine<SSGENV>(s)]

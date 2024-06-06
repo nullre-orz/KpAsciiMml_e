@@ -1,7 +1,9 @@
-﻿#include "pch.h"
-#include "musiccom/musiccom.h"
+﻿#include "musiccom/musiccom.h"
 #include "resource.h"
+#include <Windows.h>
+#include <boost/lexical_cast.hpp>
 #include <kmp_pi.h>
+#include <shlwapi.h>
 
 #pragma comment(lib, "Shlwapi.lib")
 
