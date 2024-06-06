@@ -105,9 +105,11 @@ namespace MusicCom
     void Sequencer::NextFrame()
     {
         // 全パートが終了していた場合、先頭から再開させる
-        if (std::none_of(partData, partData + 6, [](const PartData& part) { return part.Playing; }))
+        if (std::none_of(partData, partData + 6, [](const PartData& part)
+                         { return part.Playing; }))
         {
-            for (int ch = 0; ch < 6; ch++) {
+            for (int ch = 0; ch < 6; ch++)
+            {
                 partData[ch].Playing = musicdata.IsChannelPresent(ch);
                 if (partData[ch].Playing)
                 {

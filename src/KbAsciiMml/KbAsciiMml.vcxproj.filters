@@ -21,42 +21,27 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="mmlparser.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="musdata.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="musiccom.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="sequencer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fmwrap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\fmwrap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\mmlparser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\musdata.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\musiccom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\sequencer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fmwrap.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="mmlparser.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="musdata.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="musiccom.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="sequencer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\external\fmgen\fmtimer.cpp">
@@ -78,6 +63,21 @@
       <Filter>fmgen</Filter>
     </ClCompile>
     <ClCompile Include="kbAsciiMml.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\fmwrap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\mmlparser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\musdata.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\musiccom.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\sequencer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

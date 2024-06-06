@@ -1,5 +1,5 @@
 ﻿#include "pch.h"
-#include "musiccom.h"
+#include "musiccom/musiccom.h"
 #include "resource.h"
 #include <kmp_pi.h>
 

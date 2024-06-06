@@ -167,13 +167,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="fmwrap.h" />
-    <ClInclude Include="mmlparser.h" />
-    <ClInclude Include="musdata.h" />
-    <ClInclude Include="musiccom.h" />
+    <ClInclude Include="musiccom\fmwrap.h" />
+    <ClInclude Include="musiccom\mmlparser.h" />
+    <ClInclude Include="musiccom\musdata.h" />
+    <ClInclude Include="musiccom\musiccom.h" />
+    <ClInclude Include="musiccom\sequencer.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="sequencer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\external\fmgen\file.cpp">
@@ -236,18 +236,18 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_CRT_SECURE_NO_WARNINGS;_MBCS</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_CRT_SECURE_NO_WARNINGS;_MBCS;NDEBUG</PreprocessorDefinitions>
     </ClCompile>
-    <ClCompile Include="fmwrap.cpp" />
     <ClCompile Include="KbAsciiMml.cpp" />
-    <ClCompile Include="mmlparser.cpp" />
-    <ClCompile Include="musdata.cpp" />
-    <ClCompile Include="musiccom.cpp" />
+    <ClCompile Include="musiccom\fmwrap.cpp" />
+    <ClCompile Include="musiccom\mmlparser.cpp" />
+    <ClCompile Include="musiccom\musdata.cpp" />
+    <ClCompile Include="musiccom\musiccom.cpp" />
+    <ClCompile Include="musiccom\sequencer.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="sequencer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="KbAsciiMml.rc" />
