@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "musiccom.h"
+#include "resource.h"
 #include <kmp_pi.h>
 
 #pragma comment(lib, "Shlwapi.lib")
@@ -10,8 +11,6 @@ using namespace boost;
 HMODULE hDllModule;
 
 #define KMPPLUGIN_VERSION 1
-#define KMPPLUGIN_COPYRIGHT "KpAsciiMml_e: Copyright (C) 2024 nullre-orz\nKbAsciiMml: Copyright (C) asmichi\nfmgen: Copyright (C) 1998-2003 cisc"
-#define KMPPLUGIN_DESCRIPTION "ASCII music.com MML player [Extended Edition] (powered by cisc's fmgen library)"
 
 class KbAsciiMml
 {
@@ -152,8 +151,8 @@ KMPMODULE* WINAPI kmp_GetTestModule()
         {
             KMPMODULE_VERSION, // dwVersion
             KMPPLUGIN_VERSION, // dwPluginVersion
-            KMPPLUGIN_COPYRIGHT, // pszCopyright
-            KMPPLUGIN_DESCRIPTION, // pszDescription
+            VER_LEGAL_COPYRIGHT, // pszCopyright
+            VER_FILE_DESCRIPTION, // pszDescription
             ppszSupportExts, // ppszSupportExts
             1, // dwReentrant
             NULL, // Init

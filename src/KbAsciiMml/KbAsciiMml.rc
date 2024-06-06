@@ -66,13 +66,13 @@ BEGIN
     BEGIN
         BLOCK "040004b0"
         BEGIN
-            VALUE "FileDescription", "ASCII music.com MML player [Extended Edition] (powered by cisc's fmgen library)"
-            VALUE "FileVersion", "0.9.1.0"
-            VALUE "InternalName", "KbAsciiMml.dll"
-            VALUE "LegalCopyright", "KpAsciiMml_e: Copyright (C) 2024 nullre-orz\r\nKbAsciiMml: Copyright (C) asmichi\r\nfmgen: Copyright (C) 1998-2003 cisc"
-            VALUE "OriginalFilename", "KbAsciiMml.dll"
-            VALUE "ProductName", "KpAsciiMml_e"
-            VALUE "ProductVersion", "0.9.1.0"
+            VALUE "FileDescription", VER_FILE_DESCRIPTION
+            VALUE "FileVersion", VER_FILE_VERSION
+            VALUE "InternalName", VER_INTERNAL_NAME
+            VALUE "LegalCopyright", VER_LEGAL_COPYRIGHT
+            VALUE "OriginalFilename", VER_ORIGINAL_FILENAME
+            VALUE "ProductName", VER_PRODUCT_NAME
+            VALUE "ProductVersion", VER_PRODUCT_VERSION
         END
     END
     BLOCK "VarFileInfo"
