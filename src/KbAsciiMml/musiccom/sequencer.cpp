@@ -104,28 +104,36 @@ namespace MusicCom
 
     void Sequencer::NextFrame()
     {
-        // 全パートが終了していた場合、先頭から再開させる
-        if (std::none_of(partData, partData + 6, [](const PartData& part)
-                         { return part.Playing; }))
-        {
-            for (int ch = 0; ch < 6; ch++)
-            {
-                partData[ch].Playing = musicdata.IsChannelPresent(ch);
-                if (partData[ch].Playing)
-                {
-                    partData[ch].CommandPtr = musicdata.GetChannelHead(ch);
-                    // スタックはクリアしておく
-                    partData[ch].CallStack = std::stack<CommandList::const_iterator>();
-                    partData[ch].LoopStack = std::stack<std::pair<CommandList::const_iterator, int>>();
-                }
-            }
-        }
-
         for (int ch = 0; ch < 6; ch++)
         {
             PartData& part = partData[ch];
             if (part.Playing)
                 NextFramePart(ch);
+        }
+
+        // 全パートが終了していた場合、先頭から再開させる
+        if (std::none_of(
+                partData,
+                partData + 6,
+                [](const PartData& part)
+                {
+                    return part.Playing;
+                }))
+        {
+            for (int ch = 0; ch < 6; ch++)
+            {
+                PartData& part = partData[ch];
+                part.Playing = musicdata.IsChannelPresent(ch);
+                if (part.Playing)
+                {
+                    part.CommandPtr = musicdata.GetChannelHead(ch);
+                    // スタックはクリアしておく
+                    part.CallStack = std::stack<CommandList::const_iterator>();
+                    part.LoopStack = std::stack<std::pair<CommandList::const_iterator, int>>();
+
+                    NextFramePart(ch);
+                }
+            }
         }
 
         currentFrame++;
