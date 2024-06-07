@@ -12,6 +12,7 @@ using namespace boost;
 namespace MusicCom
 {
     const int TONE_KEY_OFF = -1;
+    const int MAX_MACRO_COUNT = 100;
 
     const int* const Sequencer::FNumber = &FNumberBase[1];
 
@@ -157,6 +158,12 @@ namespace MusicCom
                     continue;
                 }
                 part.CallStack.push(++CommandList::const_iterator(ptr));
+                // 自己参照等で入れ子の数がMAX_MACRO_COUNTを超えたら強制終了
+                if (part.CallStack.size() > MAX_MACRO_COUNT)
+                {
+                    part.Playing = false;
+                    return optional<CommandList::const_iterator>();
+                }
                 ptr = musicdata.GetMacroHead(command.GetStrArg());
                 continue;
             case Command::TYPE_RET:
@@ -561,6 +568,11 @@ namespace MusicCom
                     continue;
                 }
                 macro_call_stack.push(CommandList::const_iterator(ptr));
+                // 自己参照等で入れ子の数がMAX_MACRO_COUNTを超えたら強制終了
+                if (macro_call_stack.size() > MAX_MACRO_COUNT)
+                {
+                    return boost::none;
+                }
                 ptr = musicdata.GetMacroHead(command.GetStrArg());
                 break;
             case Command::TYPE_RET:
