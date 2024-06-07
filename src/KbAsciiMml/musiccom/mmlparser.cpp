@@ -473,7 +473,7 @@ namespace MusicCom
                     lexeme_d[+(~digit_p - sign_p - blank_p - cntrl_p - ch_p(','))];
 
                 macro_name =
-                    +chset<>("a-zA-Z0-9_");
+                    lexeme_d[+(~chset<>("$,=") - blank_p - cntrl_p)];
                 mml_Command =
                     mml_note[ProcessNote(s)] | mml_ctrl[ProcessCtrl(s)] | mml_call[ProcessCall(s)];
                 mml_note =
