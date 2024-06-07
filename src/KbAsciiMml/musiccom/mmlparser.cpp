@@ -5,8 +5,11 @@
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_file_iterator.hpp>
 #include <boost/spirit/include/classic_utility.hpp>
+#include <format>
 #include <memory>
+#include <numeric>
 #include <string>
+#include <vector>
 
 using namespace std;
 using namespace boost::spirit::classic;
@@ -564,6 +567,8 @@ namespace MusicCom
         iterator_t first = begin;
         iterator_t last = first.make_end();
 
+        vector<string> error_list = {};
+
         while (first != last)
         {
             parse_info<iterator_t> info;
@@ -572,8 +577,6 @@ namespace MusicCom
                 info = parse(first, last, mmlparser, blank_p);
                 if (!info.hit)
                 {
-                    ostringstream ss;
-                    ss << "parse error at \"";
                     iterator_t i = find_if(
                         info.stop,
                         last,
@@ -581,21 +584,36 @@ namespace MusicCom
                         {
                             return c == '\r' || c == '\n';
                         });
-                    copy(info.stop, i, ostream_iterator<char>(ss));
-                    ss << "\"" << endl;
-                    throw std::runtime_error(ss.str());
-                    return nullptr;
+                    error_list.push_back(format("({:d}): parse error at \"{}\"", state.LineNumber, string(info.stop, i)));
+                    first = i;
+                }
+                else
+                {
+                    first = info.stop;
                 }
             }
             catch (exception& e)
             {
-                ostringstream ss;
-                ss << filename << "(" << state.LineNumber << ") : " << e.what() << endl;
-                throw std::runtime_error(ss.str());
-                return nullptr;
+                error_list.push_back(format("({:d}): {}", state.LineNumber, e.what()));
+                break;
             }
+        }
 
-            first = info.stop;
+        // エラーリストが空でない場合は例外をthrow
+        if (error_list.size() > 0)
+        {
+            // 改行区切りで連結
+            auto msg = accumulate(
+                error_list.begin(),
+                error_list.end(),
+                string(filename),
+                [](const string& acc, const string& str)
+                {
+                    return format("{}\n{}", acc, str);
+                });
+
+            throw std::runtime_error(msg);
+            return nullptr;
         }
 
         return pMusicData.release();
