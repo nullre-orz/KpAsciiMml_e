@@ -1,0 +1,55 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: MSBuild
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.2
+      with:
+        vs-version: '2022'
+
+    - name: Install Boost
+      run: |
+        set BOOST_TAGS=boost-1.85.0
+        git clone -b %BOOST_TAGS% --depth 1 https://github.com/boostorg/boost.git boost
+        echo BOOST_ROOT=boost >> $GITHUB_ENV
+  
+    - name: Build
+      run: |
+        msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln"
+        msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
+
+    - name: Package
+      run: |
+        mkdir -p artifact/x86 artifact/x64
+        cp bin/KbAsciiMml/Win32/Release/KbAsciiMml.dll artifact/x86/KbAsciiMml/kpi
+        cp bin/KbAsciiMml/x64/Release/KbAsciiMml.dll artifact/x64/KbAsciiMml/kpi
+        cp KbAsciiMml.ini artifact/x86/KbAsciiMml.ini
+        cp KbAsciiMml.ini artifact/x64/KbAsciiMml.ini
+        cp KpAsciiMml_e.txt artifact/x86/KpAsciiMml_e.txt
+        cp KpAsciiMml_e.txt artifact/x64/KpAsciiMml_e.txt
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: KpAsciiMml_e
+        path: artifact
