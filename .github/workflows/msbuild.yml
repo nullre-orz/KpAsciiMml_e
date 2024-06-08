@@ -7,9 +7,9 @@ name: MSBuild
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master","actions" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master","actions" ]
   workflow_dispatch:
     inputs:
       branch:
@@ -39,6 +39,7 @@ jobs:
     - name: Build
       run: |
         echo ${BOOST_ROOT}
+        $env:BOOST_ROOT=BOOST_ROOT
         msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln"
         msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
       env:
