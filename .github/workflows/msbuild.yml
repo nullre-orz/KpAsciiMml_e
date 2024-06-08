@@ -38,8 +38,9 @@ jobs:
   
     - name: Build
       run: |
-        msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln" -v:d
-        msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln" -v:d
+        cd
+        msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln"
+        msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
       env:
         BOOST_ROOT: ${{ env.BOOST_ROOT }}
       shell: cmd
