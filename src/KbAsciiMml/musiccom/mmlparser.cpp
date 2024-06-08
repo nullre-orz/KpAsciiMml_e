@@ -1,5 +1,15 @@
-﻿#include "pch.h"
-#include "musdata.h"
+﻿#include "musdata.h"
+
+#include <algorithm>
+#include <boost/lexical_cast.hpp>
+#include <boost/spirit/include/classic_core.hpp>
+#include <boost/spirit/include/classic_file_iterator.hpp>
+#include <boost/spirit/include/classic_utility.hpp>
+#include <format>
+#include <memory>
+#include <numeric>
+#include <string>
+#include <vector>
 
 using namespace std;
 using namespace boost::spirit::classic;
@@ -54,9 +64,8 @@ namespace MusicCom
         vector<int> container(args.size());
         try
         {
-            transform(args.begin(), args.end(), container.begin(), [](std::string& s) {
-                return lexical_cast<int>(s);
-            });
+            transform(args.begin(), args.end(), container.begin(), [](std::string& s)
+                      { return lexical_cast<int>(s); });
         }
         catch (bad_lexical_cast)
         {
@@ -464,7 +473,7 @@ namespace MusicCom
                     lexeme_d[+(~digit_p - sign_p - blank_p - cntrl_p - ch_p(','))];
 
                 macro_name =
-                    +chset<>("a-zA-Z0-9_");
+                    lexeme_d[+(~chset<>("$,=") - blank_p - cntrl_p)];
                 mml_Command =
                     mml_note[ProcessNote(s)] | mml_ctrl[ProcessCtrl(s)] | mml_call[ProcessCall(s)];
                 mml_note =
@@ -512,7 +521,7 @@ namespace MusicCom
                     >> sound_args[ProcessLFO(s)];
                 op_line =
                     (as_lower_d[str_p("op")]
-                    >> range_p('1', '4')[SetChNumber(s)] >> ch_p(':'))[BeginLine<OP>(s)]
+                     >> range_p('1', '4')[SetChNumber(s)] >> ch_p(':'))[BeginLine<OP>(s)]
                     >> sound_args[ProcessOP(s)];
                 ssgenv_line =
                     (as_lower_d[str_p("ssgenv")] >> ch_p(':'))[BeginLine<SSGENV>(s)]
@@ -541,9 +550,9 @@ namespace MusicCom
 
     MusicData* ParseMML(const char* filename)
     {
-        MusicData* pMusicData = new MusicData();
+        auto pMusicData = std::make_unique<MusicData>();
         MMLParser::MMLParserState state;
-        state.pMusicData = pMusicData;
+        state.pMusicData = pMusicData.get();
         MMLParser mmlparser(state);
 
         typedef file_iterator<char> iterator_t;
@@ -558,6 +567,8 @@ namespace MusicCom
         iterator_t first = begin;
         iterator_t last = first.make_end();
 
+        vector<string> error_list = {};
+
         while (first != last)
         {
             parse_info<iterator_t> info;
@@ -566,8 +577,6 @@ namespace MusicCom
                 info = parse(first, last, mmlparser, blank_p);
                 if (!info.hit)
                 {
-                    ostringstream ss;
-                    ss << filename << "(" << state.LineNumber << ") : parse error at \"";
                     iterator_t i = find_if(
                         info.stop,
                         last,
@@ -575,26 +584,39 @@ namespace MusicCom
                         {
                             return c == '\r' || c == '\n';
                         });
-                    copy(info.stop, i, ostream_iterator<char>(ss));
-                    ss << "\"" << endl;
-                    MessageBoxA(NULL, ss.str().c_str(), "エラー", MB_OK);
-                    delete pMusicData;
-                    return 0;
+                    error_list.push_back(format("({:d}): parse error at \"{}\"", state.LineNumber, string(info.stop, i)));
+                    first = i;
+                }
+                else
+                {
+                    first = info.stop;
                 }
             }
             catch (exception& e)
             {
-                ostringstream ss;
-                ss << filename << "(" << state.LineNumber << ") : " << e.what() << endl;
-                MessageBoxA(NULL, ss.str().c_str(), "エラー", MB_OK);
-                delete pMusicData;
-                return 0;
+                error_list.push_back(format("({:d}): {}", state.LineNumber, e.what()));
+                break;
             }
-
-            first = info.stop;
         }
 
-        return pMusicData;
+        // エラーリストが空でない場合は例外をthrow
+        if (error_list.size() > 0)
+        {
+            // 改行区切りで連結
+            auto msg = accumulate(
+                error_list.begin(),
+                error_list.end(),
+                string(filename),
+                [](const string& acc, const string& str)
+                {
+                    return format("{}\n{}", acc, str);
+                });
+
+            throw std::runtime_error(msg);
+            return nullptr;
+        }
+
+        return pMusicData.release();
     }
 
 } // namespace MusicCom

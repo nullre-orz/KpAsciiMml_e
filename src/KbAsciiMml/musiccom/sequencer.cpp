@@ -1,6 +1,6 @@
-﻿#include "pch.h"
-#include "sequencer.h"
+﻿#include "sequencer.h"
 #include "musdata.h"
+#include <algorithm>
 #include <fmgen/opna.h>
 
 // KeyOff したあと、音量レベルが低下するまでMixしてからOnしないとタイになってしまう
@@ -12,6 +12,7 @@ using namespace boost;
 namespace MusicCom
 {
     const int TONE_KEY_OFF = -1;
+    const int MAX_MACRO_COUNT = 100;
 
     const int* const Sequencer::FNumber = &FNumberBase[1];
 
@@ -104,26 +105,36 @@ namespace MusicCom
 
     void Sequencer::NextFrame()
     {
-        // 全パートが終了していた場合、先頭から再開させる
-        if (std::none_of(partData, partData + 6, [](const PartData& part) { return part.Playing; }))
-        {
-            for (int ch = 0; ch < 6; ch++) {
-                partData[ch].Playing = musicdata.IsChannelPresent(ch);
-                if (partData[ch].Playing)
-                {
-                    partData[ch].CommandPtr = musicdata.GetChannelHead(ch);
-                    // スタックはクリアしておく
-                    partData[ch].CallStack = std::stack<CommandList::const_iterator>();
-                    partData[ch].LoopStack = std::stack<std::pair<CommandList::const_iterator, int>>();
-                }
-            }
-        }
-
         for (int ch = 0; ch < 6; ch++)
         {
             PartData& part = partData[ch];
             if (part.Playing)
                 NextFramePart(ch);
+        }
+
+        // 全パートが終了していた場合、先頭から再開させる
+        if (std::none_of(
+                partData,
+                partData + 6,
+                [](const PartData& part)
+                {
+                    return part.Playing;
+                }))
+        {
+            for (int ch = 0; ch < 6; ch++)
+            {
+                PartData& part = partData[ch];
+                part.Playing = musicdata.IsChannelPresent(ch);
+                if (part.Playing)
+                {
+                    part.CommandPtr = musicdata.GetChannelHead(ch);
+                    // スタックはクリアしておく
+                    part.CallStack = std::stack<CommandList::const_iterator>();
+                    part.LoopStack = std::stack<std::pair<CommandList::const_iterator, int>>();
+
+                    NextFramePart(ch);
+                }
+            }
         }
 
         currentFrame++;
@@ -147,6 +158,12 @@ namespace MusicCom
                     continue;
                 }
                 part.CallStack.push(++CommandList::const_iterator(ptr));
+                // 自己参照等で入れ子の数がMAX_MACRO_COUNTを超えたら強制終了
+                if (part.CallStack.size() > MAX_MACRO_COUNT)
+                {
+                    part.Playing = false;
+                    return optional<CommandList::const_iterator>();
+                }
                 ptr = musicdata.GetMacroHead(command.GetStrArg());
                 continue;
             case Command::TYPE_RET:
@@ -551,6 +568,11 @@ namespace MusicCom
                     continue;
                 }
                 macro_call_stack.push(CommandList::const_iterator(ptr));
+                // 自己参照等で入れ子の数がMAX_MACRO_COUNTを超えたら強制終了
+                if (macro_call_stack.size() > MAX_MACRO_COUNT)
+                {
+                    return boost::none;
+                }
                 ptr = musicdata.GetMacroHead(command.GetStrArg());
                 break;
             case Command::TYPE_RET:

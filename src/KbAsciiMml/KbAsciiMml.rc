@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+ï»¿// Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
 
@@ -7,19 +7,16 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
+#include "winres.h"
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// “ú–{Œê resources
+// æ—¥æœ¬èªž (æ—¥æœ¬) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_JPN)
-#ifdef _WIN32
 LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
-#pragma code_page(932)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -34,7 +31,7 @@ END
 
 2 TEXTINCLUDE 
 BEGIN
-    "#include ""afxres.h""\r\n"
+    "#include ""winres.h""\r\n"
     "\0"
 END
 
@@ -55,37 +52,36 @@ END
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION 0,9,1,0
  PRODUCTVERSION 0,9,1,0
- FILEFLAGSMASK 0x17L
+ FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
 #else
  FILEFLAGS 0x0L
 #endif
- FILEOS 0x4L
+ FILEOS 0x40004L
  FILETYPE 0x2L
  FILESUBTYPE 0x0L
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        BLOCK "041104b0"
+        BLOCK "040004b0"
         BEGIN
-            VALUE "Comments", "see https://github.com/nullre-orz/KpAsciiMml_e"
-            VALUE "FileDescription", "ASCII music.com MML player [Extended Edition] (powered by cisc's fmgen library)"
-            VALUE "FileVersion", "0, 9, 1, 0"
-            VALUE "InternalName", "kbAsciiMml"
-            VALUE "LegalCopyright", "KpAsciiMml_e: Copyright (C) 2024 nullre-orz\r\nKbAsciiMml: Copyright (C) asmichi\r\nfmgen: Copyright (C) 1998-2003 cisc"
-            VALUE "OriginalFilename", "kbAsciiMml.dll"
-            VALUE "ProductName", "kbAsciiMml"
-            VALUE "ProductVersion", "0, 9, 1, 0"
+            VALUE "FileDescription", VER_FILE_DESCRIPTION
+            VALUE "FileVersion", VER_FILE_VERSION
+            VALUE "InternalName", VER_INTERNAL_NAME
+            VALUE "LegalCopyright", VER_LEGAL_COPYRIGHT
+            VALUE "OriginalFilename", VER_ORIGINAL_FILENAME
+            VALUE "ProductName", VER_PRODUCT_NAME
+            VALUE "ProductVersion", VER_PRODUCT_VERSION
         END
     END
     BLOCK "VarFileInfo"
     BEGIN
-        VALUE "Translation", 0x411, 1200
+        VALUE "Translation", 0x400, 1200
     END
 END
 
-#endif    // “ú–{Œê resources
+#endif    // æ—¥æœ¬èªž (æ—¥æœ¬) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
