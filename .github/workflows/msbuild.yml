@@ -34,22 +34,21 @@ jobs:
     - name: Install Boost
       run: |
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
+        dir boost
         cd boost
         bootstrap.bat
         b2.exe headers
         echo "BOOST_ROOT=${{ github.workspace }}\boost" >> $env:GITHUB_ENV
+      shell: cmd
   
     - name: Build
       run: |
         cd
-        dir
-        dir boost
         dir boost\boost
         msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln"
         msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
       env:
         BOOST_ROOT: ${{ env.BOOST_ROOT }}
-      shell: cmd
 
     - name: Package
       run: |
