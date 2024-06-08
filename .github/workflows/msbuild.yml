@@ -37,10 +37,9 @@ jobs:
         dir boost
         cd boost
         bootstrap.bat
-        dir boost
-        b2.exe headers
-        dir boost
+        b2 headers
         echo "BOOST_ROOT=${{ github.workspace }}\boost" >> $env:GITHUB_ENV
+        dir boost
       shell: cmd
   
     - name: Build
