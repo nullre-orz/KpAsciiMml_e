@@ -49,6 +49,7 @@ jobs:
         msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
       env:
         BOOST_ROOT: ${{ env.BOOST_ROOT }}
+      shell: cmd
 
     - name: Package
       run: |
