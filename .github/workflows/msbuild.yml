@@ -38,11 +38,14 @@ jobs:
         bootstrap.bat
         b2 headers
         echo "BOOST_ROOT=${{ github.workspace }}\boost" >> $env:GITHUB_ENV
+        dir
       shell: cmd
   
     - name: Build
       run: |
+        dir boost
         boost\b2 headers
+        dir boost
         msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln"
         msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
       env:
