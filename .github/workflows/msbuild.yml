@@ -34,12 +34,10 @@ jobs:
     - name: Install Boost
       run: |
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
-        dir boost
         cd boost
         bootstrap.bat
         b2 headers
         echo "BOOST_ROOT=${{ github.workspace }}\boost" >> $env:GITHUB_ENV
-        dir boost
       shell: cmd
   
     - name: Build
