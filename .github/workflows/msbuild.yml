@@ -40,6 +40,8 @@ jobs:
       run: |
         cd
         dir
+        dir boost
+        dir boost\boost
         msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln"
         msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
       env:
