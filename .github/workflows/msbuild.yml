@@ -34,7 +34,7 @@ jobs:
     - name: Install Boost
       run: |
         git clone -b boost-1.85.0 --depth 1 https://github.com/boostorg/boost.git boost
-        echo BOOST_ROOT=boost >> $GITHUB_ENV
+        echo "BOOST_ROOT=boost" >> $env:GITHUB_ENV
   
     - name: Build
       run: |
