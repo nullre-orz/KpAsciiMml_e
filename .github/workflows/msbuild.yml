@@ -33,8 +33,7 @@ jobs:
 
     - name: Install Boost
       run: |
-        set BOOST_TAGS=boost-1.85.0
-        git clone -b %BOOST_TAGS% --depth 1 https://github.com/boostorg/boost.git boost
+        git clone -b boost-1.85.0 --depth 1 https://github.com/boostorg/boost.git boost
         echo BOOST_ROOT=boost >> $GITHUB_ENV
   
     - name: Build
