@@ -42,8 +42,7 @@ jobs:
   
     - name: Build
       run: |
-        cd
-        dir boost
+        b2 headers
         msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln"
         msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
       env:
