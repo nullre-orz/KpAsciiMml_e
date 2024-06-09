@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-latest
 
     steps:
     - name: Checkout
@@ -30,6 +30,8 @@ jobs:
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.3.3
+      with:
+        vs-version: '[17.0,17.8)'
 
     - name: Cache Boost
       uses: actions/cache@v4
