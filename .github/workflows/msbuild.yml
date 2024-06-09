@@ -36,7 +36,7 @@ jobs:
       id: cache_boost
       with:
         path: "boost"
-        key: boost-1.85.0-${{ runner.os }}-${{ hashFiles('boost/b2.exe') }}
+        key: boost-1.85.0-${{ runner.os }}
   
     - name: Download Boost
       if: ${{ steps.cache_boost.outputs.cache-hit != 'true' }}
@@ -44,9 +44,17 @@ jobs:
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
 
     - name: Install Boost 1
-      shell: powershell
+      shell: cmd
       run: |
         cd boost
         echo "=== bootstrap.bat ==="
-        .\bootstrap.bat
+        bootstrap.bat
+        dir
+
+    - name: Install Boost 2
+      shell: cmd
+      run: |
+        cd boost
+        echo "=== b2 headers ==="
+        b2.exe headers
         dir
