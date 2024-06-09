@@ -49,8 +49,10 @@ jobs:
         cd boost
         echo "=== bootstrap.bat ==="
         .\bootstrap.bat
+        dir
         echo "=== b2 headers ==="
-        .\b2 headers
+        .\b2.exe headers
+        dir
         echo "=== set env ==="
         echo "BOOST_ROOT=${{ github.workspace }}\boost" >> $env:GITHUB_ENV
         dir
