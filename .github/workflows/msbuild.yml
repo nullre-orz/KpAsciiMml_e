@@ -36,19 +36,26 @@ jobs:
       id: cache_boost
       with:
         path: "boost"
-        key: boost-1.85.0-${{ runner.os }}-${{ hashFiles('bootstrap.sh') }}
+        key: boost-1.85.0-${{ runner.os }}
   
     - name: Download Boost
       if: ${{ steps.cache_boost.outputs.cache-hit != 'true' }}
       run: |
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
-        cd boost
-        echo "=== bootstrap.bat ==="
-        call bootstrap.bat
+
+    - name: Save Boost
+      if: always()
+      uses: actions/cache@v4
+      with:
+        path: "boost"
+        key: boost-1.85.0-${{ runner.os }}
 
     - name: Install Boost
       shell: cmd
       run: |
+        cd boost
+        echo "=== bootstrap.bat ==="
+        call bootstrap.bat
         echo "=== b2 headers ==="
         .\b2 headers
         if errorlevel 1 exit 1
