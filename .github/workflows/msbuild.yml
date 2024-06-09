@@ -40,12 +40,9 @@ jobs:
   
     - name: Download Boost
       if: ${{ steps.cache_boost.outputs.cache-hit != 'true' }}
-      run: |
-        git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
-
-    - name: Install Boost 1
       shell: cmd
       run: |
+        git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
         cd boost
         echo "=== bootstrap.bat ==="
         bootstrap.bat
@@ -55,6 +52,7 @@ jobs:
       shell: cmd
       run: |
         cd boost
+        dir
         echo "=== b2 headers ==="
-        b2.exe headers
+        b2 headers
         dir
