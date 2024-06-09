@@ -36,7 +36,7 @@ jobs:
       id: cache_boost
       with:
         path: "boost"
-        key: boost-1.85.0-${{ runner.os }}-${{ hashFiles('b2.exe') }}
+        key: boost-1.85.0-${{ runner.os }}-${{ hashFiles('boost/b2.exe') }}
   
     - name: Download Boost
       if: ${{ steps.cache_boost.outputs.cache-hit != 'true' }}
