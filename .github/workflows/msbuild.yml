@@ -44,11 +44,11 @@ jobs:
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
 
     - name: Install Boost
-      shell: cmd
+      shell: powershell
       run: |
         cd boost
         echo "=== bootstrap.bat ==="
-        call bootstrap.bat
+        .\bootstrap.bat
         echo "=== b2 headers ==="
         .\b2 headers 2>&1 | Tee-Object -FilePath ..\b2_headers.log
         if errorlevel 1 exit 1
