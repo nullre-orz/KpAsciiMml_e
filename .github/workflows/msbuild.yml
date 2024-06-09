@@ -43,13 +43,6 @@ jobs:
       run: |
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
 
-    - name: Save Boost
-      if: always()
-      uses: actions/cache@v4
-      with:
-        path: "boost"
-        key: boost-1.85.0-${{ runner.os }}
-
     - name: Install Boost
       shell: cmd
       run: |
@@ -57,32 +50,10 @@ jobs:
         echo "=== bootstrap.bat ==="
         call bootstrap.bat
         echo "=== b2 headers ==="
-        .\b2 headers
+        .\b2 headers 2>&1 | Tee-Object -FilePath ..\b2_headers.log
         if errorlevel 1 exit 1
+        type ..\b2_headers.log
         echo "=== set env ==="
         echo "BOOST_ROOT=${{ github.workspace }}\boost" >> $env:GITHUB_ENV
         dir
   
-    - name: Build
-      shell: cmd
-      run: |
-        msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln"
-        msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
-      env:
-        BOOST_ROOT: ${{ env.BOOST_ROOT }}
-
-    - name: Package
-      run: |
-        mkdir -p artifact/x86 artifact/x64
-        cp bin/KbAsciiMml/Win32/Release/KbAsciiMml.dll artifact/x86/KbAsciiMml/kpi
-        cp bin/KbAsciiMml/x64/Release/KbAsciiMml.dll artifact/x64/KbAsciiMml/kpi
-        cp KbAsciiMml.ini artifact/x86/KbAsciiMml.ini
-        cp KbAsciiMml.ini artifact/x64/KbAsciiMml.ini
-        cp KpAsciiMml_e.txt artifact/x86/KpAsciiMml_e.txt
-        cp KpAsciiMml_e.txt artifact/x64/KpAsciiMml_e.txt
-
-    - name: Upload
-      uses: actions/upload-artifact@v4
-      with:
-        name: KpAsciiMml_e
-        path: artifact
