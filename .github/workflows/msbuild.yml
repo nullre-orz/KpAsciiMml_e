@@ -52,7 +52,35 @@ jobs:
       shell: cmd
       run: |
         cd boost
-        dir
         echo "=== b2 headers ==="
         b2 headers
-        dir
+
+    - name: Set env
+      shell: powershell
+      run: |
+        echo "=== set env ==="
+        echo "BOOST_ROOT=${{ github.workspace }}\boost" >> $env:GITHUB_ENV
+
+    - name: Build
+      shell: cmd
+      run: |
+        msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln"
+        msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
+      env:
+        BOOST_ROOT: ${{ env.BOOST_ROOT }}
+
+    - name: Package
+      run: |
+        mkdir -p artifact/x86 artifact/x64
+        cp bin/KbAsciiMml/Win32/Release/KbAsciiMml.dll artifact/x86/KbAsciiMml/kpi
+        cp bin/KbAsciiMml/x64/Release/KbAsciiMml.dll artifact/x64/KbAsciiMml/kpi
+        cp KbAsciiMml.ini artifact/x86/KbAsciiMml.ini
+        cp KbAsciiMml.ini artifact/x64/KbAsciiMml.ini
+        cp KpAsciiMml_e.txt artifact/x86/KpAsciiMml_e.txt
+        cp KpAsciiMml_e.txt artifact/x64/KpAsciiMml_e.txt
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: KpAsciiMml_e
+        path: artifact
