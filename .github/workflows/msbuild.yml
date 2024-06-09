@@ -31,14 +31,24 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
 
-    - name: Install Boost
-      shell: cmd
+    - name: Cache Boost
+      uses: actions/cache@v4
+      id: cache_boost
+      with:
+        path: "boost"
+        key: boost-1.85.0-${{ runner.os }}-${{ hashFiles('bootstrap.sh') }}
+  
+    - name: Download Boost
+      if: ${{ steps.cache_boost.outputs.cache-hit != 'true' }}
       run: |
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
         cd boost
         echo "=== bootstrap.bat ==="
         call bootstrap.bat
-        if errorlevel 1 exit 1
+
+    - name: Install Boost
+      shell: cmd
+      run: |
         echo "=== b2 headers ==="
         .\b2 headers
         if errorlevel 1 exit 1
