@@ -36,10 +36,13 @@ jobs:
       run: |
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
         cd boost
+        echo "=== bootstrap.bat ==="
         call bootstrap.bat
         if errorlevel 1 exit 1
-        call b2.exe headers
+        echo "=== b2 headers ==="
+        call b2 headers
         if errorlevel 1 exit 1
+        echo "=== set env ==="
         echo "BOOST_ROOT=${{ github.workspace }}\boost" >> $env:GITHUB_ENV
         dir
   
@@ -47,10 +50,10 @@ jobs:
       shell: cmd
       run: |
         dir boost
-        cd boost
+        pushd boost
         b2 headers
-        dir boost
-        cd ..\
+        dir
+        popd
         msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln"
         msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
       env:
