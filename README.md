@@ -25,10 +25,11 @@ EE 版の強化点として、LOGIN SOFCOM No.8 に収録されていた楽曲�
 ビルドに使用した環境は次の通りです。
 
 - Visual Studio Community 2022 Version 17.10.1 (「C++ ネイティブ開発」ワークロードあり)
-- Boost 1.85.0
-- KbMedia Player プラグイン SDK 2024/04/30版
+- Boost 1.85.0 (ヘッダーファイルのみ)
+  - Visual Studio 2022 Version 17.10 以降では b2 が動作しないため、旧バージョンでインストールしておく必要があります。
+- KbMedia Player プラグイン SDK 2024/06/08版
 
-なお、動作確認には KbMedia Player 3.13 を使用しています。
+なお、動作確認には KbMedia Player 3.14 を使用しています。
 
 ## 更新履歴
 
