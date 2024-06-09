@@ -40,7 +40,7 @@ jobs:
         call bootstrap.bat
         if errorlevel 1 exit 1
         echo "=== b2 headers ==="
-        call b2 headers
+        .\b2 headers
         if errorlevel 1 exit 1
         echo "=== set env ==="
         echo "BOOST_ROOT=${{ github.workspace }}\boost" >> $env:GITHUB_ENV
@@ -49,11 +49,6 @@ jobs:
     - name: Build
       shell: cmd
       run: |
-        dir boost
-        pushd boost
-        b2 headers
-        dir
-        popd
         msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln"
         msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
       env:
