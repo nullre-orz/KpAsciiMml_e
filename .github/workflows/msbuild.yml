@@ -43,13 +43,18 @@ jobs:
       run: |
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
 
-    - name: Install Boost
+    - name: Install Boost 1
       shell: powershell
       run: |
         cd boost
         echo "=== bootstrap.bat ==="
         .\bootstrap.bat
         dir
+
+    - name: Install Boost 1
+      shell: powershell
+      run: |
+        cd boost
         echo "=== b2 headers ==="
         .\b2.exe headers
         dir
