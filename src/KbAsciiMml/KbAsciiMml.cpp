@@ -1,6 +1,9 @@
-﻿#include "pch.h"
-#include "musiccom.h"
+﻿#include "musiccom/musiccom.h"
+#include "resource.h"
+#include <Windows.h>
+#include <boost/lexical_cast.hpp>
 #include <kmp_pi.h>
+#include <shlwapi.h>
 
 #pragma comment(lib, "Shlwapi.lib")
 
@@ -10,8 +13,6 @@ using namespace boost;
 HMODULE hDllModule;
 
 #define KMPPLUGIN_VERSION 1
-#define KMPPLUGIN_COPYRIGHT "KpAsciiMml_e: Copyright (C) 2024 nullre-orz\nKbAsciiMml: Copyright (C) asmichi\nfmgen: Copyright (C) 1998-2003 cisc"
-#define KMPPLUGIN_DESCRIPTION "ASCII music.com MML player [Extended Edition] (powered by cisc's fmgen library)"
 
 class KbAsciiMml
 {
@@ -74,8 +75,19 @@ BOOL KbAsciiMml::Open(const char* cszFileName, SOUNDINFO* pInfo)
     pInfo->dwReserved1 = 0xFFFFFFFF;
     pInfo->dwReserved2 = 0;
 
-    if (!musicCom.Load(cszFileName))
+    try
+    {
+        if (!musicCom.Load(cszFileName))
+        {
+            return FALSE;
+        }
+    }
+    catch (std::exception& e)
+    {
+        MessageBoxA(NULL, e.what(), "エラー", MB_OK);
         return FALSE;
+    }
+
     if (!musicCom.PrepareMix(pInfo->dwSamplesPerSec))
         return FALSE;
 
@@ -152,8 +164,8 @@ KMPMODULE* WINAPI kmp_GetTestModule()
         {
             KMPMODULE_VERSION, // dwVersion
             KMPPLUGIN_VERSION, // dwPluginVersion
-            KMPPLUGIN_COPYRIGHT, // pszCopyright
-            KMPPLUGIN_DESCRIPTION, // pszDescription
+            VER_LEGAL_COPYRIGHT, // pszCopyright
+            VER_FILE_DESCRIPTION, // pszDescription
             ppszSupportExts, // ppszSupportExts
             1, // dwReentrant
             NULL, // Init
