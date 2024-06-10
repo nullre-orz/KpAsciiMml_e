@@ -63,7 +63,7 @@ jobs:
       if: ${{ env.artifact-exists != 'true' }}
       shell: powershell
       run: |
-        Compress-Archive -Path boost\boost -DestinationPath boost.zip
+        Compress-Archive -Path boost\boost\ -DestinationPath boost.zip
         dir -Directory
     - name: Upload artifact
       if: ${{ env.artifact-exists != 'true' }}
@@ -88,9 +88,9 @@ jobs:
     - name: Expand
       shell: powershell
       run: |
-        New-Item "..\boost\boost" -ItemType Directory -ErrorAction SilentlyContinue
+        New-Item ".\boost\boost" -ItemType Directory -ErrorAction SilentlyContinue
         dir -Directory
-        Expand-Archive -Path boost.zip -DestinationPath boost\boost
+        Expand-Archive -Path boost.zip -DestinationPath boost\
     - name: Set BOOST_ROOT
       shell: cmd
       run: echo "BOOST_ROOT=./boost" >> $env:GITHUB_ENV
