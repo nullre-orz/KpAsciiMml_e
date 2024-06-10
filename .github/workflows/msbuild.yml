@@ -59,8 +59,6 @@ jobs:
         cd boost
         echo "=== b2 headers ==="
         b2 headers
-        dir
-        ulimit -n
     - name: Compress
       if: ${{ env.artifact-exists != 'true' }}
       shell: powershell
