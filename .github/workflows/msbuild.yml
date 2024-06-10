@@ -30,7 +30,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: boost
-        path: ./boost/boost
+        path: boost.zip
       continue-on-error: true
     - name: Check artifact
       run: |
@@ -61,12 +61,16 @@ jobs:
         b2 headers
         dir
         ulimit -n
+    - name: Compress
+      if: ${{ env.artifact-exists != 'true' }}
+      shell: powershell
+      run: Compress-Archive -Path boost -DestinationPath boost.zip
     - name: Upload artifact
       if: ${{ env.artifact-exists != 'true' }}
       uses: actions/upload-artifact@v4
       with:
         name: boost
-        path: ./boost/boost
+        path: boost.zip
 
   build:
     runs-on: windows-latest
@@ -80,7 +84,10 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: boost
-        path: ./boost/boost
+        path: boost.zip
+    - name: Expand
+      shell: powershell
+      run: Expand-Archive -Path boost.zip -DestinationPath boost
     - name: Set BOOST_ROOT
       shell: cmd
       run: echo "BOOST_ROOT=./boost" >> $env:GITHUB_ENV
