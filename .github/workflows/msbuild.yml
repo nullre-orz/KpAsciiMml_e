@@ -30,7 +30,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: boost
-        path: ./boost
+        path: ./boost/boost
       continue-on-error: true
     - name: Check artifact
       run: |
@@ -56,18 +56,15 @@ jobs:
       if: ${{ env.artifact-exists != 'true' }}
       shell: cmd
       run: |
-        pushd boost
+        cd boost
         echo "=== b2 headers ==="
         b2 headers
-        dir
-        popd
-        dir
     - name: Upload artifact
       if: ${{ env.artifact-exists != 'true' }}
       uses: actions/upload-artifact@v4
       with:
         name: boost
-        path: ./boost
+        path: ./boost/boost
 
   build:
     runs-on: windows-latest
@@ -81,7 +78,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: boost
-        path: ./boost
+        path: ./boost/boost
     - name: Set BOOST_ROOT
       shell: cmd
       run: echo "BOOST_ROOT=./boost" >> $env:GITHUB_ENV
