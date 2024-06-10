@@ -45,11 +45,22 @@ jobs:
       run: |
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
         msbuild -version
+    - name: Setup Boost 1
+      if: ${{ env.artifact-exists != 'true' }}
+      shell: cmd
+      run: |
         cd boost
         echo "=== bootstrap.bat ==="
         bootstrap.bat
+    - name: Setup Boost 2
+      if: ${{ env.artifact-exists != 'true' }}
+      shell: cmd
+      run: |
+        cd boost
         echo "=== b2 headers ==="
         b2 headers
+        dir
+        dir ../
     - name: Upload artifact
       if: ${{ env.artifact-exists != 'true' }}
       uses: actions/upload-artifact@v4
