@@ -59,6 +59,8 @@ jobs:
         cd boost
         echo "=== b2 headers ==="
         b2 headers
+        dir
+        ulimit -n
     - name: Upload artifact
       if: ${{ env.artifact-exists != 'true' }}
       uses: actions/upload-artifact@v4
