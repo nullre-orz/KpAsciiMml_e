@@ -56,11 +56,12 @@ jobs:
       if: ${{ env.artifact-exists != 'true' }}
       shell: cmd
       run: |
-        cd boost
+        pushd boost
         echo "=== b2 headers ==="
         b2 headers
         dir
-        dir ../
+        popd
+        dir
     - name: Upload artifact
       if: ${{ env.artifact-exists != 'true' }}
       uses: actions/upload-artifact@v4
