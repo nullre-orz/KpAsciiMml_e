@@ -30,7 +30,7 @@ jobs:
 
     - name: Install MSBuild
       run: |
-        choco install visualstudio2022buildtools --version=117.9.7.0
+        choco install visualstudio2022buildtools --version="17.9.7"
         choco install visualstudio2022-workload-vctools
 
     - name: Cache Boost
@@ -46,13 +46,19 @@ jobs:
       run: |
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
 
-    - name: Install Boost 2
+    - name: Install Boost 1
       shell: cmd
       run: |
         msbuild -version
         cd boost
         echo "=== bootstrap.bat ==="
         bootstrap.bat
+        dir
+
+    - name: Install Boost 2
+      shell: cmd
+      run: |
+        cd boost
         echo "=== b2 headers ==="
         b2 headers
         dir
