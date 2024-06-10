@@ -21,44 +21,78 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: windows-latest
-
+  setup-boost:
+    runs-on: windows-2019
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
     - name: Install MSBuild
-      run: |
-        choco install visualstudio2022buildtools --version 117.9.7.0
-        choco install visualstudio2022-workload-vctools
-
-    - name: Cache Boost
-      uses: actions/cache@v4
-      id: cache_boost
+      uses: microsoft/setup-msbuild@v1.3.3
+    - name: Download artifact
+      uses: actions/download-artifact@v4
       with:
-        path: "boost"
-        key: boost-1.85.0-${{ runner.os }}
-  
+        name: boost
+        path: ./boost
+      continue-on-error: true
+    - name: Check artifact
+      run: |
+        if (Test-Path -Path ./boost) {
+          echo "artifact-exists=true" >> $env::GITHUB_ENV
+        } else {
+          echo "artifact-exists=false" >> $env::GITHUB_ENV
+        }
     - name: Download Boost
-      if: ${{ steps.cache_boost.outputs.cache-hit != 'true' }}
+      if: ${{ env.artifact-exists != 'true' }}
       shell: cmd
       run: |
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
-
-    - name: Install Boost 1
-      shell: cmd
-      run: |
         msbuild -version
         cd boost
         echo "=== bootstrap.bat ==="
         bootstrap.bat
-        dir
-
-    - name: Install Boost 2
-      shell: cmd
-      run: |
-        cd boost
         echo "=== b2 headers ==="
         b2 headers
-        dir
+    - name: Upload artifact
+      if: ${{ env.artifact-exists != 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: boost
+        path: ./boost
+
+  build:
+    runs-on: windows-latest
+    needs: setup-boost
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Install MSBuild
+      uses: microsoft/setup-msbuild@v1.3.3
+    - name: Download boost
+      uses: actions/download-artifact@v4
+      with:
+        name: boost
+        path: ./boost
+    - name: Set BOOST_ROOT
+      shell: cmd
+      run: echo "BOOST_ROOT=./boost" >> $env:GITHUB_ENV
+    - name: Build
+      shell: cmd
+      id: build
+      run: |
+        msbuild /p:Platform="x86" /p:Configuration=Release ./src/KbAsciiMml.sln
+        msbuild /p:Platform="x64" /p:Configuration=Release ./src/KbAsciiMml.sln
+        echo "::set-output name=sha7::$(git rev-parse --short HEAD)"
+      env:
+        BOOST_ROOT: ${{ env.BOOST_ROOT }}
+    - name: Package
+      run: |
+        mkdir -p artifact/x86 artifact/x64
+        cp bin/KbAsciiMml/Win32/Release/KbAsciiMml.dll artifact/x86/KbAsciiMml/kpi
+        cp bin/KbAsciiMml/x64/Release/KbAsciiMml.dll artifact/x64/KbAsciiMml/kpi
+        cp KbAsciiMml.ini artifact/x86/KbAsciiMml.ini
+        cp KbAsciiMml.ini artifact/x64/KbAsciiMml.ini
+        cp KpAsciiMml_e.txt artifact/x86/KpAsciiMml_e.txt
+        cp KpAsciiMml_e.txt artifact/x64/KpAsciiMml_e.txt
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: KpAsciiMml_e-${{ steps.build.outputs.sha7 }}
+        path: artifact
