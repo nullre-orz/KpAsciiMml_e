@@ -30,7 +30,7 @@ jobs:
 
     - name: Install MSBuild
       run: |
-        choco install visualstudio2022buildtools --version="17.9.7"
+        choco install visualstudio2022buildtools --version 117.9.7.0
         choco install visualstudio2022-workload-vctools
 
     - name: Cache Boost
