@@ -28,8 +28,10 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v1.3.3
+    - name: Install MSBuild
+      run: |
+        choco install visualstudio2022buildtools --version=117.9.7.0
+        choco install visualstudio2022-workload-vctools
 
     - name: Cache Boost
       uses: actions/cache@v4
@@ -43,46 +45,14 @@ jobs:
       shell: cmd
       run: |
         git clone -b boost-1.85.0 --depth 1 --recursive https://github.com/boostorg/boost.git boost
-        cd boost
-        echo "=== bootstrap.bat ==="
-        bootstrap.bat
-        dir
 
     - name: Install Boost 2
       shell: cmd
       run: |
         msbuild -version
-        cl
         cd boost
+        echo "=== bootstrap.bat ==="
+        bootstrap.bat
         echo "=== b2 headers ==="
         b2 headers
-
-    - name: Set env
-      shell: powershell
-      run: |
-        echo "=== set env ==="
-        echo "BOOST_ROOT=${{ github.workspace }}\boost" >> $env:GITHUB_ENV
-
-    - name: Build
-      shell: cmd
-      run: |
-        msbuild /m /p:Platform="x86" /p:Configuration=Release "src\KbAsciiMml.sln"
-        msbuild /m /p:Platform="x64" /p:Configuration=Release "src\KbAsciiMml.sln"
-      env:
-        BOOST_ROOT: ${{ env.BOOST_ROOT }}
-
-    - name: Package
-      run: |
-        mkdir -p artifact/x86 artifact/x64
-        cp bin/KbAsciiMml/Win32/Release/KbAsciiMml.dll artifact/x86/KbAsciiMml/kpi
-        cp bin/KbAsciiMml/x64/Release/KbAsciiMml.dll artifact/x64/KbAsciiMml/kpi
-        cp KbAsciiMml.ini artifact/x86/KbAsciiMml.ini
-        cp KbAsciiMml.ini artifact/x64/KbAsciiMml.ini
-        cp KpAsciiMml_e.txt artifact/x86/KpAsciiMml_e.txt
-        cp KpAsciiMml_e.txt artifact/x64/KpAsciiMml_e.txt
-
-    - name: Upload
-      uses: actions/upload-artifact@v4
-      with:
-        name: KpAsciiMml_e
-        path: artifact
+        dir
