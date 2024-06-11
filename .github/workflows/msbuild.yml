@@ -96,9 +96,10 @@ jobs:
       shell: cmd
       run: |
         dir boost
+        dir boost\boost
     - name: Set BOOST_ROOT
       shell: cmd
-      run: echo "BOOST_ROOT=./boost" >> $env:GITHUB_ENV
+      run: echo "BOOST_ROOT=boost" >> $env:GITHUB_ENV
     - name: Build
       shell: cmd
       id: build
