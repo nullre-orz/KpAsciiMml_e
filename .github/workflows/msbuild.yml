@@ -87,16 +87,16 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: boost
-        path: boost.zip
+        path: boost
     - name: Download check
       shell: cmd
       run: |
         dir
+        dir boost
     - name: Expand
       shell: powershell
       run: |
-        New-Item ".\boost\boost" -ItemType Directory -ErrorAction SilentlyContinue
-        Expand-Archive -Path boost.zip -DestinationPath boost\
+        Expand-Archive -Path boost\boost.zip -DestinationPath boost\
     - name: Set BOOST_ROOT
       shell: cmd
       run: echo "BOOST_ROOT=./boost" >> $env:GITHUB_ENV
