@@ -92,13 +92,8 @@ jobs:
       shell: powershell
       run: |
         Expand-Archive -Path boost\boost.zip -DestinationPath boost\
-    - name: Download check
-      shell: cmd
-      run: |
-        dir boost
-        dir boost\boost
     - name: Set BOOST_ROOT
-      shell: cmd
+      shell: bash
       run: echo "BOOST_ROOT=boost" >> $env:GITHUB_ENV
     - name: Build
       shell: cmd
