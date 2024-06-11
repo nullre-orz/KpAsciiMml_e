@@ -94,7 +94,7 @@ jobs:
         Expand-Archive -Path boost\boost.zip -DestinationPath boost\
     - name: Set BOOST_ROOT
       shell: powershell
-      run: echo "BOOST_ROOT=boost" >> $env:GITHUB_ENV
+      run: echo "BOOST_ROOT=${{ github.workspace }}\boost" >> $env:GITHUB_ENV
     - name: Build
       shell: cmd
       id: build
