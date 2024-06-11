@@ -63,8 +63,11 @@ jobs:
       if: ${{ env.artifact-exists != 'true' }}
       shell: powershell
       run: |
-        Compress-Archive -Path boost\boost\ -DestinationPath boost.zip
-        dir -Directory
+        Compress-Archive -Path boost\boost\ -DestinationPath .\boost.zip
+    - name: Check zip
+      if: ${{ env.artifact-exists != 'true' }}
+      shell: cmd
+      run: dir
     - name: Upload artifact
       if: ${{ env.artifact-exists != 'true' }}
       uses: actions/upload-artifact@v4
@@ -85,11 +88,14 @@ jobs:
       with:
         name: boost
         path: boost.zip
+    - name: Download check
+      shell: cmd
+      run: |
+        dir
     - name: Expand
       shell: powershell
       run: |
         New-Item ".\boost\boost" -ItemType Directory -ErrorAction SilentlyContinue
-        dir -Directory
         Expand-Archive -Path boost.zip -DestinationPath boost\
     - name: Set BOOST_ROOT
       shell: cmd
