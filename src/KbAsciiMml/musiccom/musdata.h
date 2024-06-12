@@ -205,15 +205,21 @@ namespace MusicCom
             assert(0 <= index && index < channel_count);
             return channel_present[index];
         }
+        bool IsRhythmPartPresent() const
+        {
+            return rhythm_part_present;
+        }
         bool IsMacroPresent(std::string name) const
         {
             return macros.find(name) != macros.end();
         }
 
         void AddCommandToChannel(int index, const Command& command);
+        void AddCommandToRhythmPart(const Command& command);
         void AddCommandToMacro(std::string name, const Command& command);
 
         CommandList::const_iterator GetChannelHead(int channel) const;
+        CommandList::const_iterator GetRhythmPartHead() const;
         CommandList::const_iterator GetMacroHead(std::string name) const;
 
     private:
@@ -221,9 +227,11 @@ namespace MusicCom
 
         std::map<int, FMSound> fmsounds;
         std::map<int, SSGEnv> ssgenvs;
-        std::map<std::string, std::list<Command>> macros;
-        std::list<Command> channels[channel_count];
-        bool channel_present[6];
+        std::map<std::string, CommandList> macros;
+        CommandList channels[channel_count];
+        bool channel_present[channel_count];
+        CommandList rhythm_part;
+        bool rhythm_part_present;
         int tempo;
     };
 

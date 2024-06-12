@@ -17,6 +17,13 @@ namespace MusicCom
         return channels[index].begin();
     }
 
+    CommandList::const_iterator MusicData::GetRhythmPartHead() const
+    {
+        assert(IsRhythmPartPresent());
+
+        return rhythm_part.begin();
+    }
+
     CommandList::const_iterator MusicData::GetMacroHead(string name) const
     {
         assert(IsMacroPresent(name));
@@ -32,6 +39,19 @@ namespace MusicCom
             // 終了検知のためパート終端を追加
             cl.push_back(Command(Command::TYPE_END));
             channel_present[index] = true;
+        }
+
+        cl.insert(--cl.end(), command);
+    }
+
+    void MusicData::AddCommandToRhythmPart(const Command& command)
+    {
+        CommandList& cl = rhythm_part;
+        if (!IsRhythmPartPresent())
+        {
+            // 終了検知のためパート終端を追加
+            cl.push_back(Command(Command::TYPE_END));
+            rhythm_part_present = true;
         }
 
         cl.insert(--cl.end(), command);

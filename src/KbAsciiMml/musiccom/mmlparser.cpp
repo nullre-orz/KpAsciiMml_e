@@ -82,6 +82,7 @@ namespace MusicCom
         enum MMLLineType
         {
             CH,
+            RHYTHM,
             SOUND,
             LFO,
             OP,
@@ -129,6 +130,9 @@ namespace MusicCom
             {
             case CH:
                 state.pMusicData->AddCommandToChannel(state.ChNumber, command);
+                break;
+            case RHYTHM:
+                state.pMusicData->AddCommandToRhythmPart(command);
                 break;
             case STR:
                 state.pMusicData->AddCommandToMacro(state.MacroName, command);
@@ -508,10 +512,11 @@ namespace MusicCom
                     (range_p('1', '6')[SetChNumber(s)] >> ch_p(':'))[BeginLine<CH>(s)]
                     >> *mml_Command;
 
-                // D: は無視する
+                // D: パート (SOUND.DATのリズム音)
                 drum_line =
-                    as_lower_d[str_p("d:")]
-                    >> *(anychar_p - eol_p);
+                    (as_lower_d[str_p("d:")])[BeginLine<RHYTHM>(s)]
+                    >> *mml_Command;
+
                 sound_line =
                     (as_lower_d[str_p("sound")] >> ch_p(':'))[BeginLine<SOUND>(s)]
                     >> !ch_p('@')
