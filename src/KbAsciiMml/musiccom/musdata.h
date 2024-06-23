@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "command.h"
 #include <cassert>
 #include <list>
 #include <map>
@@ -100,78 +101,6 @@ namespace MusicCom
         std::vector<unsigned char> Env;
     };
 
-    class Command
-    {
-    public:
-        static const char TYPE_NOTE = '#'; // args = {Note, Length, Tied};
-        static const char TYPE_RET = '%'; // macro return
-        static const char TYPE_END = '\0'; // part end
-
-        Command()
-        {
-            type = 0;
-            std::memset(args, 0, sizeof(args));
-        }
-        Command(char t, int arg0 = 0, int arg1 = 0, int arg2 = 0)
-        {
-            SetType(t);
-            SetArg(0, arg0);
-            SetArg(1, arg1);
-            SetArg(2, arg2);
-        }
-        Command(char t, std::string arg)
-        {
-            SetType(t);
-            std::memset(args, 0, sizeof(args));
-            SetStrArg(arg);
-        }
-        template<class InIt>
-        Command(char t, InIt first, InIt last)
-        {
-            SetType(t);
-            std::memset(args, 0, sizeof(args));
-            for (int i = 0; i < sizeof(args) / sizeof(args[0]) && first != last; i++, first++)
-            {
-                SetArg(i, *first);
-            }
-        }
-        void SetType(char t)
-        {
-            type = t;
-        }
-        char GetType() const
-        {
-            return type;
-        }
-        void SetArg(int index, int val)
-        {
-            assert(0 <= index && index < 3);
-            args[index] = val;
-        }
-        int GetArg(int index) const
-        {
-            assert(0 <= index && index < 3);
-            return args[index];
-        }
-
-        // （; ＾ω＾）
-        void SetStrArg(std::string val)
-        {
-            strarg = val;
-        }
-        const std::string& GetStrArg() const
-        {
-            return strarg;
-        }
-
-    private:
-        char type;
-        int args[3];
-        std::string strarg;
-    };
-
-    typedef std::list<Command> CommandList;
-
     class MusicData
     {
     public:
@@ -218,9 +147,9 @@ namespace MusicCom
         void AddCommandToRhythmPart(const Command& command);
         void AddCommandToMacro(std::string name, const Command& command);
 
-        CommandList::const_iterator GetChannelHead(int channel) const;
-        CommandList::const_iterator GetRhythmPartHead() const;
-        CommandList::const_iterator GetMacroHead(std::string name) const;
+        CommandIterator GetChannelHead(int channel) const;
+        CommandIterator GetRhythmPartHead() const;
+        CommandIterator GetMacroHead(std::string name) const;
 
     private:
         static const int channel_count = 6;

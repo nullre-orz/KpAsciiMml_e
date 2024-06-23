@@ -2,7 +2,7 @@
 
 #include "fmwrap.h"
 #include "musdata.h"
-#include <boost/optional.hpp>
+#include "partdata.h"
 #include <stack>
 
 namespace FM
@@ -25,56 +25,13 @@ namespace MusicCom
         }
 
     private:
-        struct PartData
-        {
-            PartData();
-
-            std::stack<CommandList::const_iterator> CallStack;
-            std::stack<std::pair<CommandList::const_iterator, int>> LoopStack;
-            CommandList::const_iterator CommandPtr;
-
-            int NoteBeginFrame;
-            int NoteEndFrame;
-            int KeyOnFrame;
-            int KeyOffFrame;
-
-            int Octave;
-            int LastOctave;
-            int Volume;
-            int Tone;
-            int LastTone;
-
-            bool SSGEnvOn;
-            int SoundNo;
-            int DefaultNoteLength;
-            int Detune;
-            int GateTime;
-
-            // いい加減適当
-            int PLength;
-
-            int ILength;
-            int IDepth;
-            int IDelay;
-
-            int ULength;
-            int UDepth;
-            int UDelay;
-
-            boost::optional<char> LinkedItem;
-            bool Playing;
-            // 無限ループ検出
-            bool InfiniteLooping;
-        };
-
-    private:
         void NextFrame();
         void NextFramePart(int ch);
         void KeyOnOff(int ch, bool on);
-        boost::optional<CommandList::const_iterator> ProcessLoop(PartData& part, CommandList::const_iterator ptr);
+        std::optional<CommandIterator> ProcessLoop(PartData& part, CommandIterator ptr);
         void ProcessCommand(int ch);
         void ProcessEffect(int ch);
-        boost::optional<char> FindLinkedItem(const PartData& part, CommandList::const_iterator ptr);
+        std::optional<CommandType> FindLinkedItem(const PartData& part, CommandIterator ptr);
         int GetFmTone(int base_tone, int detune) const;
         int GetSsgTone(int base_octave, int base_tone, int detune) const;
 

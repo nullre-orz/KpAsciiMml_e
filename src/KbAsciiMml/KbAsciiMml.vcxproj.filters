@@ -42,6 +42,12 @@
     <ClInclude Include="musiccom\sounddata.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="musiccom\command.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\partdata.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\external\fmgen\fmtimer.cpp">

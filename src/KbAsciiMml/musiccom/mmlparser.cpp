@@ -1,4 +1,5 @@
-﻿#include "musdata.h"
+﻿#include "mmlparser.h"
+#include "musdata.h"
 
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
@@ -109,7 +110,7 @@ namespace MusicCom
 
         public:
             int ChNumber; // ch番号 (0-origin)
-            char CommandType;
+            CommandType CommandType;
             string MacroName;
 
             // Sound
@@ -291,7 +292,7 @@ namespace MusicCom
             void operator()(char c) const
             {
                 state.args.clear();
-                state.CommandType = toupper(c);
+                state.CommandType = static_cast<CommandType>(toupper(c));
             }
 
             MMLParserState& state;
@@ -317,7 +318,7 @@ namespace MusicCom
 
                 vector<string>& a = state.args;
 
-                int note = note_numbers[state.CommandType - 'A'];
+                int note = note_numbers[static_cast<char>(state.CommandType) - 'A'];
                 if (!a[0].empty())
                 {
                     switch (a[0][0])
@@ -332,7 +333,7 @@ namespace MusicCom
                 }
                 int len = ParseLength(state.args[1]);
 
-                AddCommand(state, Command(Command::TYPE_NOTE, note, len));
+                AddCommand(state, Command(CommandType::TYPE_NOTE, note, len));
             }
 
             MMLParserState& state;
@@ -347,32 +348,32 @@ namespace MusicCom
             {
                 const static struct CtrlDef
                 {
-                    char Type;
+                    CommandType Type;
                     bool IsNoteLength;
                     int MinArgs;
                     int MaxArgs;
                     int Defaults[3];
                 } ctrl_defs[] = {
-                    {'&', false, 0, 0, {}},
-                    {'T', false, 1, 1, {}},
-                    {'R', true, 0, 1, {0}},
-                    {'W', true, 0, 1, {0}},
-                    {'L', true, 1, 1, {}},
-                    {'O', false, 1, 1, {}},
-                    {'<', false, 0, 0, {}},
-                    {'>', false, 0, 0, {}},
-                    {'V', false, 1, 1, {}},
-                    {'@', false, 1, 1, {}},
-                    {'Q', false, 1, 1, {}},
-                    {'N', false, 1, 1, {}},
-                    {'P', false, 1, 1, {}},
-                    {'U', false, 1, 3, {0, 0, 0}},
-                    {'I', false, 1, 3, {0, 0, 0}},
-                    {'S', false, 1, 1, {}},
-                    {'M', false, 1, 1, {}},
-                    {'Y', false, 2, 2, {}},
-                    {'{', false, 0, 1, {0}},
-                    {'}', false, 0, 0, {}},
+                    {CommandType::TYPE_TIE, false, 0, 0, {}},
+                    {CommandType::TYPE_TEMPO, false, 1, 1, {}},
+                    {CommandType::TYPE_REST, true, 0, 1, {0}},
+                    {CommandType::TYPE_WAIT, true, 0, 1, {0}},
+                    {CommandType::TYPE_LENGTH, true, 1, 1, {}},
+                    {CommandType::TYPE_OCTAVE, false, 1, 1, {}},
+                    {CommandType::TYPE_OCTAVE_DOWN, false, 0, 0, {}},
+                    {CommandType::TYPE_OCTAVE_UP, false, 0, 0, {}},
+                    {CommandType::TYPE_VOLUME, false, 1, 1, {}},
+                    {CommandType::TYPE_TONE, false, 1, 1, {}},
+                    {CommandType::TYPE_GATE_TIME, false, 1, 1, {}},
+                    {CommandType::TYPE_DETUNE, false, 1, 1, {}},
+                    {CommandType::TYPE_PORTAMENTO, false, 1, 1, {}},
+                    {CommandType::TYPE_TREMOLO, false, 1, 3, {0, 0, 0}},
+                    {CommandType::TYPE_VIBRATO, false, 1, 3, {0, 0, 0}},
+                    {CommandType::TYPE_ENV_FORM, false, 1, 1, {}},
+                    {CommandType::TYPE_ENV_PERIOD, false, 1, 1, {}},
+                    {CommandType::TYPE_DIRECT, false, 2, 2, {}},
+                    {CommandType::TYPE_LOOP, false, 0, 1, {0}},
+                    {CommandType::TYPE_EXIT, false, 0, 0, {}},
                 };
 
                 const CtrlDef* pctrldef = NULL;
@@ -418,7 +419,7 @@ namespace MusicCom
                 }
 
                 // Tのみ特別処理
-                if (state.CommandType == 'T')
+                if (state.CommandType == CommandType::TYPE_TEMPO)
                 {
                     state.pMusicData->SetTempo(a[0]);
                 }
@@ -441,7 +442,7 @@ namespace MusicCom
             template<typename IteratorT>
             void operator()(IteratorT first, IteratorT last) const
             {
-                AddCommand(state, Command('$', state.args[0]));
+                AddCommand(state, Command(CommandType::TYPE_MACRO, state.args[0]));
             }
 
             MMLParserState& state;

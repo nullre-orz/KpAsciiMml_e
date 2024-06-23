@@ -10,21 +10,21 @@ namespace MusicCom
         tempo = 120;
     }
 
-    CommandList::const_iterator MusicData::GetChannelHead(int index) const
+    CommandIterator MusicData::GetChannelHead(int index) const
     {
         assert(IsChannelPresent(index));
 
         return channels[index].begin();
     }
 
-    CommandList::const_iterator MusicData::GetRhythmPartHead() const
+    CommandIterator MusicData::GetRhythmPartHead() const
     {
         assert(IsRhythmPartPresent());
 
         return rhythm_part.begin();
     }
 
-    CommandList::const_iterator MusicData::GetMacroHead(string name) const
+    CommandIterator MusicData::GetMacroHead(string name) const
     {
         assert(IsMacroPresent(name));
 
@@ -37,7 +37,7 @@ namespace MusicCom
         if (!IsChannelPresent(index))
         {
             // 終了検知のためパート終端を追加
-            cl.push_back(Command(Command::TYPE_END));
+            cl.push_back(Command(CommandType::TYPE_END));
             channel_present[index] = true;
         }
 
@@ -50,7 +50,7 @@ namespace MusicCom
         if (!IsRhythmPartPresent())
         {
             // 終了検知のためパート終端を追加
-            cl.push_back(Command(Command::TYPE_END));
+            cl.push_back(Command(CommandType::TYPE_END));
             rhythm_part_present = true;
         }
 
@@ -63,7 +63,7 @@ namespace MusicCom
         {
             CommandList& cl = macros[name];
             // マクロからのreturnを追加
-            cl.push_back(Command(Command::TYPE_RET));
+            cl.push_back(Command(CommandType::TYPE_RETURN));
         }
 
         CommandList& cl = macros[name];

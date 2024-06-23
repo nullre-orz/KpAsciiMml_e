@@ -7,7 +7,6 @@
 // fmgen の問題？
 
 using namespace std;
-using namespace boost;
 
 namespace MusicCom
 {
@@ -129,8 +128,8 @@ namespace MusicCom
                 {
                     part.CommandPtr = musicdata.GetChannelHead(ch);
                     // スタックはクリアしておく
-                    part.CallStack = std::stack<CommandList::const_iterator>();
-                    part.LoopStack = std::stack<std::pair<CommandList::const_iterator, int>>();
+                    part.CallStack = std::stack<CommandIterator>();
+                    part.LoopStack = std::stack<std::pair<CommandIterator, int>>();
 
                     NextFramePart(ch);
                 }
@@ -140,7 +139,7 @@ namespace MusicCom
         currentFrame++;
     }
 
-    boost::optional<CommandList::const_iterator> Sequencer::ProcessLoop(PartData& part, CommandList::const_iterator ptr)
+    std::optional<CommandIterator> Sequencer::ProcessLoop(PartData& part, CommandIterator ptr)
     {
         while (1)
         {
@@ -148,45 +147,45 @@ namespace MusicCom
 
             switch (command.GetType())
             {
-            case Command::TYPE_END:
+            case CommandType::TYPE_END:
                 part.Playing = false;
-                return optional<CommandList::const_iterator>();
-            case '$':
+                return std::nullopt;
+            case CommandType::TYPE_MACRO:
                 if (!musicdata.IsMacroPresent(command.GetStrArg()))
                 {
                     ptr++;
                     continue;
                 }
-                part.CallStack.push(++CommandList::const_iterator(ptr));
+                part.CallStack.push(++CommandIterator(ptr));
                 // 自己参照等で入れ子の数がMAX_MACRO_COUNTを超えたら強制終了
                 if (part.CallStack.size() > MAX_MACRO_COUNT)
                 {
                     part.Playing = false;
-                    return optional<CommandList::const_iterator>();
+                    return std::nullopt;
                 }
                 ptr = musicdata.GetMacroHead(command.GetStrArg());
                 continue;
-            case Command::TYPE_RET:
+            case CommandType::TYPE_RETURN:
                 if (part.CallStack.empty())
                 {
                     part.Playing = false;
-                    return optional<CommandList::const_iterator>();
+                    return std::nullopt;
                 }
                 ptr = part.CallStack.top();
                 part.CallStack.pop();
                 continue;
-            case '{':
-                part.LoopStack.push(pair<CommandList::const_iterator, int>(++CommandList::const_iterator(ptr), command.GetArg(0)));
+            case CommandType::TYPE_LOOP:
+                part.LoopStack.push(pair<CommandIterator, int>(++CommandIterator(ptr), command.GetArg(0)));
                 ptr++;
                 continue;
-            case '}':
+            case CommandType::TYPE_EXIT:
             {
                 if (part.LoopStack.empty())
                 {
                     part.Playing = false;
-                    return optional<CommandList::const_iterator>();
+                    return std::nullopt;
                 }
-                pair<CommandList::const_iterator, int>& p = part.LoopStack.top();
+                pair<CommandIterator, int>& p = part.LoopStack.top();
                 if (p.second != 0)
                 {
                     p.second--;
@@ -208,7 +207,7 @@ namespace MusicCom
                     if (part.InfiniteLooping)
                     {
                         part.Playing = false;
-                        return optional<CommandList::const_iterator>();
+                        return std::nullopt;
                     }
                     part.InfiniteLooping = true;
                     ptr = p.first;
@@ -256,14 +255,14 @@ namespace MusicCom
         PartData& part = partData[ch];
         part.InfiniteLooping = false;
         // もうかなり適当
-        CommandList::const_iterator initial_ptr = part.CommandPtr;
-        CommandList::const_iterator ptr = initial_ptr;
+        CommandIterator initial_ptr = part.CommandPtr;
+        CommandIterator ptr = initial_ptr;
 
         while (part.NoteEndFrame <= currentFrame)
         {
             // ptrを特別に更新するひとたち
             {
-                optional<CommandList::const_iterator> ret = ProcessLoop(part, ptr);
+                optional<CommandIterator> ret = ProcessLoop(part, ptr);
                 if (!ret)
                     return;
                 ptr = *ret;
@@ -275,7 +274,7 @@ namespace MusicCom
             // 音符はタイの処理を行うため特別処理
             switch (command.GetType())
             {
-            case Command::TYPE_NOTE:
+            case CommandType::TYPE_NOTE:
             {
                 part.NoteBeginFrame = currentFrame;
                 if (!part.LinkedItem)
@@ -309,7 +308,7 @@ namespace MusicCom
                 part.NoteEndFrame = currentFrame + length;
 
                 // '&' がついているか
-                if ((part.LinkedItem = FindLinkedItem(part, CommandList::const_iterator(ptr))) == '&')
+                if ((part.LinkedItem = FindLinkedItem(part, CommandIterator(ptr))) == CommandType::TYPE_TIE)
                 {
                     part.KeyOffFrame = part.NoteEndFrame;
                 }
@@ -319,8 +318,8 @@ namespace MusicCom
                 }
                 break;
             }
-            case 'R':
-            case 'W':
+            case CommandType::TYPE_REST:
+            case CommandType::TYPE_WAIT:
             {
                 // 共通
                 int length = command.GetArg(0);
@@ -329,14 +328,14 @@ namespace MusicCom
                 part.NoteBeginFrame = currentFrame;
                 part.NoteEndFrame = currentFrame + length;
 
-                if (command.GetType() == 'R' && part.LinkedItem != '&')
+                if (command.GetType() == CommandType::TYPE_REST && part.LinkedItem != CommandType::TYPE_TIE)
                 {
                     // &R でなければキーオフ
                     KeyOnOff(ch, false);
                     part.LastTone = TONE_KEY_OFF;
                     part.Tone = TONE_KEY_OFF;
                 }
-                else if (command.GetType() == 'W' && part.LinkedItem == '&')
+                else if (command.GetType() == CommandType::TYPE_WAIT && part.LinkedItem == CommandType::TYPE_TIE)
                 {
                     // &W は後方にも & があるとみなす (music.comのバグ?)
                     // LinkedItemは更新不要
@@ -344,7 +343,7 @@ namespace MusicCom
                 }
                 else
                 {
-                    if ((part.LinkedItem = FindLinkedItem(part, CommandList::const_iterator(ptr))) == '&')
+                    if ((part.LinkedItem = FindLinkedItem(part, CommandIterator(ptr))) == CommandType::TYPE_TIE)
                     {
                         part.KeyOffFrame = part.NoteEndFrame;
                     }
@@ -355,19 +354,19 @@ namespace MusicCom
                 }
                 break;
             }
-            case 'L':
+            case CommandType::TYPE_LENGTH:
                 part.DefaultNoteLength = command.GetArg(0);
                 break;
-            case 'O':
+            case CommandType::TYPE_OCTAVE:
                 part.Octave = min(max(command.GetArg(0), 1), 8);
                 break;
-            case '<':
+            case CommandType::TYPE_OCTAVE_DOWN:
                 part.Octave = max(part.Octave - 1, 0);
                 break;
-            case '>':
+            case CommandType::TYPE_OCTAVE_UP:
                 part.Octave = min(part.Octave + 1, 8);
                 break;
-            case 'V':
+            case CommandType::TYPE_VOLUME:
                 part.Volume = min(max(command.GetArg(0), 0), 15);
                 if (fm)
                 {
@@ -378,7 +377,7 @@ namespace MusicCom
                     ssgwrap.SetVolume(ssgch, part.Volume);
                 }
                 break;
-            case '@':
+            case CommandType::TYPE_TONE:
                 part.SoundNo = command.GetArg(0);
                 if (fm)
                 {
@@ -389,32 +388,32 @@ namespace MusicCom
                     part.SSGEnvOn = true;
                 }
                 break;
-            case 'Q':
+            case CommandType::TYPE_GATE_TIME:
                 part.GateTime = command.GetArg(0);
                 break;
-            case 'N':
+            case CommandType::TYPE_DETUNE:
                 part.Detune = command.GetArg(0);
                 break;
-            case 'P':
+            case CommandType::TYPE_PORTAMENTO:
                 part.PLength = max(command.GetArg(0), 0);
 
                 part.ILength = part.ULength = 0;
                 break;
-            case 'U':
+            case CommandType::TYPE_TREMOLO:
                 part.UDepth = command.GetArg(0);
                 part.ULength = max(command.GetArg(1), 0);
                 part.UDelay = max(command.GetArg(2), 0);
 
                 part.ILength = part.PLength = 0;
                 break;
-            case 'I':
+            case CommandType::TYPE_VIBRATO:
                 part.IDepth = command.GetArg(0);
                 part.ILength = max(command.GetArg(1), 0);
                 part.IDelay = max(command.GetArg(2), 0);
 
                 part.PLength = part.ULength = 0;
                 break;
-            case 'S':
+            case CommandType::TYPE_ENV_FORM:
                 if (!fm)
                 {
                     part.SSGEnvOn = false;
@@ -422,7 +421,7 @@ namespace MusicCom
                     ssgwrap.SetEnvForm(command.GetArg(0));
                 }
                 break;
-            case 'M':
+            case CommandType::TYPE_ENV_PERIOD:
                 if (!fm)
                 {
                     part.SSGEnvOn = false;
@@ -430,7 +429,7 @@ namespace MusicCom
                     ssgwrap.SetEnvPeriod(command.GetArg(0));
                 }
                 break;
-            case 'Y':
+            case CommandType::TYPE_DIRECT:
                 opn.SetReg(command.GetArg(0), command.GetArg(1));
                 break;
             }
@@ -548,7 +547,7 @@ namespace MusicCom
         }
     }
 
-    boost::optional<char> Sequencer::FindLinkedItem(const PartData& part, CommandList::const_iterator ptr)
+    std::optional<CommandType> Sequencer::FindLinkedItem(const PartData& part, CommandIterator ptr)
     {
         // 後方にタイ(&)やキーオフなし休符(W)が存在するかどうかを先読みして確認
         // ProcessLoop同様にマクロ/ループは展開するが、本体に影響しないようコピーで処理する
@@ -560,39 +559,39 @@ namespace MusicCom
             const Command& command = *ptr++;
             switch (command.GetType())
             {
-            case Command::TYPE_END:
-                return boost::none;
-            case '$':
+            case CommandType::TYPE_END:
+                return std::nullopt;
+            case CommandType::TYPE_MACRO:
                 if (!musicdata.IsMacroPresent(command.GetStrArg()))
                 {
                     continue;
                 }
-                macro_call_stack.push(CommandList::const_iterator(ptr));
+                macro_call_stack.push(CommandIterator(ptr));
                 // 自己参照等で入れ子の数がMAX_MACRO_COUNTを超えたら強制終了
                 if (macro_call_stack.size() > MAX_MACRO_COUNT)
                 {
-                    return boost::none;
+                    return std::nullopt;
                 }
                 ptr = musicdata.GetMacroHead(command.GetStrArg());
                 break;
-            case Command::TYPE_RET:
+            case CommandType::TYPE_RETURN:
                 if (macro_call_stack.empty())
                 {
-                    return boost::none;
+                    return std::nullopt;
                 }
                 ptr = macro_call_stack.top();
                 macro_call_stack.pop();
                 break;
-            case '{':
-                loop_stack.push(pair<CommandList::const_iterator, int>(CommandList::const_iterator(ptr), command.GetArg(0)));
+            case CommandType::TYPE_LOOP:
+                loop_stack.push(pair<CommandIterator, int>(CommandIterator(ptr), command.GetArg(0)));
                 break;
-            case '}':
+            case CommandType::TYPE_EXIT:
             {
                 if (loop_stack.empty())
                 {
-                    return boost::none;
+                    return std::nullopt;
                 }
-                pair<CommandList::const_iterator, int>& p = loop_stack.top();
+                pair<CommandIterator, int>& p = loop_stack.top();
                 if (p.second != 0)
                 {
                     p.second--;
@@ -612,24 +611,24 @@ namespace MusicCom
                     // 音符の入っていない無限ループ検出
                     if (infinite_looping)
                     {
-                        return boost::none;
+                        return std::nullopt;
                     }
                     infinite_looping = true;
                     ptr = p.first;
                 }
             }
                 continue;
-            case '&':
-                return '&';
-            case 'W':
-                return 'W';
-            case Command::TYPE_NOTE:
-            case 'R':
-                return boost::none;
+            case CommandType::TYPE_TIE:
+                return CommandType::TYPE_TIE;
+            case CommandType::TYPE_WAIT:
+                return CommandType::TYPE_WAIT;
+            case CommandType::TYPE_NOTE:
+            case CommandType::TYPE_REST:
+                return std::nullopt;
             }
         }
 
-        return boost::none;
+        return std::nullopt;
     }
 
     int Sequencer::GetFmTone(int base_tone, int detune) const
@@ -660,39 +659,4 @@ namespace MusicCom
         }
         return tone;
     }
-
-    Sequencer::PartData::PartData()
-    {
-        NoteBeginFrame = 0;
-        NoteEndFrame = 0;
-        KeyOnFrame = 0;
-        KeyOffFrame = 0;
-
-        LastOctave = 4;
-        Octave = 4;
-        Volume = 15;
-        Tone = 0;
-        LastTone = 0;
-
-        SSGEnvOn = false;
-        SoundNo = 0;
-        DefaultNoteLength = 64;
-        Detune = 0;
-        GateTime = 8;
-
-        PLength = 0;
-
-        ILength = 0;
-        IDepth = 0;
-        IDelay = 0;
-
-        ULength = 0;
-        UDepth = 0;
-        UDelay = 0;
-
-        LinkedItem = boost::none;
-        Playing = false;
-        InfiniteLooping = false;
-    }
-
 } // namespace MusicCom

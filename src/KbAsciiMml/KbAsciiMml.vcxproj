@@ -171,10 +171,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="musiccom\command.h" />
     <ClInclude Include="musiccom\fmwrap.h" />
     <ClInclude Include="musiccom\mmlparser.h" />
     <ClInclude Include="musiccom\musdata.h" />
     <ClInclude Include="musiccom\musiccom.h" />
+    <ClInclude Include="musiccom\partdata.h" />
     <ClInclude Include="musiccom\sequencer.h" />
     <ClInclude Include="musiccom\sounddata.h" />
     <ClInclude Include="musiccom\soundparser.h" />
