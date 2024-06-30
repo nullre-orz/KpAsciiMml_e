@@ -24,7 +24,7 @@ namespace MusicCom
         return rhythm_part.begin();
     }
 
-    CommandIterator MusicData::GetMacroHead(string name) const
+    CommandIterator MusicData::GetMacroHead(const string& name) const
     {
         assert(IsMacroPresent(name));
 

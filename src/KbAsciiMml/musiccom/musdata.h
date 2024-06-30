@@ -113,11 +113,11 @@ namespace MusicCom
         {
             ssgenvs[no] = env;
         }
-        const FMSound& GetFMSound(int no)
+        const FMSound& GetFMSound(int no) const
         {
             return fmsounds[no];
         }
-        const SSGEnv& GetSSGEnv(int no)
+        const SSGEnv& GetSSGEnv(int no) const
         {
             // 存在しないnoが指定された場合は無音とする
             if (ssgenvs.find(no) == ssgenvs.end())
@@ -138,7 +138,7 @@ namespace MusicCom
         {
             return rhythm_part_present;
         }
-        bool IsMacroPresent(std::string name) const
+        bool IsMacroPresent(const std::string& name) const
         {
             return macros.find(name) != macros.end();
         }
@@ -149,13 +149,13 @@ namespace MusicCom
 
         CommandIterator GetChannelHead(int channel) const;
         CommandIterator GetRhythmPartHead() const;
-        CommandIterator GetMacroHead(std::string name) const;
+        CommandIterator GetMacroHead(const std::string& name) const;
 
     private:
         static const int channel_count = 6;
 
-        std::map<int, FMSound> fmsounds;
-        std::map<int, SSGEnv> ssgenvs;
+        mutable std::map<int, FMSound> fmsounds;
+        mutable std::map<int, SSGEnv> ssgenvs;
         std::map<std::string, CommandList> macros;
         CommandList channels[channel_count];
         bool channel_present[channel_count];
