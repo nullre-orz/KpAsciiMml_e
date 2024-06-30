@@ -48,6 +48,15 @@
     <ClInclude Include="musiccom\partdata.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="musiccom\fmsequencer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\partsequencerbase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\psgsequencer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\external\fmgen\fmtimer.cpp">
@@ -90,6 +99,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="musiccom\sounddata.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\fmsequencer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\partsequencerbase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\psgsequencer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
