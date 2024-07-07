@@ -1,7 +1,7 @@
 ﻿#include "soundparser.h"
 #include "sounddata.h"
-#include <boost/spirit/include/classic_file_iterator.hpp>
 #include <boost/spirit/home/x3.hpp>
+#include <boost/spirit/include/classic_file_iterator.hpp>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -61,6 +61,11 @@ Noise:	3, 20 ,-5 ,4,0
         {
         }
 
+        std::vector<Block>& GetEditingBlocks() const
+        {
+            return editing_data->blocks_;
+        }
+
         SoundData& sound_data;
         std::unique_ptr<RhythmData> editing_data;
 
@@ -93,7 +98,6 @@ Noise:	3, 20 ,-5 ,4,0
                     auto& state = x3::get<SoundParserState>(ctx);
                     ++state.line;
                 };
-
             };
 
             static decltype(auto) begin_operator()
@@ -153,9 +157,13 @@ Noise:	3, 20 ,-5 ,4,0
                         return;
                     }
 
-                    // ブロックを追加
-                    Block block({state.args[0]});
-                    state.editing_data->blocks.push_back(block);
+                    int len = state.args[0];
+                    if (len > 0)
+                    {
+                        // ブロックを追加
+                        Block block({len});
+                        state.GetEditingBlocks().push_back(block);
+                    }
                 };
             };
 
@@ -169,7 +177,7 @@ Noise:	3, 20 ,-5 ,4,0
                         return;
                     }
 
-                    auto& target = state.editing_data->blocks.back();
+                    auto& target = state.GetEditingBlocks().back();
                     auto& tone = target.tone[state.channel];
                     tone.initial_value = state.args[0];
                     tone.final_value = state.args[0] + state.args[1];
@@ -188,7 +196,7 @@ Noise:	3, 20 ,-5 ,4,0
                         return;
                     }
 
-                    auto& target = state.editing_data->blocks.back();
+                    auto& target = state.GetEditingBlocks().back();
                     auto& volume = target.volume[state.channel];
                     volume.initial_value = state.args[0];
                     volume.final_value = state.args[0] + state.args[1];
@@ -207,7 +215,7 @@ Noise:	3, 20 ,-5 ,4,0
                         return;
                     }
 
-                    auto& target = state.editing_data->blocks.back();
+                    auto& target = state.GetEditingBlocks().back();
                     auto& noise = target.noise;
                     noise.channel_type = state.args[0];
                     noise.initial_value = state.args[1];
@@ -230,7 +238,7 @@ Noise:	3, 20 ,-5 ,4,0
 
                     // 完了処理
                     state.finished = true;
-                    };
+                };
             };
         } // namespace detail
 
@@ -276,8 +284,7 @@ Noise:	3, 20 ,-5 ,4,0
             volume_line,
             noise_line,
             comment_line,
-            blank_line
-        );
+            blank_line);
     } // namespace grammer
 
     template<typename Iterator>
