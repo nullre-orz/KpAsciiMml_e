@@ -26,7 +26,7 @@ namespace MusicCom
             index = (part.loop) ? (index % period) : period;
         }
 
-        return part.initial_value + static_cast<int>(std::round(diff * index));
+        return std::max(part.initial_value + static_cast<int>(std::round(diff * index)), 0);
     };
 
     RhythmData::const_iterator::const_iterator(BlockIterator block_ptr, BlockIterator sentinel, int part_index)

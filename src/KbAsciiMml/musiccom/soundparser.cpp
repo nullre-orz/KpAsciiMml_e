@@ -51,13 +51,16 @@ Noise:	3, 20 ,-5 ,4,0
 
     struct SoundParserState
     {
-        SoundParserState(SoundData& container) : sound_data(container),
-                                                 editing_data(),
-                                                 line(1),
-                                                 current_sound(-1),
-                                                 channel(0),
-                                                 args(),
-                                                 finished(false)
+        SoundParserState(SoundData& container)
+            : sound_data(container),
+              editing_data(),
+              line(1),
+              current_sound(-1),
+              channel(0),
+              tone_multiplier(1),
+              volume_multiplier(1),
+              args(),
+              finished(false)
         {
         }
 
@@ -73,6 +76,8 @@ Noise:	3, 20 ,-5 ,4,0
 
         int current_sound;
         int channel;
+        int tone_multiplier;
+        int volume_multiplier;
         std::vector<int> args;
 
         bool finished;
@@ -152,7 +157,7 @@ Noise:	3, 20 ,-5 ,4,0
                 return [](auto& ctx)
                 {
                     SoundParserState& state = x3::get<SoundParserState>(ctx);
-                    if (state.args.size() < 1 || !state.editing_data)
+                    if (state.args.size() < 3 || !state.editing_data)
                     {
                         return;
                     }
@@ -163,6 +168,10 @@ Noise:	3, 20 ,-5 ,4,0
                         // ブロックを追加
                         Block block({len});
                         state.GetEditingBlocks().push_back(block);
+
+                        // 周期の倍率設定
+                        state.tone_multiplier = state.args[1];
+                        state.volume_multiplier = state.args[2];
                     }
                 };
             };
@@ -184,7 +193,7 @@ Noise:	3, 20 ,-5 ,4,0
                         auto& tone = target.tone[state.channel];
                         tone.initial_value = state.args[0];
                         tone.final_value = state.args[0] + state.args[1];
-                        tone.period = state.args[2];
+                        tone.period = state.args[2] * state.tone_multiplier;
                         tone.loop = (state.args[3] == 0);
                     }
                 };
@@ -207,7 +216,7 @@ Noise:	3, 20 ,-5 ,4,0
                         auto& volume = target.volume[state.channel];
                         volume.initial_value = state.args[0];
                         volume.final_value = state.args[0] + state.args[1];
-                        volume.period = state.args[2];
+                        volume.period = state.args[2] * state.volume_multiplier;
                         volume.loop = (state.args[3] == 0);
                     }
                 };
@@ -231,7 +240,7 @@ Noise:	3, 20 ,-5 ,4,0
                         noise.channel_type = state.args[0];
                         noise.initial_value = state.args[1];
                         noise.final_value = state.args[1] + state.args[2];
-                        noise.period = state.args[3];
+                        noise.period = state.args[3] * state.tone_multiplier;
                         noise.loop = (state.args[4] == 0);
                     }
                 };
