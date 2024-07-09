@@ -139,7 +139,7 @@ namespace MusicCom
 
     void SSGWrap::SetNoisePeriod(int period)
     {
-        opn.SetReg(0x06, period & 0xff);
+        opn.SetReg(0x06, period & 0x1f);
     }
 
     void SSGWrap::SetTone(int ch, int tone)
