@@ -177,12 +177,16 @@ Noise:	3, 20 ,-5 ,4,0
                         return;
                     }
 
-                    auto& target = state.GetEditingBlocks().back();
-                    auto& tone = target.tone[state.channel];
-                    tone.initial_value = state.args[0];
-                    tone.final_value = state.args[0] + state.args[1];
-                    tone.period = state.args[2];
-                    tone.loop = (state.args[3] == 0);
+                    auto& editing_blocks = state.GetEditingBlocks();
+                    if (!editing_blocks.empty())
+                    {
+                        auto& target = editing_blocks.back();
+                        auto& tone = target.tone[state.channel];
+                        tone.initial_value = state.args[0];
+                        tone.final_value = state.args[0] + state.args[1];
+                        tone.period = state.args[2];
+                        tone.loop = (state.args[3] == 0);
+                    }
                 };
             };
 
@@ -196,12 +200,16 @@ Noise:	3, 20 ,-5 ,4,0
                         return;
                     }
 
-                    auto& target = state.GetEditingBlocks().back();
-                    auto& volume = target.volume[state.channel];
-                    volume.initial_value = state.args[0];
-                    volume.final_value = state.args[0] + state.args[1];
-                    volume.period = state.args[2];
-                    volume.loop = (state.args[3] == 0);
+                    auto& editing_blocks = state.GetEditingBlocks();
+                    if (!editing_blocks.empty())
+                    {
+                        auto& target = editing_blocks.back();
+                        auto& volume = target.volume[state.channel];
+                        volume.initial_value = state.args[0];
+                        volume.final_value = state.args[0] + state.args[1];
+                        volume.period = state.args[2];
+                        volume.loop = (state.args[3] == 0);
+                    }
                 };
             };
 
@@ -215,13 +223,17 @@ Noise:	3, 20 ,-5 ,4,0
                         return;
                     }
 
-                    auto& target = state.GetEditingBlocks().back();
-                    auto& noise = target.noise;
-                    noise.channel_type = state.args[0];
-                    noise.initial_value = state.args[1];
-                    noise.final_value = state.args[1] + state.args[2];
-                    noise.period = state.args[3];
-                    noise.loop = (state.args[4] == 0);
+                    auto& editing_blocks = state.GetEditingBlocks();
+                    if (!editing_blocks.empty())
+                    {
+                        auto& target = editing_blocks.back();
+                        auto& noise = target.noise;
+                        noise.channel_type = state.args[0];
+                        noise.initial_value = state.args[1];
+                        noise.final_value = state.args[1] + state.args[2];
+                        noise.period = state.args[3];
+                        noise.loop = (state.args[4] == 0);
+                    }
                 };
             };
             static decltype(auto) finish()
