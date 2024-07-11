@@ -1,11 +1,13 @@
 ﻿#pragma once
 
 #include <fmgen/opna.h>
+#include <memory>
 
 namespace MusicCom
 {
     class Sequencer;
     class MusicData;
+    class SoundData;
 
     class MusicCom
     {
@@ -19,11 +21,15 @@ namespace MusicCom
         void SetPSGVolume(int vol);
 
     protected:
-        MusicCom(const MusicCom&); // non-copyable
+        // non-copyable
+        MusicCom(const MusicCom&) = delete;
+        MusicCom& operator=(const MusicCom&) = delete;
+
     private:
         FM::OPN opn;
-        Sequencer* pseq;
-        MusicData* pmusicdata;
+        std::unique_ptr<Sequencer> pseq;
+        std::unique_ptr<MusicData> pmusicdata;
+        std::unique_ptr<SoundData> psounddata;
         int fmVolume;
         int psgVolume;
     };

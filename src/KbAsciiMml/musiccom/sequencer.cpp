@@ -3,6 +3,8 @@
 #include "musdata.h"
 #include "partsequencerbase.h"
 #include "psgsequencer.h"
+#include "sounddata.h"
+#include "soundsequencer.h"
 #include <algorithm>
 #include <fmgen/opna.h>
 
@@ -13,7 +15,12 @@ using namespace std;
 
 namespace MusicCom
 {
-    Sequencer::Sequencer(FM::OPN& o, MusicData* pmd) : opn(o), fmwrap(o), ssgwrap(o), musicdata(*pmd)
+    Sequencer::Sequencer(FM::OPN& o, MusicData* pmd, SoundData* psd)
+        : opn(o),
+          fmwrap(o),
+          ssgwrap(o),
+          musicdata(*pmd),
+          sounddata(*psd)
     {
     }
 
@@ -43,6 +50,11 @@ namespace MusicCom
                 }
                 partSequencer.back()->Initialize();
             }
+        }
+        if (musicdata.IsRhythmPartPresent())
+        {
+            partSequencer.emplace_back(std::make_unique<SoundSequencer>(opn, ssgwrap, musicdata, sounddata));
+            partSequencer.back()->Initialize();
         }
 
         // 効果音モード on

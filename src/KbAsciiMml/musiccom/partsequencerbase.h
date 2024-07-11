@@ -31,6 +31,7 @@ namespace MusicCom
         void ProcessCommand(int current_frame);
 
         virtual int InitializeTone() = 0;
+        virtual void PreProcess(int current_frame);
         virtual void ProcessEffect(int current_frame);
         virtual void KeyOn() = 0;
         virtual void KeyOff() = 0;

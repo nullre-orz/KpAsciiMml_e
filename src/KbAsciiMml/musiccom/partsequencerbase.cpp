@@ -40,17 +40,7 @@ namespace MusicCom
             return;
         }
 
-        if (part_data_.NoteEndFrame <= current_frame)
-        {
-            part_data_.LastOctave = part_data_.Octave;
-            part_data_.LastTone = part_data_.Tone;
-            // 前回のコマンド先読みで & や W が検出された場合はキーオフせず継続
-            if (!part_data_.LinkedItem)
-            {
-                KeyOff();
-            }
-        }
-
+        PreProcess(current_frame);
         ProcessCommand(current_frame);
         ProcessEffect(current_frame);
     }
@@ -66,6 +56,20 @@ namespace MusicCom
     const MusicData& PartSequencerBase::GetMusicData() const
     {
         return music_data_;
+    }
+
+    void PartSequencerBase::PreProcess(int current_frame)
+    {
+        if (part_data_.NoteEndFrame <= current_frame)
+        {
+            part_data_.LastOctave = part_data_.Octave;
+            part_data_.LastTone = part_data_.Tone;
+            // 前回のコマンド先読みで & や W が検出された場合はキーオフせず継続
+            if (!part_data_.LinkedItem)
+            {
+                KeyOff();
+            }
+        }
     }
 
     std::optional<CommandIterator> PartSequencerBase::ProcessLoop(CommandIterator ptr)

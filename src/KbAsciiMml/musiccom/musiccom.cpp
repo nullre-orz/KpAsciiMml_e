@@ -2,27 +2,31 @@
 #include "mmlparser.h"
 #include "musdata.h"
 #include "sequencer.h"
+#include "sounddata.h"
+#include "soundparser.h"
 
 namespace MusicCom
 {
     MusicCom::MusicCom()
+        : pseq(nullptr),
+          pmusicdata(nullptr),
+          psounddata(nullptr)
     {
-        pmusicdata = NULL;
-        pseq = NULL;
     }
 
     MusicCom::~MusicCom()
     {
-        delete pmusicdata;
-        delete pseq;
     }
 
     bool MusicCom::Load(const char* filename)
     {
-        delete pmusicdata;
+        pmusicdata.reset(ParseMML(filename));
+        if (!pmusicdata)
+            return false;
 
-        pmusicdata = ParseMML(filename);
-        if (pmusicdata == NULL)
+        // SOUND.datを解析
+        psounddata.reset(ParseSound(filename));
+        if (!psounddata)
             return false;
 
         return true;
@@ -30,10 +34,7 @@ namespace MusicCom
 
     bool MusicCom::PrepareMix(uint rate)
     {
-        const uint OPN_CLOCKFREQ = 3993600; // OPNのクロック周波数
-
-        delete pseq;
-        pseq = new Sequencer(opn, pmusicdata);
+        pseq = std::make_unique<Sequencer>(opn, pmusicdata.get(), psounddata.get());
         if (!pseq->Init(rate))
         {
             return false;

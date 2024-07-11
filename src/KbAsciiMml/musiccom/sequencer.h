@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "fmwrap.h"
-#include "musdata.h"
 #include "partdata.h"
 #include "partsequencerbase.h"
 #include <memory>
@@ -14,11 +13,14 @@ namespace FM
 
 namespace MusicCom
 {
+    class MusicData;
+    class SoundData;
+
     // 適当すぎ
     class Sequencer
     {
     public:
-        Sequencer(FM::OPN& o, MusicData* pmd);
+        Sequencer(FM::OPN& o, MusicData* pmd, SoundData* psd);
         bool Init(int rate);
         void Mix(__int16* dest, int nsamples);
         int GetSamplesPerFrame()
@@ -33,6 +35,7 @@ namespace MusicCom
         FMWrap fmwrap;
         SSGWrap ssgwrap;
         MusicData& musicdata;
+        SoundData& sounddata;
 
         std::vector<std::unique_ptr<PartSequencerBase>> partSequencer;
 

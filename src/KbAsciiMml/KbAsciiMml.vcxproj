@@ -183,6 +183,7 @@
     <ClInclude Include="musiccom\sequencer.h" />
     <ClInclude Include="musiccom\sounddata.h" />
     <ClInclude Include="musiccom\soundparser.h" />
+    <ClInclude Include="musiccom\soundsequencer.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
@@ -257,6 +258,7 @@
     <ClCompile Include="musiccom\sequencer.cpp" />
     <ClCompile Include="musiccom\sounddata.cpp" />
     <ClCompile Include="musiccom\soundparser.cpp" />
+    <ClCompile Include="musiccom\soundsequencer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="KbAsciiMml.rc" />
