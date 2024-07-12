@@ -82,6 +82,7 @@ namespace MusicCom
     {
         enum MMLLineType
         {
+            UNDEFINED,
             CH,
             RHYTHM,
             SOUND,
@@ -94,29 +95,34 @@ namespace MusicCom
         struct MMLParserState
         {
             MMLParserState()
+                : pMusicData(nullptr),
+                  LineNumber(1),
+                  LineType(UNDEFINED),
+                  ChNumber(),
+                  CommandType(),
+                  SoundNumber(),
+                  Finished(false)
             {
-                LineNumber = 1;
             }
 
-        public:
             vector<string> args;
 
-        public:
             MusicData* pMusicData;
 
-        public:
+            // Line
             int LineNumber;
             MMLLineType LineType;
 
-        public:
             int ChNumber; // ch番号 (0-origin)
+
             CommandType CommandType;
             string MacroName;
 
             // Sound
-        public:
             FMSound Sound;
             int SoundNumber;
+
+            bool Finished;
         };
 
         MMLParser(MMLParserState& s) : state(s)
@@ -144,18 +150,43 @@ namespace MusicCom
             }
         }
 
-        template<typename T>
-        struct Increment
+        struct ChangeLine
         {
-            Increment(T& t) : target(t) {}
+            ChangeLine(MMLParserState& s) : state(s) {}
 
             template<typename IteratorT>
             void operator()(IteratorT first, IteratorT last) const
             {
-                target++;
+                // パート解析の場合は一時停止コマンドを追加
+                if (state.LineType == CH || state.LineType == RHYTHM)
+                {
+                    AddCommand(state, CommandType::TYPE_PAUSE);
+                }
+
+                state.LineNumber++;
+                state.LineType = UNDEFINED;
             }
 
-            T& target;
+            MMLParserState& state;
+        };
+
+        struct Finish
+        {
+            Finish(MMLParserState& s) : state(s) {}
+
+            template<typename IteratorT>
+            void operator()(IteratorT first, IteratorT last) const
+            {
+                // パート解析の場合は一時停止コマンドを追加
+                if (state.LineType == CH || state.LineType == RHYTHM)
+                {
+                    AddCommand(state, CommandType::TYPE_PAUSE);
+                }
+
+                state.Finished = true;
+            }
+
+            MMLParserState& state;
         };
 
         template<enum MMLLineType t>
@@ -460,7 +491,7 @@ namespace MusicCom
                 line =
                     (ch_line | drum_line | sound_line | lfo_line | op_line | ssgenv_line | str_line | arrow_line | blank_line)
                     >> !comment
-                    >> (eol_p[Increment<int>(self.state.LineNumber)] | end_p | ch_p(0x1a));
+                    >> (eol_p[ChangeLine(s)] | end_p[Finish(s)] | ch_p(0x1a));
 
                 args =
                     arg % *ch_p(',') // !: スペースで区切るMML対策
@@ -532,7 +563,7 @@ namespace MusicCom
                 ssgenv_line =
                     (as_lower_d[str_p("ssgenv")] >> ch_p(':'))[BeginLine<SSGENV>(s)]
                     >> !ch_p('@')
-                    >> ((int_p | eps_p)[PushArg(s)] % (((eol_p[Increment<int>(s.LineNumber)] % !(comment | blank_line)) >> str_p("->") | ch_p(','))))[ProcessSSGEnv(s)];
+                    >> ((int_p | eps_p)[PushArg(s)] % (((eol_p[ChangeLine(s)] % !(comment | blank_line)) >> str_p("->") | ch_p(','))))[ProcessSSGEnv(s)];
                 str_line =
                     (as_lower_d[str_p("str")] >> ch_p(':'))[BeginLine<STR>(s)]
                     >> macro_name[SetMacroName(s)]
@@ -575,7 +606,7 @@ namespace MusicCom
 
         vector<string> error_list = {};
 
-        while (first != last)
+        while (!state.Finished)
         {
             parse_info<iterator_t> info;
             try
