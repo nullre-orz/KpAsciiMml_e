@@ -33,8 +33,7 @@ namespace MusicCom
         TYPE_EXIT        =  '}', // loop exit
         TYPE_MACRO       =  '$', // macro start
         TYPE_RETURN      =  '%', // macro return
-        TYPE_PAUSE       =  '_', // pause
-        TYPE_END         = '\0'  // part end
+        TYPE_PAUSE       =  '_'  // pause
     };
     // clang-format on
 

@@ -13,19 +13,20 @@ namespace MusicCom
     class PartSequencerBase
     {
     public:
-        PartSequencerBase(FM::OPN& opn, const MusicData& music);
+        PartSequencerBase(FM::OPN& opn, const MusicData& music, CommandIterator command_tail);
         virtual ~PartSequencerBase();
 
         void Initialize();
         bool IsPlaying() const;
+        void Resume();
         void NextFrame(int current_frame);
-        void ReturnToHead();
 
     protected:
         const MusicData& GetMusicData() const;
         virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
 
     private:
+        void ReturnToHead();
         std::optional<CommandIterator> ProcessLoop(CommandIterator ptr);
         std::optional<CommandType> FindLinkedItem(CommandIterator ptr) const;
         void ProcessCommand(int current_frame);
@@ -45,5 +46,6 @@ namespace MusicCom
         FM::OPN& opn_;
         PartData part_data_;
         const MusicData& music_data_;
+        const CommandIterator command_tail_;
     };
 } // namespace MusicCom

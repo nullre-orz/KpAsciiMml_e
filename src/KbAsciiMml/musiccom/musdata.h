@@ -129,10 +129,10 @@ namespace MusicCom
         }
         void SetTempo(int t) { tempo = t; }
         int GetTempo() const { return tempo; }
-        bool IsChannelPresent(int index) const
+        bool IsChannelPresent(int channel) const
         {
-            assert(0 <= index && index < channel_count);
-            return channel_present[index];
+            assert(0 <= channel && channel < channel_count);
+            return channel_present[channel];
         }
         bool IsRhythmPartPresent() const
         {
@@ -143,12 +143,14 @@ namespace MusicCom
             return macros.find(name) != macros.end();
         }
 
-        void AddCommandToChannel(int index, const Command& command);
+        void AddCommandToChannel(int channel, const Command& command);
         void AddCommandToRhythmPart(const Command& command);
         void AddCommandToMacro(std::string name, const Command& command);
 
         CommandIterator GetChannelHead(int channel) const;
+        CommandIterator GetChannelTail(int channel) const;
         CommandIterator GetRhythmPartHead() const;
+        CommandIterator GetRhythmPartTail() const;
         CommandIterator GetMacroHead(const std::string& name) const;
 
     private:

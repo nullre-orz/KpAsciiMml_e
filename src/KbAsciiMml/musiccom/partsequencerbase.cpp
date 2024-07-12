@@ -9,10 +9,11 @@ namespace MusicCom
     const int TONE_KEY_OFF = -1;
     const int MAX_MACRO_COUNT = 100;
 
-    PartSequencerBase::PartSequencerBase(FM::OPN& opn, const MusicData& music)
+    PartSequencerBase::PartSequencerBase(FM::OPN& opn, const MusicData& music, CommandIterator command_tail)
         : opn_(opn),
           part_data_(),
-          music_data_(music)
+          music_data_(music),
+          command_tail_(command_tail)
     {
     }
 
@@ -22,6 +23,7 @@ namespace MusicCom
 
     void PartSequencerBase::Initialize()
     {
+        part_data_.Playing = true;
         ReturnToHead();
         // 初手ポルタメント対応
         // 初期値をセットしておく
@@ -31,6 +33,24 @@ namespace MusicCom
     bool PartSequencerBase::IsPlaying() const
     {
         return part_data_.Playing;
+    }
+
+    void PartSequencerBase::Resume()
+    {
+        // 再生中は何もしない
+        if (IsPlaying())
+        {
+            return;
+        }
+
+        part_data_.CommandPtr++;
+        part_data_.Playing = true;
+
+        // パート終端の場合は先頭に戻して再開
+        if (part_data_.CommandPtr == command_tail_)
+        {
+            ReturnToHead();
+        }
     }
 
     void PartSequencerBase::NextFrame(int current_frame)
@@ -45,17 +65,16 @@ namespace MusicCom
         ProcessEffect(current_frame);
     }
 
-    void PartSequencerBase::ReturnToHead()
-    {
-        part_data_.Playing = true;
-        part_data_.CommandPtr = GetHead();
-        part_data_.CallStack = {};
-        part_data_.LoopStack = {};
-    }
-
     const MusicData& PartSequencerBase::GetMusicData() const
     {
         return music_data_;
+    }
+
+    void PartSequencerBase::ReturnToHead()
+    {
+        part_data_.CommandPtr = GetHead();
+        part_data_.CallStack = {};
+        part_data_.LoopStack = {};
     }
 
     void PartSequencerBase::PreProcess(int current_frame)
@@ -80,8 +99,9 @@ namespace MusicCom
 
             switch (command.GetType())
             {
-            case CommandType::TYPE_END:
+            case CommandType::TYPE_PAUSE:
                 part_data_.Playing = false;
+                part_data_.CommandPtr = ptr;
                 return std::nullopt;
             case CommandType::TYPE_MACRO:
                 if (!music_data_.IsMacroPresent(command.GetStrArg()))
@@ -167,7 +187,7 @@ namespace MusicCom
             auto type = command.GetType();
             switch (type)
             {
-            case CommandType::TYPE_END:
+            case CommandType::TYPE_PAUSE:
                 return std::nullopt;
             case CommandType::TYPE_MACRO:
                 if (!music_data_.IsMacroPresent(command.GetStrArg()))
@@ -407,6 +427,12 @@ namespace MusicCom
     {
         // エフェクト等の処理
         // ディレイはKeyOnFrameを基準とする
+
+        // 一時停止中の場合は何もしない
+        if (!part_data_.Playing)
+        {
+            return;
+        }
 
         // ゲートタイム(Q)でのキーオフ
         if (part_data_.KeyOffFrame <= current_frame)

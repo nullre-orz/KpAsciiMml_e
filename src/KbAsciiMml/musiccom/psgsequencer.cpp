@@ -21,7 +21,7 @@ namespace MusicCom
     // clang-format on
 
     PsgSequencer::PsgSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, int channel)
-        : PartSequencerBase(opn, music),
+        : PartSequencerBase(opn, music, music.GetChannelTail(channel)),
           channel_(channel - 3),
           ssgwrap_(ssgwrap),
           GetSSGEnv([this](int no) -> const SSGEnv&

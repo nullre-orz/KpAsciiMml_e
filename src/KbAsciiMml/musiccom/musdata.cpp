@@ -10,11 +10,18 @@ namespace MusicCom
         tempo = 120;
     }
 
-    CommandIterator MusicData::GetChannelHead(int index) const
+    CommandIterator MusicData::GetChannelHead(int channel) const
     {
-        assert(IsChannelPresent(index));
+        assert(IsChannelPresent(channel));
 
-        return channels[index].begin();
+        return channels[channel].begin();
+    }
+
+    CommandIterator MusicData::GetChannelTail(int channel) const
+    {
+        assert(IsChannelPresent(channel));
+
+        return channels[channel].end();
     }
 
     CommandIterator MusicData::GetRhythmPartHead() const
@@ -24,6 +31,13 @@ namespace MusicCom
         return rhythm_part.begin();
     }
 
+    CommandIterator MusicData::GetRhythmPartTail() const
+    {
+        assert(IsRhythmPartPresent());
+
+        return rhythm_part.end();
+    }
+
     CommandIterator MusicData::GetMacroHead(const string& name) const
     {
         assert(IsMacroPresent(name));
@@ -31,17 +45,15 @@ namespace MusicCom
         return macros.find(name)->second.begin();
     }
 
-    void MusicData::AddCommandToChannel(int index, const Command& command)
+    void MusicData::AddCommandToChannel(int channel, const Command& command)
     {
-        CommandList& cl = channels[index];
-        if (!IsChannelPresent(index))
+        CommandList& cl = channels[channel];
+        if (!IsChannelPresent(channel))
         {
-            // 終了検知のためパート終端を追加
-            cl.push_back(Command(CommandType::TYPE_END));
-            channel_present[index] = true;
+            channel_present[channel] = true;
         }
 
-        cl.insert(--cl.end(), command);
+        cl.insert(cl.end(), command);
     }
 
     void MusicData::AddCommandToRhythmPart(const Command& command)
@@ -49,12 +61,10 @@ namespace MusicCom
         CommandList& cl = rhythm_part;
         if (!IsRhythmPartPresent())
         {
-            // 終了検知のためパート終端を追加
-            cl.push_back(Command(CommandType::TYPE_END));
             rhythm_part_present = true;
         }
 
-        cl.insert(--cl.end(), command);
+        cl.insert(cl.end(), command);
     }
 
     void MusicData::AddCommandToMacro(std::string name, const Command& command)

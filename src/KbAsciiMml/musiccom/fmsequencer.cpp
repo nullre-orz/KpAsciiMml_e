@@ -13,7 +13,7 @@ namespace MusicCom
     const int* const F_NUMBER = &F_NUMBER_BASE[1];
 
     FmSequencer::FmSequencer(FM::OPN& opn, FMWrap& fmwrap, const MusicData& music, int channel)
-        : PartSequencerBase(opn, music),
+        : PartSequencerBase(opn, music, music.GetChannelTail(channel)),
           channel_(channel),
           fmwrap_(fmwrap),
           GetSound([this](int no) -> const FMSound&

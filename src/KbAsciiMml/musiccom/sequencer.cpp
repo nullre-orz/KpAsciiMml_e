@@ -92,7 +92,7 @@ namespace MusicCom
             part->NextFrame(currentFrame);
         }
 
-        // 全パートが終了していた場合、先頭から再開させる
+        // 全パートが一時停止していた場合、再開させる
         if (std::none_of(
                 partSequencer.begin(),
                 partSequencer.end(),
@@ -103,7 +103,7 @@ namespace MusicCom
         {
             for (const auto& part : partSequencer)
             {
-                part->ReturnToHead();
+                part->Resume();
                 part->NextFrame(currentFrame);
             }
         }

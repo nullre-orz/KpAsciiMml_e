@@ -22,7 +22,7 @@ namespace MusicCom
     // clang-format on
 
     SoundSequencer::SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound)
-        : PartSequencerBase(opn, music),
+        : PartSequencerBase(opn, music, music.GetRhythmPartTail()),
           ssgwrap_(ssgwrap),
           sound_(sound),
           current_sound_data_(std::nullopt),
