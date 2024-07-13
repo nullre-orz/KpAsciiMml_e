@@ -15,6 +15,8 @@ using namespace std;
 
 namespace MusicCom
 {
+    const unsigned int OPN_CLOCKFREQ = 3993600; // OPNのクロック周波数
+
     Sequencer::Sequencer(FM::OPN& o, MusicData* pmd, SoundData* psd)
         : opn(o),
           fmwrap(o),
@@ -26,8 +28,6 @@ namespace MusicCom
 
     bool Sequencer::Init(int r)
     {
-        const unsigned int OPN_CLOCKFREQ = 3993600; // OPNのクロック周波数
-
         rate = r;
         samplesPerFrame = (int)(rate * (60.0 / (musicdata.GetTempo() * 16.0)) / 1.1 + 0.5); // 1.1: music.comの演奏は速いので補正
         samplesLeft = 0;
@@ -36,31 +36,55 @@ namespace MusicCom
         if (!opn.Init(OPN_CLOCKFREQ, rate))
             return false;
 
-        for (int ch = 0; ch < 6; ch++)
-        {
-            if (musicdata.IsChannelPresent(ch))
-            {
-                if (ch < 3)
-                {
-                    partSequencer.emplace_back(std::make_unique<FmSequencer>(opn, fmwrap, musicdata, ch));
-                }
-                else
-                {
-                    partSequencer.emplace_back(std::make_unique<PsgSequencer>(opn, ssgwrap, musicdata, ch));
-                }
-                partSequencer.back()->Initialize();
-            }
-        }
-        if (musicdata.IsRhythmPartPresent())
-        {
-            partSequencer.emplace_back(std::make_unique<SoundSequencer>(opn, ssgwrap, musicdata, sounddata));
-            partSequencer.back()->Initialize();
-        }
+        InitializeSequencer();
 
         // 効果音モード on
         opn.SetReg(0x27, 0x40);
 
         return true;
+    }
+
+    void Sequencer::InitializeSequencer()
+    {
+        std::vector<PsgSequencer*> observer_list;
+        for (int ch = 0; ch < 6; ch++)
+        {
+            if (musicdata.IsChannelPresent(ch))
+            {
+                std::unique_ptr<PartSequencerBase> ptr;
+                if (ch < 3)
+                {
+                    ptr = std::make_unique<FmSequencer>(opn, fmwrap, musicdata, ch);
+                }
+                else
+                {
+                    auto psg = std::make_unique<PsgSequencer>(opn, ssgwrap, musicdata, ch);
+                    // チャンネル4,5(プログラム上は3,4)は効果音再生状態通知を受け取る
+                    if (ch == 3 || ch == 4)
+                    {
+                        observer_list.push_back(psg.get());
+                    }
+                    ptr = std::move(psg);
+                }
+                ptr->Initialize();
+                partSequencer.emplace_back(std::move(ptr));
+            }
+        }
+        if (musicdata.IsRhythmPartPresent())
+        {
+            auto ptr = std::make_unique<SoundSequencer>(opn, ssgwrap, musicdata, sounddata);
+            ptr->Initialize();
+            // 効果音再生状態通知(チャンネル4,5を抑止するため)
+            for (auto item : observer_list)
+            {
+                ptr->AppendPlayStatusObserver(
+                    [item](SoundSequencer::PlayStatus status)
+                    {
+                        item->UpdateDeterrence(status);
+                    });
+            }
+            partSequencer.emplace_back(std::move(ptr));
+        }
     }
 
     void Sequencer::Mix(__int16* dest, int nsamples)

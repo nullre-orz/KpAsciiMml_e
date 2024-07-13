@@ -29,6 +29,7 @@ namespace MusicCom
         }
 
     private:
+        void InitializeSequencer();
         void NextFrame();
 
         FM::OPN& opn;

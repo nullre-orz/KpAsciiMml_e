@@ -33,6 +33,12 @@ namespace MusicCom
 
     SoundSequencer::~SoundSequencer()
     {
+        observer_list_.clear();
+    }
+
+    void SoundSequencer::AppendPlayStatusObserver(PlayStatusObserver observer)
+    {
+        observer_list_.push_back(observer);
     }
 
     void SoundSequencer::PreProcess(int current_frame)
@@ -136,16 +142,29 @@ namespace MusicCom
 
     void SoundSequencer::KeyOn()
     {
-        // チャンネル4,5(SSGチャンネルA,B)を流用
-        ssgwrap_.KeyOnOff(0, true);
-        ssgwrap_.KeyOnOff(1, true);
+        KeyOnOffImpl(true);
     }
 
     void SoundSequencer::KeyOff()
     {
+        // ノイズを無効化しておく
+        ssgwrap_.SetNoise(0, false);
+        ssgwrap_.SetNoise(1, false);
+
+        KeyOnOffImpl(false);
+    }
+
+    void SoundSequencer::KeyOnOffImpl(bool on)
+    {
         // チャンネル4,5(SSGチャンネルA,B)を流用
-        ssgwrap_.KeyOnOff(0, false);
-        ssgwrap_.KeyOnOff(1, false);
+        ssgwrap_.KeyOnOff(0, on);
+        ssgwrap_.KeyOnOff(1, on);
+
+        // 通知
+        for (auto item : observer_list_)
+        {
+            item((on) ? PlayStatus::PLAYING : PlayStatus::STOP);
+        }
     }
 
     void SoundSequencer::UpdateTone(int base_tone, PartData& part_data)

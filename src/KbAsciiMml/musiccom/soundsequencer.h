@@ -4,6 +4,7 @@
 #include "sounddata.h"
 #include <functional>
 #include <optional>
+#include <vector>
 
 namespace FM
 {
@@ -21,6 +22,14 @@ namespace MusicCom
         SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound);
         ~SoundSequencer();
 
+        enum class PlayStatus : int
+        {
+            STOP,
+            PLAYING
+        };
+        using PlayStatusObserver = std::function<void(PlayStatus)>;
+        void AppendPlayStatusObserver(PlayStatusObserver observer);
+
     protected: // for PartSequencerBase
         virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
 
@@ -36,9 +45,13 @@ namespace MusicCom
         virtual void SetVolume(int volume);
         virtual const CommandIterator GetHead() const;
 
+        void KeyOnOffImpl(bool on);
+
     private:
         SSGWrap& ssgwrap_;
         const SoundData& sound_;
+
+        std::vector<PlayStatusObserver> observer_list_;
 
         struct CurrentSoundData
         {

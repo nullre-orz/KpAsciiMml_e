@@ -24,6 +24,7 @@ namespace MusicCom
         : PartSequencerBase(opn, music, music.GetChannelTail(channel)),
           channel_(channel - 3),
           ssgwrap_(ssgwrap),
+          ring_deterrence_(false),
           GetSSGEnv([this](int no) -> const SSGEnv&
                     { return GetMusicData().GetSSGEnv(no); }),
           GetHeadImpl([this, channel]()
@@ -33,6 +34,11 @@ namespace MusicCom
 
     PsgSequencer::~PsgSequencer()
     {
+    }
+
+    void PsgSequencer::UpdateDeterrence(SoundSequencer::PlayStatus status)
+    {
+        ring_deterrence_ = (status == SoundSequencer::PlayStatus::PLAYING);
     }
 
     CommandIterator PsgSequencer::ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data)
@@ -69,12 +75,18 @@ namespace MusicCom
 
     void PsgSequencer::KeyOn()
     {
-        ssgwrap_.KeyOnOff(channel_, true);
+        if (!ring_deterrence_)
+        {
+            ssgwrap_.KeyOnOff(channel_, true);
+        }
     }
 
     void PsgSequencer::KeyOff()
     {
-        ssgwrap_.KeyOnOff(channel_, false);
+        if (!ring_deterrence_)
+        {
+            ssgwrap_.KeyOnOff(channel_, false);
+        }
     }
 
     void PsgSequencer::UpdateTone(int base_tone, PartData& part_data)

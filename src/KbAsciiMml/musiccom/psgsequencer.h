@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "partsequencerbase.h"
+#include "soundsequencer.h"
 #include <functional>
 
 namespace MusicCom
@@ -13,6 +14,8 @@ namespace MusicCom
     public:
         PsgSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, int channel);
         ~PsgSequencer();
+
+        void UpdateDeterrence(SoundSequencer::PlayStatus status);
 
     protected: // for PartSequencerBase
         virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
@@ -33,6 +36,7 @@ namespace MusicCom
 
         int channel_;
         SSGWrap& ssgwrap_;
+        bool ring_deterrence_;
 
         std::function<const SSGEnv&(int)> GetSSGEnv;
         std::function<CommandIterator()> GetHeadImpl;
