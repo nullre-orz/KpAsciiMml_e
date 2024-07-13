@@ -191,6 +191,7 @@ Noise:	3, 20 ,-5 ,4,0
                     {
                         auto& target = editing_blocks.back();
                         auto& tone = target.tone[state.channel];
+                        tone.enabled = true;
                         tone.initial_value = state.args[0];
                         tone.final_value = state.args[0] + state.args[1];
                         tone.period = state.args[2] * state.tone_multiplier;

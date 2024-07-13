@@ -10,12 +10,19 @@ namespace MusicCom
     {
         struct TonePart
         {
+            bool enabled;
             int initial_value;
             int final_value;
             int period;
             bool loop;
         };
-        using VolumePart = TonePart;
+        struct VolumePart
+        {
+            int initial_value;
+            int final_value;
+            int period;
+            bool loop;
+        };
         struct NoisePart
         {
             int channel_type;
@@ -42,6 +49,7 @@ namespace MusicCom
             int tone[2];
             int volume[2];
             int noise_period;
+            bool tone_enabled[2];
             bool noise_enabled[2];
         };
 

@@ -121,7 +121,7 @@ namespace MusicCom
     void PsgSequencer::SetTone(int octave, int tone)
     {
         // octaveは使用しない
-        ssgwrap_.SetTone(channel_, tone);
+        ssgwrap_.SetTonePeriod(channel_, tone);
     }
 
     void PsgSequencer::SetVolume(int volume)

@@ -19,7 +19,7 @@ namespace MusicCom
     int get_value(const Part& part, DiffType diff, int index, int length)
     {
         // indexが周期を超えている場合は補正
-        int period = std::max(part.period + 1, 1);
+        int period = std::max(part.period, 1) + 1;
         if (index > period)
         {
             // ループしない場合は最終値のまま
@@ -108,6 +108,8 @@ namespace MusicCom
         data_cache_.volume[0] = get_value(block.volume[0], diff_cache_.volume[0], part_index_, len);
         data_cache_.volume[1] = get_value(block.volume[1], diff_cache_.volume[1], part_index_, len);
         data_cache_.noise_period = get_value(block.noise, diff_cache_.noise, part_index_, len);
+        data_cache_.tone_enabled[0] = block.tone[0].enabled;
+        data_cache_.tone_enabled[1] = block.tone[1].enabled;
         data_cache_.noise_enabled[0] = (block.noise.channel_type & 0x1);
         data_cache_.noise_enabled[1] = (block.noise.channel_type & 0x2);
     }

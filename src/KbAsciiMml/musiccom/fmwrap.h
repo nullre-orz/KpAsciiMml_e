@@ -38,17 +38,18 @@ namespace MusicCom
         void SetEnv(int ch, bool on);
         void SetEnvForm(int form);
         void SetEnvPeriod(int period);
+        void SetTonePeriod(int ch, int tone);
         void SetNoisePeriod(int period);
-        void SetTone(int ch, int tone);
-        void SetNoise(int ch, bool on);
+        void SetToneEnabled(int ch, bool on);
+        void SetNoiseEnabled(int ch, bool on);
         void SetVolume(int ch, int vol);
 
         void KeyOnOff(int ch, bool on);
-
-    private:
         void SetNoiseToneEnable();
 
+    private:
         FM::OPN& opn;
+        bool tone[3];
         bool noise[3];
         bool keyon[3];
         bool env[3];

@@ -132,10 +132,12 @@ namespace MusicCom
         ssgwrap_.SetNoisePeriod(data.noise_period);
         for (int ch = 0; ch < 2; ch++)
         {
-            ssgwrap_.SetTone(ch, data.tone[ch]);
+            ssgwrap_.SetTonePeriod(ch, data.tone[ch]);
             ssgwrap_.SetVolume(ch, data.volume[ch]);
-            ssgwrap_.SetNoise(ch, data.noise_enabled[ch]);
+            ssgwrap_.SetToneEnabled(ch, data.tone_enabled[ch]);
+            ssgwrap_.SetNoiseEnabled(ch, data.noise_enabled[ch]);
         }
+        ssgwrap_.SetNoiseToneEnable();
 
         ++current_sound.ptr;
     }
@@ -147,9 +149,11 @@ namespace MusicCom
 
     void SoundSequencer::KeyOff()
     {
-        // ノイズを無効化しておく
-        ssgwrap_.SetNoise(0, false);
-        ssgwrap_.SetNoise(1, false);
+        // トーンを有効化, ノイズを無効化しておく
+        ssgwrap_.SetToneEnabled(0, true);
+        ssgwrap_.SetToneEnabled(1, true);
+        ssgwrap_.SetNoiseEnabled(0, false);
+        ssgwrap_.SetNoiseEnabled(1, false);
 
         KeyOnOffImpl(false);
     }
