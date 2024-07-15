@@ -15,6 +15,7 @@ namespace MusicCom
 {
     class MusicData;
     class SoundData;
+    class SoundSequencer;
 
     // 適当すぎ
     class Sequencer
@@ -23,14 +24,9 @@ namespace MusicCom
         Sequencer(FM::OPN& o, MusicData* pmd, SoundData* psd);
         bool Init(int rate);
         void Mix(__int16* dest, int nsamples);
-        int GetSamplesPerFrame()
-        {
-            return samplesPerFrame;
-        }
 
     private:
-        void InitializeSequencer();
-        void NextFrame();
+        void InitializeSequencer(int rate);
 
         FM::OPN& opn;
         FMWrap fmwrap;
@@ -39,11 +35,6 @@ namespace MusicCom
         SoundData& sounddata;
 
         std::vector<std::unique_ptr<PartSequencerBase>> partSequencer;
-
-        int rate;
-        int samplesPerFrame;
-        int samplesLeft; // このフレーム(64分音符)でmixすべき残りのサンプル数
-        int currentFrame;
     };
 
 } // namespace MusicCom

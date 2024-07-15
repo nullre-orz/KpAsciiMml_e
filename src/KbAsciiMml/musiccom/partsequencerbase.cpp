@@ -9,11 +9,15 @@ namespace MusicCom
     const int TONE_KEY_OFF = -1;
     const int MAX_MACRO_COUNT = 100;
 
-    PartSequencerBase::PartSequencerBase(FM::OPN& opn, const MusicData& music, CommandIterator command_tail)
+    PartSequencerBase::PartSequencerBase(FM::OPN& opn, const MusicData& music, CommandIterator command_tail, int rate)
         : opn_(opn),
           part_data_(),
           music_data_(music),
-          command_tail_(command_tail)
+          command_tail_(command_tail),
+          rate_(rate),
+          samples_per_frame_(0),
+          samples_left_(0),
+          current_frame_(0)
     {
     }
 
@@ -25,9 +29,14 @@ namespace MusicCom
     {
         part_data_.Playing = true;
         ReturnToHead();
-        // 初手ポルタメント対応
-        // 初期値をセットしておく
-        part_data_.Tone = InitializeTone();
+
+        // フレーム初期化
+        samples_per_frame_ = CalculatePerFrame(GetMusicData().GetTempo());
+        samples_left_ = 0;
+        current_frame_ = 0;
+
+        // サブクラス固有の設定
+        InitializeImpl(part_data_);
     }
 
     bool PartSequencerBase::IsPlaying() const
@@ -53,21 +62,53 @@ namespace MusicCom
         }
     }
 
-    void PartSequencerBase::NextFrame(int current_frame)
+    int PartSequencerBase::GetRemainFrameSize()
+    {
+        // NVI pattern
+        return GetRemainFrameSizeImpl();
+    }
+    int PartSequencerBase::GetRemainFrameSizeImpl()
+    {
+        return samples_left_;
+    }
+
+    void PartSequencerBase::IncreaseFrame(int frame_size)
     {
         if (!part_data_.Playing)
         {
             return;
         }
 
-        PreProcess(current_frame);
-        ProcessCommand(current_frame);
-        ProcessEffect(current_frame);
+        // NVI pattern
+        IncreaseFrameImpl(frame_size);
+    }
+    void PartSequencerBase::IncreaseFrameImpl(int frame_size)
+    {
+        samples_left_ -= frame_size;
+        if (samples_left_ <= 0)
+        {
+            samples_left_ = samples_per_frame_;
+            NextCommandFrame();
+        }
+    }
+
+    void PartSequencerBase::NextCommandFrame()
+    {
+        PreProcess(current_frame_);
+        ProcessCommand(current_frame_);
+        ProcessEffect(current_frame_);
+
+        current_frame_++;
     }
 
     const MusicData& PartSequencerBase::GetMusicData() const
     {
         return music_data_;
+    }
+
+    int PartSequencerBase::CalculatePerFrame(int tempo)
+    {
+        return static_cast<int>(rate_ * (60.0 / (tempo * 16.0)) / 1.1 + 0.5); // 1.1: music.comの演奏は速いので補正
     }
 
     void PartSequencerBase::ReturnToHead()

@@ -12,16 +12,17 @@ namespace MusicCom
     class PsgSequencer : public PartSequencerBase
     {
     public:
-        PsgSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, int channel);
+        PsgSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, int channel, int rate);
         ~PsgSequencer();
 
         void UpdateDeterrence(SoundSequencer::PlayStatus status);
 
     protected: // for PartSequencerBase
         virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
+        virtual void ProcessEffect(int current_frame);
 
     private: // for PartSequencerBase
-        virtual int InitializeTone();
+        virtual void InitializeImpl(PartData& part_data);
         virtual void KeyOn();
         virtual void KeyOff();
         virtual void UpdateTone(int base_tone, PartData& part_data);

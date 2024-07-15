@@ -1,5 +1,6 @@
 ﻿#include "soundsequencer.h"
 #include "fmwrap.h"
+#include <algorithm>
 #include <cmath>
 
 namespace MusicCom
@@ -20,20 +21,96 @@ namespace MusicCom
          1  // B
     };
     // clang-format on
+    const int SOUND_EFFECT_TEMPO = 195; // 効果音のベーステンポ
 
-    SoundSequencer::SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound)
-        : PartSequencerBase(opn, music, music.GetRhythmPartTail()),
+    SoundSequencer::SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int rate)
+        : PartSequencerBase(opn, music, music.GetRhythmPartTail(), rate),
           ssgwrap_(ssgwrap),
           sound_(sound),
           current_sound_data_(std::nullopt),
           GetHeadImpl([this]()
-                      { return GetMusicData().GetRhythmPartHead(); })
+                      { return GetMusicData().GetRhythmPartHead(); }),
+          sound_interrupt_enabled_(false),
+          sound_interrupt_per_frame_(0),
+          sound_interrupt_left_(0)
     {
     }
 
     SoundSequencer::~SoundSequencer()
     {
         observer_list_.clear();
+    }
+
+    void SoundSequencer::InitializeImpl(PartData& part_data)
+    {
+        // 効果音フレーム初期化
+        sound_interrupt_enabled_ = false;
+        sound_interrupt_per_frame_ = CalculatePerFrame(SOUND_EFFECT_TEMPO);
+        sound_interrupt_left_ = 0;
+    }
+
+    int SoundSequencer::GetRemainFrameSizeImpl()
+    {
+        // SoundSequencerでは効果音フレームとコマンドフレームを同時に扱う
+        // 効果音再生中は効果音フレームの残時間とコマンドフレームの残時間のうち小さい方を返す
+
+        // コマンドフレームの残時間は基底クラスから取得
+        int command_frame_size = PartSequencerBase::GetRemainFrameSizeImpl();
+        if (sound_interrupt_enabled_)
+        {
+            return std::min(sound_interrupt_left_, command_frame_size);
+        }
+        return command_frame_size;
+    }
+
+    void SoundSequencer::IncreaseFrameImpl(int frame_size)
+    {
+        // コマンドフレームの処理
+        PartSequencerBase::IncreaseFrameImpl(frame_size);
+
+        // 効果音フレームの処理
+        if (sound_interrupt_enabled_)
+        {
+            sound_interrupt_left_ -= frame_size;
+            if (sound_interrupt_left_ <= 0)
+            {
+                sound_interrupt_left_ = sound_interrupt_per_frame_;
+                NextSoundFrame();
+            }
+        }
+    }
+
+    void SoundSequencer::NextSoundFrame()
+    {
+        if (!current_sound_data_)
+        {
+            return;
+        }
+
+        // optinal外し
+        auto& current_sound = *current_sound_data_;
+
+        // 終端の場合はクリア
+        if (current_sound.ptr == current_sound.end_ptr)
+        {
+            current_sound_data_ = std::nullopt;
+            KeyOff();
+            return;
+        }
+
+        // 効果音の設定
+        const auto& data = *current_sound.ptr;
+        ssgwrap_.SetNoisePeriod(data.noise_period);
+        for (int ch = 0; ch < 2; ch++)
+        {
+            ssgwrap_.SetTonePeriod(ch, data.tone[ch]);
+            ssgwrap_.SetVolume(ch, data.volume[ch]);
+            ssgwrap_.SetToneEnabled(ch, data.tone_enabled[ch]);
+            ssgwrap_.SetNoiseEnabled(ch, data.noise_enabled[ch]);
+        }
+        ssgwrap_.SetNoiseToneEnable();
+
+        ++current_sound.ptr;
     }
 
     void SoundSequencer::AppendPlayStatusObserver(PlayStatusObserver observer)
@@ -43,18 +120,7 @@ namespace MusicCom
 
     void SoundSequencer::PreProcess(int current_frame)
     {
-        if (current_sound_data_)
-        {
-            // optinal外し
-            auto& current_sound = *current_sound_data_;
-
-            // 終端の場合はクリア
-            if (current_sound.ptr == current_sound.end_ptr)
-            {
-                current_sound_data_ = std::nullopt;
-                KeyOff();
-            }
-        }
+        // nothing todo.
     }
 
     CommandIterator SoundSequencer::ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data)
@@ -85,6 +151,7 @@ namespace MusicCom
             if (sound_data.length() > 0)
             {
                 current_sound_data_ = {sound_data.begin(), sound_data.end()};
+                NextSoundFrame();
                 KeyOn();
             }
 
@@ -112,39 +179,18 @@ namespace MusicCom
         return return_ptr;
     }
 
-    int SoundSequencer::InitializeTone()
-    {
-        return 0;
-    }
-
     void SoundSequencer::ProcessEffect(int current_frame)
     {
-        if (!current_sound_data_)
-        {
-            return;
-        }
-
-        // optinal外し
-        auto& current_sound = *current_sound_data_;
-
-        // 効果音の設定
-        const auto& data = *current_sound.ptr;
-        ssgwrap_.SetNoisePeriod(data.noise_period);
-        for (int ch = 0; ch < 2; ch++)
-        {
-            ssgwrap_.SetTonePeriod(ch, data.tone[ch]);
-            ssgwrap_.SetVolume(ch, data.volume[ch]);
-            ssgwrap_.SetToneEnabled(ch, data.tone_enabled[ch]);
-            ssgwrap_.SetNoiseEnabled(ch, data.noise_enabled[ch]);
-        }
-        ssgwrap_.SetNoiseToneEnable();
-
-        ++current_sound.ptr;
+        // nothing todo.
     }
 
     void SoundSequencer::KeyOn()
     {
         KeyOnOffImpl(true);
+
+        // コマンドフレームの残時間を設定
+        // (有効/無効はImpl内で設定するため省略)
+        sound_interrupt_left_ = sound_interrupt_per_frame_;
     }
 
     void SoundSequencer::KeyOff()
@@ -163,6 +209,8 @@ namespace MusicCom
         // チャンネル4,5(SSGチャンネルA,B)を流用
         ssgwrap_.KeyOnOff(0, on);
         ssgwrap_.KeyOnOff(1, on);
+
+        sound_interrupt_enabled_ = on;
 
         // 通知
         for (auto item : observer_list_)

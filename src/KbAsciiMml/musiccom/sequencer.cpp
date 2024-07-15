@@ -7,6 +7,7 @@
 #include "soundsequencer.h"
 #include <algorithm>
 #include <fmgen/opna.h>
+#include <numeric>
 
 // KeyOff したあと、音量レベルが低下するまでMixしてからOnしないとタイになってしまう
 // fmgen の問題？
@@ -26,17 +27,14 @@ namespace MusicCom
     {
     }
 
-    bool Sequencer::Init(int r)
+    bool Sequencer::Init(int rate)
     {
-        rate = r;
-        samplesPerFrame = (int)(rate * (60.0 / (musicdata.GetTempo() * 16.0)) / 1.1 + 0.5); // 1.1: music.comの演奏は速いので補正
-        samplesLeft = 0;
-        currentFrame = 0;
-
         if (!opn.Init(OPN_CLOCKFREQ, rate))
+        {
             return false;
+        }
 
-        InitializeSequencer();
+        InitializeSequencer(rate);
 
         // 効果音モード on
         opn.SetReg(0x27, 0x40);
@@ -44,7 +42,7 @@ namespace MusicCom
         return true;
     }
 
-    void Sequencer::InitializeSequencer()
+    void Sequencer::InitializeSequencer(int rate)
     {
         std::vector<PsgSequencer*> observer_list;
         for (int ch = 0; ch < 6; ch++)
@@ -54,12 +52,13 @@ namespace MusicCom
                 std::unique_ptr<PartSequencerBase> ptr;
                 if (ch < 3)
                 {
-                    ptr = std::make_unique<FmSequencer>(opn, fmwrap, musicdata, ch);
+                    ptr = std::make_unique<FmSequencer>(opn, fmwrap, musicdata, ch, rate);
                 }
                 else
                 {
-                    auto psg = std::make_unique<PsgSequencer>(opn, ssgwrap, musicdata, ch);
+                    auto psg = std::make_unique<PsgSequencer>(opn, ssgwrap, musicdata, ch, rate);
                     // チャンネル4,5(プログラム上は3,4)は効果音再生状態通知を受け取る
+                    // D:パートの初期化時に設定するためここではポインタのみ保持
                     if (ch == 3 || ch == 4)
                     {
                         observer_list.push_back(psg.get());
@@ -72,9 +71,9 @@ namespace MusicCom
         }
         if (musicdata.IsRhythmPartPresent())
         {
-            auto ptr = std::make_unique<SoundSequencer>(opn, ssgwrap, musicdata, sounddata);
+            auto ptr = std::make_unique<SoundSequencer>(opn, ssgwrap, musicdata, sounddata, rate);
             ptr->Initialize();
-            // 効果音再生状態通知(チャンネル4,5を抑止するため)
+            // 効果音再生状態通知(効果音フレームの更新およびチャンネル4,5の抑止のため)
             for (auto item : observer_list)
             {
                 ptr->AppendPlayStatusObserver(
@@ -92,46 +91,41 @@ namespace MusicCom
         memset(dest, 0, nsamples * sizeof(__int16) * 2);
         while (nsamples > 0)
         {
-            if (samplesLeft < nsamples)
-            {
-                opn.Mix(dest, samplesLeft);
-                dest += samplesLeft * 2;
-                nsamples -= samplesLeft;
-                NextFrame();
-                samplesLeft = samplesPerFrame;
-            }
-            else
-            {
-                opn.Mix(dest, nsamples);
-                samplesLeft -= nsamples;
-                nsamples = 0;
-            }
-        }
-    }
-
-    void Sequencer::NextFrame()
-    {
-        for (const auto& part : partSequencer)
-        {
-            part->NextFrame(currentFrame);
-        }
-
-        // 全パートが一時停止していた場合、再開させる
-        if (std::none_of(
+            // 各パートから次フレームまでの残時間が最小のものを抽出
+            auto frame_size = std::reduce(
                 partSequencer.begin(),
                 partSequencer.end(),
-                [](const auto& part)
+                nsamples,
+                [](auto acc, const auto& sequencer)
                 {
-                    return part->IsPlaying();
-                }))
-        {
+                    return std::min(acc, sequencer->GetRemainFrameSize());
+                });
+
+            opn.Mix(dest, frame_size);
+
+            dest += frame_size * 2;
+            nsamples -= frame_size;
+
             for (const auto& part : partSequencer)
             {
-                part->Resume();
-                part->NextFrame(currentFrame);
+                part->IncreaseFrame(frame_size);
+            }
+
+            // 全パートが一時停止していた場合、再開させる
+            if (std::none_of(
+                    partSequencer.begin(),
+                    partSequencer.end(),
+                    [](const auto& part)
+                    {
+                        return part->IsPlaying();
+                    }))
+            {
+                for (const auto& part : partSequencer)
+                {
+                    part->Resume();
+                    part->IncreaseFrame(frame_size);
+                }
             }
         }
-
-        currentFrame++;
     }
 } // namespace MusicCom

@@ -16,14 +16,14 @@ namespace MusicCom
     class FmSequencer : public PartSequencerBase
     {
     public:
-        FmSequencer(FM::OPN& opn, FMWrap& fmwrap, const MusicData& music, int channel);
+        FmSequencer(FM::OPN& opn, FMWrap& fmwrap, const MusicData& music, int channel, int rate);
         ~FmSequencer();
 
     protected: // for PartSequencerBase
         virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
 
     private: // for PartSequencerBase
-        virtual int InitializeTone();
+        virtual void InitializeImpl(PartData& part_data);
         virtual void KeyOn();
         virtual void KeyOff();
         virtual void UpdateTone(int base_tone, PartData& part_data);

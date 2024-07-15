@@ -12,8 +12,8 @@ namespace MusicCom
     // clang-format on
     const int* const F_NUMBER = &F_NUMBER_BASE[1];
 
-    FmSequencer::FmSequencer(FM::OPN& opn, FMWrap& fmwrap, const MusicData& music, int channel)
-        : PartSequencerBase(opn, music, music.GetChannelTail(channel)),
+    FmSequencer::FmSequencer(FM::OPN& opn, FMWrap& fmwrap, const MusicData& music, int channel, int rate)
+        : PartSequencerBase(opn, music, music.GetChannelTail(channel), rate),
           channel_(channel),
           fmwrap_(fmwrap),
           GetSound([this](int no) -> const FMSound&
@@ -25,6 +25,12 @@ namespace MusicCom
 
     FmSequencer::~FmSequencer()
     {
+    }
+
+    void FmSequencer::InitializeImpl(PartData& part_data)
+    {
+        // 初手ポルタメント対応
+        part_data.Tone = CalculateTone(1, 0);
     }
 
     CommandIterator FmSequencer::ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data)
@@ -42,11 +48,6 @@ namespace MusicCom
             break;
         }
         return return_ptr;
-    }
-
-    int FmSequencer::InitializeTone()
-    {
-        return CalculateTone(1, 0);
     }
 
     void FmSequencer::KeyOn()

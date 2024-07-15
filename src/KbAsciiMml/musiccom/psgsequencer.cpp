@@ -20,8 +20,8 @@ namespace MusicCom
     };
     // clang-format on
 
-    PsgSequencer::PsgSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, int channel)
-        : PartSequencerBase(opn, music, music.GetChannelTail(channel)),
+    PsgSequencer::PsgSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, int channel, int rate)
+        : PartSequencerBase(opn, music, music.GetChannelTail(channel), rate),
           channel_(channel - 3),
           ssgwrap_(ssgwrap),
           ring_deterrence_(false),
@@ -34,6 +34,12 @@ namespace MusicCom
 
     PsgSequencer::~PsgSequencer()
     {
+    }
+
+    void PsgSequencer::InitializeImpl(PartData& part_data)
+    {
+        // 初手ポルタメント対応
+        part_data.Tone = CalculateTone(1, 1, 0);
     }
 
     void PsgSequencer::UpdateDeterrence(SoundSequencer::PlayStatus status)
@@ -68,9 +74,12 @@ namespace MusicCom
         return return_ptr;
     }
 
-    int PsgSequencer::InitializeTone()
+    void PsgSequencer::ProcessEffect(int current_frame)
     {
-        return CalculateTone(1, 1, 0);
+        if (!ring_deterrence_)
+        {
+            PartSequencerBase::ProcessEffect(current_frame);
+        }
     }
 
     void PsgSequencer::KeyOn()

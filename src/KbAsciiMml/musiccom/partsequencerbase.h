@@ -13,27 +13,34 @@ namespace MusicCom
     class PartSequencerBase
     {
     public:
-        PartSequencerBase(FM::OPN& opn, const MusicData& music, CommandIterator command_tail);
+        PartSequencerBase(FM::OPN& opn, const MusicData& music, CommandIterator command_tail, int rate);
         virtual ~PartSequencerBase();
 
         void Initialize();
         bool IsPlaying() const;
         void Resume();
-        void NextFrame(int current_frame);
+
+        int GetRemainFrameSize();
+        void IncreaseFrame(int frame_size);
 
     protected:
         const MusicData& GetMusicData() const;
+        int CalculatePerFrame(int tempo);
+
+        virtual int GetRemainFrameSizeImpl();
+        virtual void IncreaseFrameImpl(int frame_size);
         virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
+        virtual void ProcessEffect(int current_frame);
 
     private:
         void ReturnToHead();
+        void NextCommandFrame();
         std::optional<CommandIterator> ProcessLoop(CommandIterator ptr);
         std::optional<CommandType> FindLinkedItem(CommandIterator ptr) const;
         void ProcessCommand(int current_frame);
 
-        virtual int InitializeTone() = 0;
+        virtual void InitializeImpl(PartData& part_data) = 0;
         virtual void PreProcess(int current_frame);
-        virtual void ProcessEffect(int current_frame);
         virtual void KeyOn() = 0;
         virtual void KeyOff() = 0;
         virtual void UpdateTone(int base_tone, PartData& part_data) = 0;
@@ -47,5 +54,11 @@ namespace MusicCom
         PartData part_data_;
         const MusicData& music_data_;
         const CommandIterator command_tail_;
+
+        const int rate_;
+        // コマンドフレーム
+        int samples_per_frame_;
+        int samples_left_; // このフレーム(64分音符)でmixすべき残りのサンプル数
+        int current_frame_;
     };
 } // namespace MusicCom

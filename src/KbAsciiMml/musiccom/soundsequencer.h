@@ -19,7 +19,7 @@ namespace MusicCom
     class SoundSequencer : public PartSequencerBase
     {
     public:
-        SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound);
+        SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int rate);
         ~SoundSequencer();
 
         enum class PlayStatus : int
@@ -31,10 +31,15 @@ namespace MusicCom
         void AppendPlayStatusObserver(PlayStatusObserver observer);
 
     protected: // for PartSequencerBase
+        virtual int GetRemainFrameSizeImpl();
+        virtual void IncreaseFrameImpl(int frame_size);
         virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
 
+    private:
+        void NextSoundFrame();
+
     private: // for PartSequencerBase
-        virtual int InitializeTone();
+        virtual void InitializeImpl(PartData& part_data);
         virtual void PreProcess(int current_frame);
         virtual void ProcessEffect(int current_frame);
         virtual void KeyOn();
@@ -61,5 +66,10 @@ namespace MusicCom
         std::optional<CurrentSoundData> current_sound_data_;
 
         std::function<CommandIterator()> GetHeadImpl;
+
+        // 効果音フレーム
+        bool sound_interrupt_enabled_;
+        int sound_interrupt_per_frame_;
+        int sound_interrupt_left_;
     };
 } // namespace MusicCom
