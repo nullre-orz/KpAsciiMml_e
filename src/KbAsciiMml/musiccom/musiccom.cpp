@@ -10,7 +10,8 @@ namespace MusicCom
     MusicCom::MusicCom()
         : pseq(nullptr),
           pmusicdata(nullptr),
-          psounddata(nullptr)
+          psounddata(nullptr),
+          adjustment(false)
     {
     }
 
@@ -41,6 +42,7 @@ namespace MusicCom
         }
         opn.SetVolumeFM(fmVolume);
         opn.SetVolumePSG(psgVolume);
+        opn.SetNoiseAdjustment(adjustment);
 
         return true;
     }
@@ -58,6 +60,11 @@ namespace MusicCom
     void MusicCom::SetPSGVolume(int vol)
     {
         psgVolume = vol;
+    }
+
+    void MusicCom::SetNoiseAdjustment(bool on)
+    {
+        adjustment = on;
     }
 
 } // namespace MusicCom

@@ -32,6 +32,7 @@ private:
 KbAsciiMml::KbAsciiMml()
 {
     int fmvol = 0, psgvol = 0;
+    bool noiseAdjustment = true;
     try
     {
         wchar_t iniName[MAX_PATH];
@@ -44,12 +45,15 @@ KbAsciiMml::KbAsciiMml()
         fmvol = boost::lexical_cast<int>(buf);
         GetPrivateProfileStringW(L"KbAsciiMml", L"PSGVolume", L"0", buf, sizeof(buf), iniName);
         psgvol = boost::lexical_cast<int>(buf);
+        GetPrivateProfileStringW(L"KbAsciiMml", L"NoiseAdjustment", L"1", buf, sizeof(buf), iniName);
+        noiseAdjustment = (boost::lexical_cast<int>(buf) != 0);
     }
     catch (boost::bad_lexical_cast)
     {
     }
     musicCom.SetFMVolume(fmvol);
     musicCom.SetPSGVolume(psgvol);
+    musicCom.SetNoiseAdjustment(noiseAdjustment);
 }
 
 KbAsciiMml::~KbAsciiMml()

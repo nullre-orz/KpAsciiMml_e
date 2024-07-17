@@ -19,6 +19,7 @@ namespace MusicCom
         void Mix(FM_SAMPLETYPE* dest, int nsamples);
         void SetFMVolume(int vol);
         void SetPSGVolume(int vol);
+        void SetNoiseAdjustment(bool on);
 
     protected:
         // non-copyable
@@ -32,6 +33,7 @@ namespace MusicCom
         std::unique_ptr<SoundData> psounddata;
         int fmVolume;
         int psgVolume;
+        bool adjustment;
     };
 
 } // namespace MusicCom
