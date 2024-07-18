@@ -4,14 +4,18 @@
 #include "sequencer.h"
 #include "sounddata.h"
 #include "soundparser.h"
+#include "soundsequencer.h"
 
 namespace MusicCom
 {
+    const int MusicCom::SOUND_EFFECT_DEFAULT_TEMPO = 195;
+
     MusicCom::MusicCom()
         : pseq(nullptr),
           pmusicdata(nullptr),
           psounddata(nullptr),
-          adjustment(false)
+          adjustment(false),
+          soundTempo(SOUND_EFFECT_DEFAULT_TEMPO)
     {
     }
 
@@ -35,7 +39,7 @@ namespace MusicCom
 
     bool MusicCom::PrepareMix(uint rate)
     {
-        pseq = std::make_unique<Sequencer>(opn, pmusicdata.get(), psounddata.get());
+        pseq = std::make_unique<Sequencer>(opn, pmusicdata.get(), psounddata.get(), soundTempo);
         if (!pseq->Init(rate))
         {
             return false;
@@ -54,17 +58,22 @@ namespace MusicCom
 
     void MusicCom::SetFMVolume(int vol)
     {
-        fmVolume = vol;
+        fmVolume = std::min(std::max(vol, -192), 20);
     }
 
     void MusicCom::SetPSGVolume(int vol)
     {
-        psgVolume = vol;
+        psgVolume = std::min(std::max(vol, -192), 20);
     }
 
     void MusicCom::SetNoiseAdjustment(bool on)
     {
         adjustment = on;
+    }
+
+    void MusicCom::SetSoundTempo(int tempo)
+    {
+        soundTempo = std::min(std::max(tempo, 128), 255);
     }
 
 } // namespace MusicCom

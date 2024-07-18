@@ -21,7 +21,7 @@ namespace MusicCom
     class Sequencer
     {
     public:
-        Sequencer(FM::OPN& o, MusicData* pmd, SoundData* psd);
+        Sequencer(FM::OPN& o, MusicData* pmd, SoundData* psd, int stempo);
         bool Init(int rate);
         void Mix(__int16* dest, int nsamples);
 
@@ -33,6 +33,7 @@ namespace MusicCom
         SSGWrap ssgwrap;
         MusicData& musicdata;
         SoundData& sounddata;
+        int soundtempo;
 
         std::vector<std::unique_ptr<PartSequencerBase>> partSequencer;
     };

@@ -32,6 +32,7 @@ private:
 KbAsciiMml::KbAsciiMml()
 {
     int fmvol = 0, psgvol = 0;
+    int soundtempo = MusicCom::MusicCom::SOUND_EFFECT_DEFAULT_TEMPO;
     bool noiseAdjustment = true;
     try
     {
@@ -47,6 +48,8 @@ KbAsciiMml::KbAsciiMml()
         psgvol = boost::lexical_cast<int>(buf);
         GetPrivateProfileStringW(L"KbAsciiMml", L"NoiseAdjustment", L"1", buf, sizeof(buf), iniName);
         noiseAdjustment = (boost::lexical_cast<int>(buf) != 0);
+        GetPrivateProfileStringW(L"KbAsciiMml", L"SoundTempo", L"195", buf, sizeof(buf), iniName);
+        soundtempo = boost::lexical_cast<int>(buf);
     }
     catch (boost::bad_lexical_cast)
     {
@@ -54,6 +57,7 @@ KbAsciiMml::KbAsciiMml()
     musicCom.SetFMVolume(fmvol);
     musicCom.SetPSGVolume(psgvol);
     musicCom.SetNoiseAdjustment(noiseAdjustment);
+    musicCom.SetSoundTempo(soundtempo);
 }
 
 KbAsciiMml::~KbAsciiMml()

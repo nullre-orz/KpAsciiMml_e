@@ -18,12 +18,13 @@ namespace MusicCom
 {
     const unsigned int OPN_CLOCKFREQ = 3993600; // OPNのクロック周波数
 
-    Sequencer::Sequencer(FM::OPN& o, MusicData* pmd, SoundData* psd)
+    Sequencer::Sequencer(FM::OPN& o, MusicData* pmd, SoundData* psd, int stempo)
         : opn(o),
           fmwrap(o),
           ssgwrap(o),
           musicdata(*pmd),
-          sounddata(*psd)
+          sounddata(*psd),
+          soundtempo(stempo)
     {
     }
 
@@ -71,7 +72,7 @@ namespace MusicCom
         }
         if (musicdata.IsRhythmPartPresent())
         {
-            auto ptr = std::make_unique<SoundSequencer>(opn, ssgwrap, musicdata, sounddata, rate);
+            auto ptr = std::make_unique<SoundSequencer>(opn, ssgwrap, musicdata, sounddata, soundtempo, rate);
             ptr->Initialize();
             // 効果音再生状態通知(効果音フレームの更新およびチャンネル4,5の抑止のため)
             for (auto item : observer_list)

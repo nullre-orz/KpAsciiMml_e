@@ -20,6 +20,9 @@ namespace MusicCom
         void SetFMVolume(int vol);
         void SetPSGVolume(int vol);
         void SetNoiseAdjustment(bool on);
+        void SetSoundTempo(int tempo);
+
+        static const int SOUND_EFFECT_DEFAULT_TEMPO;
 
     protected:
         // non-copyable
@@ -34,6 +37,7 @@ namespace MusicCom
         int fmVolume;
         int psgVolume;
         bool adjustment;
+        int soundTempo;
     };
 
 } // namespace MusicCom

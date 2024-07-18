@@ -21,9 +21,8 @@ namespace MusicCom
          1  // B
     };
     // clang-format on
-    const int SOUND_EFFECT_TEMPO = 195; // 効果音のベーステンポ
 
-    SoundSequencer::SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int rate)
+    SoundSequencer::SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate)
         : PartSequencerBase(opn, music, music.GetRhythmPartTail(), rate),
           ssgwrap_(ssgwrap),
           sound_(sound),
@@ -31,7 +30,7 @@ namespace MusicCom
           GetHeadImpl([this]()
                       { return GetMusicData().GetRhythmPartHead(); }),
           sound_interrupt_enabled_(false),
-          sound_interrupt_per_frame_(0),
+          sound_interrupt_per_frame_(CalculatePerFrame(soundtempo)),
           sound_interrupt_left_(0)
     {
     }
@@ -45,7 +44,6 @@ namespace MusicCom
     {
         // 効果音フレーム初期化
         sound_interrupt_enabled_ = false;
-        sound_interrupt_per_frame_ = CalculatePerFrame(SOUND_EFFECT_TEMPO);
         sound_interrupt_left_ = 0;
     }
 

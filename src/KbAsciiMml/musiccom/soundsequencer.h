@@ -19,7 +19,7 @@ namespace MusicCom
     class SoundSequencer : public PartSequencerBase
     {
     public:
-        SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int rate);
+        SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate);
         ~SoundSequencer();
 
         enum class PlayStatus : int
