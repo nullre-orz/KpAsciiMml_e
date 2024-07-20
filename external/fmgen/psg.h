@@ -64,6 +64,7 @@ public:
 	
 	void SetVolume(int vol);
 	void SetChannelMask(int c);
+	void SetNoiseAdjustment(bool on);
 	
 	void Reset();
 	void SetReg(uint regnum, uint8 data);
@@ -86,6 +87,7 @@ protected:
 	uint32 nperiodbase;
 	int volume;
 	int mask;
+	bool adjustment;
 
 	static uint enveloptable[16][64];
 	static uint noisetable[noisetablesize];

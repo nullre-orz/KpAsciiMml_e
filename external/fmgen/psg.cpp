@@ -11,7 +11,7 @@
 // ---------------------------------------------------------------------------
 //	コンストラクタ・デストラクタ
 //
-PSG::PSG()
+PSG::PSG() : adjustment(false)
 {
 	SetVolume(0);
 	MakeNoiseTable();
@@ -54,7 +54,7 @@ void PSG::SetClock(int clock, int rate)
 	tmp = ((reg[4] + reg[5] * 256) & 0xfff);
 	speriod[2] = tmp ? tperiodbase / tmp : tperiodbase;
 	tmp = reg[6] & 0x1f;
-	nperiod = tmp ? nperiodbase / tmp / 2 : nperiodbase / 2;
+	nperiod = (adjustment ? 2 : 1) * nperiodbase / (tmp ? tmp : 1);
 	tmp = ((reg[11] + reg[12] * 256) & 0xffff);
 	eperiod = tmp ? eperiodbase / tmp : eperiodbase * 2;
 }
@@ -106,6 +106,13 @@ void PSG::SetChannelMask(int c)
 		olevel[i] = mask & (1 << i) ? EmitTable[(reg[8+i] & 15) * 2 + 1] : 0;
 }
 
+void PSG::SetNoiseAdjustment(bool on)
+{
+	adjustment = on;
+	int period = reg[6] & 0x1f;
+	nperiod = (adjustment ? 2 : 1) * nperiodbase / (period ? period : 1);
+}
+
 // ---------------------------------------------------------------------------
 //	エンベロープ波形テーブル
 //
@@ -118,7 +125,7 @@ void PSG::MakeEnvelopTable()
 		2,2, 2,0, 2,1, 2,3, 1,1, 1,3, 1,2, 1,0,
 	};
 	static uint8 table2[4] = {  0,  0, 31, 31 };
-	static uint8 table3[4] = {  0,  1, -1,  0 };
+	static uint8 table3[4] = {  0,  1, (uint8)-1,  0 };
 
 	uint* ptr = enveloptable[0];
 
@@ -168,7 +175,7 @@ void PSG::SetReg(uint regnum, uint8 data)
 
 		case 6:		// Noise generator control
 			data &= 0x1f;
-			nperiod = data ? nperiodbase / data : nperiodbase;
+			nperiod = (adjustment ? 2 : 1) * nperiodbase / (data ? data : 1);
 			break;
 
 		case 8:

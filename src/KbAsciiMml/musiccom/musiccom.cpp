@@ -2,27 +2,36 @@
 #include "mmlparser.h"
 #include "musdata.h"
 #include "sequencer.h"
+#include "sounddata.h"
+#include "soundparser.h"
+#include "soundsequencer.h"
 
 namespace MusicCom
 {
+    const int MusicCom::SOUND_EFFECT_DEFAULT_TEMPO = 195;
+
     MusicCom::MusicCom()
+        : pseq(nullptr),
+          pmusicdata(nullptr),
+          psounddata(nullptr),
+          adjustment(false),
+          soundTempo(SOUND_EFFECT_DEFAULT_TEMPO)
     {
-        pmusicdata = NULL;
-        pseq = NULL;
     }
 
     MusicCom::~MusicCom()
     {
-        delete pmusicdata;
-        delete pseq;
     }
 
     bool MusicCom::Load(const char* filename)
     {
-        delete pmusicdata;
+        pmusicdata.reset(ParseMML(filename));
+        if (!pmusicdata)
+            return false;
 
-        pmusicdata = ParseMML(filename);
-        if (pmusicdata == NULL)
+        // SOUND.datを解析
+        psounddata.reset(ParseSound(filename));
+        if (!psounddata)
             return false;
 
         return true;
@@ -30,16 +39,14 @@ namespace MusicCom
 
     bool MusicCom::PrepareMix(uint rate)
     {
-        const uint OPN_CLOCKFREQ = 3993600; // OPNのクロック周波数
-
-        delete pseq;
-        pseq = new Sequencer(opn, pmusicdata);
+        pseq = std::make_unique<Sequencer>(opn, pmusicdata.get(), psounddata.get(), soundTempo);
         if (!pseq->Init(rate))
         {
             return false;
         }
         opn.SetVolumeFM(fmVolume);
         opn.SetVolumePSG(psgVolume);
+        opn.SetNoiseAdjustment(adjustment);
 
         return true;
     }
@@ -51,12 +58,22 @@ namespace MusicCom
 
     void MusicCom::SetFMVolume(int vol)
     {
-        fmVolume = vol;
+        fmVolume = std::min(std::max(vol, -192), 20);
     }
 
     void MusicCom::SetPSGVolume(int vol)
     {
-        psgVolume = vol;
+        psgVolume = std::min(std::max(vol, -192), 20);
+    }
+
+    void MusicCom::SetNoiseAdjustment(bool on)
+    {
+        adjustment = on;
+    }
+
+    void MusicCom::SetSoundTempo(int tempo)
+    {
+        soundTempo = std::min(std::max(tempo, 128), 255);
     }
 
 } // namespace MusicCom

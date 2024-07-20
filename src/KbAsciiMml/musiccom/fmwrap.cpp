@@ -120,6 +120,7 @@ namespace MusicCom
 
     SSGWrap::SSGWrap(FM::OPN& o) : opn(o)
     {
+        fill_n(tone, 3, true);
         fill_n(noise, 3, false);
         fill_n(keyon, 3, false);
         fill_n(env, 3, false);
@@ -137,18 +138,17 @@ namespace MusicCom
         opn.SetReg(0x0c, (period >> 8) & 0xff);
     }
 
-    void SSGWrap::SetNoisePeriod(int period)
-    {
-        opn.SetReg(0x06, period & 0xff);
-    }
-
-    void SSGWrap::SetTone(int ch, int tone)
+    void SSGWrap::SetTonePeriod(int ch, int tone)
     {
         assert(0 <= ch && ch < 3);
 
         int d = ch * 2;
         opn.SetReg(0x00 + d, tone & 0xff);
         opn.SetReg(0x01 + d, (tone >> 8) & 0x0f);
+    }
+    void SSGWrap::SetNoisePeriod(int period)
+    {
+        opn.SetReg(0x06, period & 0x1f);
     }
 
     void SSGWrap::SetVolume(int ch, int v)
@@ -166,16 +166,19 @@ namespace MusicCom
         env[ch] = on;
         SetVolume(ch, vol[ch]);
     }
-    void SSGWrap::SetNoise(int ch, bool on)
+    void SSGWrap::SetToneEnabled(int ch, bool on)
+    {
+        assert(0 <= ch && ch < 3);
+        tone[ch] = on;
+    }
+    void SSGWrap::SetNoiseEnabled(int ch, bool on)
     {
         assert(0 <= ch && ch < 3);
         noise[ch] = on;
-        KeyOnOff(ch, keyon[ch]);
     }
     void SSGWrap::KeyOnOff(int ch, bool on)
     {
         assert(0 <= ch && ch < 3);
-
         keyon[ch] = on;
         SetNoiseToneEnable();
     }
@@ -185,8 +188,8 @@ namespace MusicCom
         int val = 0;
         for (int ch = 0; ch < 3; ch++)
         {
-            int n = (int)!(noise[ch] && keyon[ch]) << 3;
-            int t = (int)!keyon[ch];
+            int n = static_cast<int>(!(noise[ch] && keyon[ch]) << 3);
+            int t = static_cast<int>(!(tone[ch] && keyon[ch]));
             val |= (n | t) << ch;
         }
         val |= 0x80;

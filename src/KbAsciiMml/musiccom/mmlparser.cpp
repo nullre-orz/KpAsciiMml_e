@@ -1,4 +1,5 @@
-﻿#include "musdata.h"
+﻿#include "mmlparser.h"
+#include "musdata.h"
 
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
@@ -81,7 +82,9 @@ namespace MusicCom
     {
         enum MMLLineType
         {
+            UNDEFINED,
             CH,
+            RHYTHM,
             SOUND,
             LFO,
             OP,
@@ -92,29 +95,34 @@ namespace MusicCom
         struct MMLParserState
         {
             MMLParserState()
+                : pMusicData(nullptr),
+                  LineNumber(1),
+                  LineType(UNDEFINED),
+                  ChNumber(),
+                  CommandType(),
+                  SoundNumber(),
+                  Finished(false)
             {
-                LineNumber = 1;
             }
 
-        public:
             vector<string> args;
 
-        public:
             MusicData* pMusicData;
 
-        public:
+            // Line
             int LineNumber;
             MMLLineType LineType;
 
-        public:
             int ChNumber; // ch番号 (0-origin)
-            char CommandType;
+
+            CommandType CommandType;
             string MacroName;
 
             // Sound
-        public:
             FMSound Sound;
             int SoundNumber;
+
+            bool Finished;
         };
 
         MMLParser(MMLParserState& s) : state(s)
@@ -130,6 +138,9 @@ namespace MusicCom
             case CH:
                 state.pMusicData->AddCommandToChannel(state.ChNumber, command);
                 break;
+            case RHYTHM:
+                state.pMusicData->AddCommandToRhythmPart(command);
+                break;
             case STR:
                 state.pMusicData->AddCommandToMacro(state.MacroName, command);
                 break;
@@ -139,18 +150,43 @@ namespace MusicCom
             }
         }
 
-        template<typename T>
-        struct Increment
+        struct ChangeLine
         {
-            Increment(T& t) : target(t) {}
+            ChangeLine(MMLParserState& s) : state(s) {}
 
             template<typename IteratorT>
             void operator()(IteratorT first, IteratorT last) const
             {
-                target++;
+                // パート解析の場合は一時停止コマンドを追加
+                if (state.LineType == CH || state.LineType == RHYTHM)
+                {
+                    AddCommand(state, CommandType::TYPE_PAUSE);
+                }
+
+                state.LineNumber++;
+                state.LineType = UNDEFINED;
             }
 
-            T& target;
+            MMLParserState& state;
+        };
+
+        struct Finish
+        {
+            Finish(MMLParserState& s) : state(s) {}
+
+            template<typename IteratorT>
+            void operator()(IteratorT first, IteratorT last) const
+            {
+                // パート解析の場合は一時停止コマンドを追加
+                if (state.LineType == CH || state.LineType == RHYTHM)
+                {
+                    AddCommand(state, CommandType::TYPE_PAUSE);
+                }
+
+                state.Finished = true;
+            }
+
+            MMLParserState& state;
         };
 
         template<enum MMLLineType t>
@@ -287,7 +323,7 @@ namespace MusicCom
             void operator()(char c) const
             {
                 state.args.clear();
-                state.CommandType = toupper(c);
+                state.CommandType = static_cast<CommandType>(toupper(c));
             }
 
             MMLParserState& state;
@@ -313,7 +349,7 @@ namespace MusicCom
 
                 vector<string>& a = state.args;
 
-                int note = note_numbers[state.CommandType - 'A'];
+                int note = note_numbers[static_cast<char>(state.CommandType) - 'A'];
                 if (!a[0].empty())
                 {
                     switch (a[0][0])
@@ -328,7 +364,7 @@ namespace MusicCom
                 }
                 int len = ParseLength(state.args[1]);
 
-                AddCommand(state, Command(Command::TYPE_NOTE, note, len));
+                AddCommand(state, Command(CommandType::TYPE_NOTE, note, len));
             }
 
             MMLParserState& state;
@@ -343,32 +379,32 @@ namespace MusicCom
             {
                 const static struct CtrlDef
                 {
-                    char Type;
+                    CommandType Type;
                     bool IsNoteLength;
                     int MinArgs;
                     int MaxArgs;
                     int Defaults[3];
                 } ctrl_defs[] = {
-                    {'&', false, 0, 0, {}},
-                    {'T', false, 1, 1, {}},
-                    {'R', true, 0, 1, {0}},
-                    {'W', true, 0, 1, {0}},
-                    {'L', true, 1, 1, {}},
-                    {'O', false, 1, 1, {}},
-                    {'<', false, 0, 0, {}},
-                    {'>', false, 0, 0, {}},
-                    {'V', false, 1, 1, {}},
-                    {'@', false, 1, 1, {}},
-                    {'Q', false, 1, 1, {}},
-                    {'N', false, 1, 1, {}},
-                    {'P', false, 1, 1, {}},
-                    {'U', false, 1, 3, {0, 0, 0}},
-                    {'I', false, 1, 3, {0, 0, 0}},
-                    {'S', false, 1, 1, {}},
-                    {'M', false, 1, 1, {}},
-                    {'Y', false, 2, 2, {}},
-                    {'{', false, 0, 1, {0}},
-                    {'}', false, 0, 0, {}},
+                    {CommandType::TYPE_TIE, false, 0, 0, {}},
+                    {CommandType::TYPE_TEMPO, false, 1, 1, {}},
+                    {CommandType::TYPE_REST, true, 0, 1, {0}},
+                    {CommandType::TYPE_WAIT, true, 0, 1, {0}},
+                    {CommandType::TYPE_LENGTH, true, 1, 1, {}},
+                    {CommandType::TYPE_OCTAVE, false, 1, 1, {}},
+                    {CommandType::TYPE_OCTAVE_DOWN, false, 0, 0, {}},
+                    {CommandType::TYPE_OCTAVE_UP, false, 0, 0, {}},
+                    {CommandType::TYPE_VOLUME, false, 1, 1, {}},
+                    {CommandType::TYPE_TONE, false, 1, 1, {}},
+                    {CommandType::TYPE_GATE_TIME, false, 1, 1, {}},
+                    {CommandType::TYPE_DETUNE, false, 1, 1, {}},
+                    {CommandType::TYPE_PORTAMENTO, false, 1, 1, {}},
+                    {CommandType::TYPE_TREMOLO, false, 1, 3, {0, 0, 0}},
+                    {CommandType::TYPE_VIBRATO, false, 1, 3, {0, 0, 0}},
+                    {CommandType::TYPE_ENV_FORM, false, 1, 1, {}},
+                    {CommandType::TYPE_ENV_PERIOD, false, 1, 1, {}},
+                    {CommandType::TYPE_DIRECT, false, 2, 2, {}},
+                    {CommandType::TYPE_LOOP, false, 0, 1, {0}},
+                    {CommandType::TYPE_EXIT, false, 0, 0, {}},
                 };
 
                 const CtrlDef* pctrldef = NULL;
@@ -414,7 +450,7 @@ namespace MusicCom
                 }
 
                 // Tのみ特別処理
-                if (state.CommandType == 'T')
+                if (state.CommandType == CommandType::TYPE_TEMPO)
                 {
                     state.pMusicData->SetTempo(a[0]);
                 }
@@ -437,7 +473,7 @@ namespace MusicCom
             template<typename IteratorT>
             void operator()(IteratorT first, IteratorT last) const
             {
-                AddCommand(state, Command('$', state.args[0]));
+                AddCommand(state, Command(CommandType::TYPE_MACRO, state.args[0]));
             }
 
             MMLParserState& state;
@@ -455,7 +491,7 @@ namespace MusicCom
                 line =
                     (ch_line | drum_line | sound_line | lfo_line | op_line | ssgenv_line | str_line | arrow_line | blank_line)
                     >> !comment
-                    >> (eol_p[Increment<int>(self.state.LineNumber)] | end_p | ch_p(0x1a));
+                    >> (eol_p[ChangeLine(s)] | end_p[Finish(s)] | ch_p(0x1a));
 
                 args =
                     arg % *ch_p(',') // !: スペースで区切るMML対策
@@ -508,10 +544,11 @@ namespace MusicCom
                     (range_p('1', '6')[SetChNumber(s)] >> ch_p(':'))[BeginLine<CH>(s)]
                     >> *mml_Command;
 
-                // D: は無視する
+                // D: パート (SOUND.DATのリズム音)
                 drum_line =
-                    as_lower_d[str_p("d:")]
-                    >> *(anychar_p - eol_p);
+                    (as_lower_d[str_p("d:")])[BeginLine<RHYTHM>(s)]
+                    >> *mml_Command;
+
                 sound_line =
                     (as_lower_d[str_p("sound")] >> ch_p(':'))[BeginLine<SOUND>(s)]
                     >> !ch_p('@')
@@ -526,7 +563,7 @@ namespace MusicCom
                 ssgenv_line =
                     (as_lower_d[str_p("ssgenv")] >> ch_p(':'))[BeginLine<SSGENV>(s)]
                     >> !ch_p('@')
-                    >> ((int_p | eps_p)[PushArg(s)] % (((eol_p[Increment<int>(s.LineNumber)] % !(comment | blank_line)) >> str_p("->") | ch_p(','))))[ProcessSSGEnv(s)];
+                    >> ((int_p | eps_p)[PushArg(s)] % (((eol_p[ChangeLine(s)] % !(comment | blank_line)) >> str_p("->") | ch_p(','))))[ProcessSSGEnv(s)];
                 str_line =
                     (as_lower_d[str_p("str")] >> ch_p(':'))[BeginLine<STR>(s)]
                     >> macro_name[SetMacroName(s)]
@@ -569,7 +606,7 @@ namespace MusicCom
 
         vector<string> error_list = {};
 
-        while (first != last)
+        while (!state.Finished)
         {
             parse_info<iterator_t> info;
             try

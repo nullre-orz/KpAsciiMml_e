@@ -36,6 +36,30 @@
     <ClInclude Include="musiccom\sequencer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="musiccom\soundparser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\sounddata.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\command.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\partdata.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\fmsequencer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\partsequencerbase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\psgsequencer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="musiccom\soundsequencer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\external\fmgen\fmtimer.cpp">
@@ -72,6 +96,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="musiccom\sequencer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\soundparser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\sounddata.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\fmsequencer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\partsequencerbase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\psgsequencer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="musiccom\soundsequencer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
