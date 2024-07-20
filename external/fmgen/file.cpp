@@ -37,7 +37,7 @@ bool FileIO::Open(const char* filename, uint flg)
 	DWORD share = (flg & readonly) ? FILE_SHARE_READ : 0;
 	DWORD creation = flg & create ? CREATE_ALWAYS : OPEN_EXISTING;
 
-	hfile = CreateFile(filename, access, share, 0, creation, 0, 0);
+	hfile = CreateFileA(filename, access, share, 0, creation, 0, 0);
 	
 	flags = (flg & readonly) | (hfile == INVALID_HANDLE_VALUE ? 0 : open);
 	if (!(flags & open))
@@ -68,7 +68,7 @@ bool FileIO::CreateNew(const char* filename)
 	DWORD share = 0;
 	DWORD creation = CREATE_NEW;
 
-	hfile = CreateFile(filename, access, share, 0, creation, 0, 0);
+	hfile = CreateFileA(filename, access, share, 0, creation, 0, 0);
 	
 	flags = (hfile == INVALID_HANDLE_VALUE ? 0 : open);
 	SetLogicalOrigin(0);
@@ -93,7 +93,7 @@ bool FileIO::Reopen(uint flg)
 	DWORD share = flg & readonly ? FILE_SHARE_READ : 0;
 	DWORD creation = flg & create ? CREATE_ALWAYS : OPEN_EXISTING;
 
-	hfile = CreateFile(path, access, share, 0, creation, 0, 0);
+	hfile = CreateFileA(path, access, share, 0, creation, 0, 0);
 	
 	flags = (flg & readonly) | (hfile == INVALID_HANDLE_VALUE ? 0 : open);
 	SetLogicalOrigin(0);

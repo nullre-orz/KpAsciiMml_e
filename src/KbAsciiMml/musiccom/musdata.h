@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "command.h"
 #include <cassert>
 #include <list>
 #include <map>
@@ -100,78 +101,6 @@ namespace MusicCom
         std::vector<unsigned char> Env;
     };
 
-    class Command
-    {
-    public:
-        static const char TYPE_NOTE = '#'; // args = {Note, Length, Tied};
-        static const char TYPE_RET = '%'; // macro return
-        static const char TYPE_END = '\0'; // part end
-
-        Command()
-        {
-            type = 0;
-            std::memset(args, 0, sizeof(args));
-        }
-        Command(char t, int arg0 = 0, int arg1 = 0, int arg2 = 0)
-        {
-            SetType(t);
-            SetArg(0, arg0);
-            SetArg(1, arg1);
-            SetArg(2, arg2);
-        }
-        Command(char t, std::string arg)
-        {
-            SetType(t);
-            std::memset(args, 0, sizeof(args));
-            SetStrArg(arg);
-        }
-        template<class InIt>
-        Command(char t, InIt first, InIt last)
-        {
-            SetType(t);
-            std::memset(args, 0, sizeof(args));
-            for (int i = 0; i < sizeof(args) / sizeof(args[0]) && first != last; i++, first++)
-            {
-                SetArg(i, *first);
-            }
-        }
-        void SetType(char t)
-        {
-            type = t;
-        }
-        char GetType() const
-        {
-            return type;
-        }
-        void SetArg(int index, int val)
-        {
-            assert(0 <= index && index < 3);
-            args[index] = val;
-        }
-        int GetArg(int index) const
-        {
-            assert(0 <= index && index < 3);
-            return args[index];
-        }
-
-        // （; ＾ω＾）
-        void SetStrArg(std::string val)
-        {
-            strarg = val;
-        }
-        const std::string& GetStrArg() const
-        {
-            return strarg;
-        }
-
-    private:
-        char type;
-        int args[3];
-        std::string strarg;
-    };
-
-    typedef std::list<Command> CommandList;
-
     class MusicData
     {
     public:
@@ -184,11 +113,11 @@ namespace MusicCom
         {
             ssgenvs[no] = env;
         }
-        const FMSound& GetFMSound(int no)
+        const FMSound& GetFMSound(int no) const
         {
             return fmsounds[no];
         }
-        const SSGEnv& GetSSGEnv(int no)
+        const SSGEnv& GetSSGEnv(int no) const
         {
             // 存在しないnoが指定された場合は無音とする
             if (ssgenvs.find(no) == ssgenvs.end())
@@ -200,30 +129,40 @@ namespace MusicCom
         }
         void SetTempo(int t) { tempo = t; }
         int GetTempo() const { return tempo; }
-        bool IsChannelPresent(int index) const
+        bool IsChannelPresent(int channel) const
         {
-            assert(0 <= index && index < channel_count);
-            return channel_present[index];
+            assert(0 <= channel && channel < channel_count);
+            return channel_present[channel];
         }
-        bool IsMacroPresent(std::string name) const
+        bool IsRhythmPartPresent() const
+        {
+            return rhythm_part_present;
+        }
+        bool IsMacroPresent(const std::string& name) const
         {
             return macros.find(name) != macros.end();
         }
 
-        void AddCommandToChannel(int index, const Command& command);
+        void AddCommandToChannel(int channel, const Command& command);
+        void AddCommandToRhythmPart(const Command& command);
         void AddCommandToMacro(std::string name, const Command& command);
 
-        CommandList::const_iterator GetChannelHead(int channel) const;
-        CommandList::const_iterator GetMacroHead(std::string name) const;
+        CommandIterator GetChannelHead(int channel) const;
+        CommandIterator GetChannelTail(int channel) const;
+        CommandIterator GetRhythmPartHead() const;
+        CommandIterator GetRhythmPartTail() const;
+        CommandIterator GetMacroHead(const std::string& name) const;
 
     private:
         static const int channel_count = 6;
 
-        std::map<int, FMSound> fmsounds;
-        std::map<int, SSGEnv> ssgenvs;
-        std::map<std::string, std::list<Command>> macros;
-        std::list<Command> channels[channel_count];
-        bool channel_present[6];
+        mutable std::map<int, FMSound> fmsounds;
+        mutable std::map<int, SSGEnv> ssgenvs;
+        std::map<std::string, CommandList> macros;
+        CommandList channels[channel_count];
+        bool channel_present[channel_count];
+        CommandList rhythm_part;
+        bool rhythm_part_present;
         int tempo;
     };
 

@@ -14,6 +14,21 @@ HMODULE hDllModule;
 
 #define KMPPLUGIN_VERSION 1
 
+template<typename T>
+T GetSetting(LPCWSTR fileName, LPCWSTR key, T defaultValue)
+{
+    try
+    {
+        wchar_t buf[256];
+        GetPrivateProfileStringW(L"KbAsciiMml", key, NULL, buf, sizeof(buf), fileName);
+        return boost::lexical_cast<int>(buf);
+    }
+    catch (boost::bad_lexical_cast)
+    {
+        return defaultValue;
+    }
+}
+
 class KbAsciiMml
 {
 public:
@@ -31,25 +46,20 @@ private:
 
 KbAsciiMml::KbAsciiMml()
 {
-    int fmvol = 0, psgvol = 0;
-    try
-    {
-        wchar_t iniName[MAX_PATH];
-        GetModuleFileNameW(hDllModule, iniName, sizeof(iniName));
-        PathRemoveExtensionW(iniName);
-        PathAddExtensionW(iniName, L".ini");
+    wchar_t iniName[MAX_PATH];
+    GetModuleFileNameW(hDllModule, iniName, sizeof(iniName));
+    PathRemoveExtensionW(iniName);
+    PathAddExtensionW(iniName, L".ini");
 
-        wchar_t buf[256];
-        GetPrivateProfileStringW(L"KbAsciiMml", L"FMVolume", L"0", buf, sizeof(buf), iniName);
-        fmvol = boost::lexical_cast<int>(buf);
-        GetPrivateProfileStringW(L"KbAsciiMml", L"PSGVolume", L"0", buf, sizeof(buf), iniName);
-        psgvol = boost::lexical_cast<int>(buf);
-    }
-    catch (boost::bad_lexical_cast)
-    {
-    }
+    int fmvol = GetSetting(iniName, L"FMVolume", 0);
+    int psgvol = GetSetting(iniName, L"PSGVolume", 0);
+    bool noiseAdjustment = GetSetting(iniName, L"NoiseAdjustment", true);
+    int soundtempo = GetSetting(iniName, L"SoundTempo", MusicCom::MusicCom::SOUND_EFFECT_DEFAULT_TEMPO);
+
     musicCom.SetFMVolume(fmvol);
     musicCom.SetPSGVolume(psgvol);
+    musicCom.SetNoiseAdjustment(noiseAdjustment);
+    musicCom.SetSoundTempo(soundtempo);
 }
 
 KbAsciiMml::~KbAsciiMml()

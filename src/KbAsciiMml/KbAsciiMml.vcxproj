@@ -171,11 +171,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="musiccom\command.h" />
+    <ClInclude Include="musiccom\fmsequencer.h" />
     <ClInclude Include="musiccom\fmwrap.h" />
     <ClInclude Include="musiccom\mmlparser.h" />
     <ClInclude Include="musiccom\musdata.h" />
     <ClInclude Include="musiccom\musiccom.h" />
+    <ClInclude Include="musiccom\partdata.h" />
+    <ClInclude Include="musiccom\partsequencerbase.h" />
+    <ClInclude Include="musiccom\psgsequencer.h" />
     <ClInclude Include="musiccom\sequencer.h" />
+    <ClInclude Include="musiccom\sounddata.h" />
+    <ClInclude Include="musiccom\soundparser.h" />
+    <ClInclude Include="musiccom\soundsequencer.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
@@ -240,11 +248,17 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_CRT_SECURE_NO_WARNINGS;_MBCS;NDEBUG</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="KbAsciiMml.cpp" />
+    <ClCompile Include="musiccom\fmsequencer.cpp" />
     <ClCompile Include="musiccom\fmwrap.cpp" />
     <ClCompile Include="musiccom\mmlparser.cpp" />
     <ClCompile Include="musiccom\musdata.cpp" />
     <ClCompile Include="musiccom\musiccom.cpp" />
+    <ClCompile Include="musiccom\partsequencerbase.cpp" />
+    <ClCompile Include="musiccom\psgsequencer.cpp" />
     <ClCompile Include="musiccom\sequencer.cpp" />
+    <ClCompile Include="musiccom\sounddata.cpp" />
+    <ClCompile Include="musiccom\soundparser.cpp" />
+    <ClCompile Include="musiccom\soundsequencer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="KbAsciiMml.rc" />

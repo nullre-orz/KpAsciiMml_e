@@ -16,7 +16,7 @@
 #endif
 
 #define VER_FILE_DESCRIPTION "ASCII music.com MML player [Extended Edition] (powered by cisc's fmgen library)"
-#define VER_FILE_VERSION "0.10.0.0"
+#define VER_FILE_VERSION "0.11.0.0"
 #define VER_INTERNAL_NAME "KbAsciiMml.dll"
 #define VER_LEGAL_COPYRIGHT                         \
     "KpAsciiMml_e: Copyright (C) 2024 nullre-orz\n" \
@@ -24,4 +24,4 @@
     "fmgen: Copyright (C) 1998-2003 cisc"
 #define VER_ORIGINAL_FILENAME "KbAsciiMml.dll"
 #define VER_PRODUCT_NAME "KpAsciiMml_e"
-#define VER_PRODUCT_VERSION "0.10.0.0"
+#define VER_PRODUCT_VERSION "0.11.0.0"
