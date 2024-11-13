@@ -14,7 +14,6 @@ namespace MusicCom
         : pseq(nullptr),
           pmusicdata(nullptr),
           psounddata(nullptr),
-          adjustment(false),
           soundTempo(SOUND_EFFECT_DEFAULT_TEMPO)
     {
     }
@@ -46,7 +45,6 @@ namespace MusicCom
         }
         opn.SetVolumeFM(fmVolume);
         opn.SetVolumePSG(psgVolume);
-        opn.SetNoiseAdjustment(adjustment);
 
         return true;
     }
@@ -64,11 +62,6 @@ namespace MusicCom
     void MusicCom::SetPSGVolume(int vol)
     {
         psgVolume = std::min(std::max(vol, -192), 20);
-    }
-
-    void MusicCom::SetNoiseAdjustment(bool on)
-    {
-        adjustment = on;
     }
 
     void MusicCom::SetSoundTempo(int tempo)
