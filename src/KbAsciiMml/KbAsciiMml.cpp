@@ -53,12 +53,10 @@ KbAsciiMml::KbAsciiMml()
 
     int fmvol = GetSetting(iniName, L"FMVolume", 0);
     int psgvol = GetSetting(iniName, L"PSGVolume", 0);
-    bool noiseAdjustment = GetSetting(iniName, L"NoiseAdjustment", true);
     int soundtempo = GetSetting(iniName, L"SoundTempo", MusicCom::MusicCom::SOUND_EFFECT_DEFAULT_TEMPO);
 
     musicCom.SetFMVolume(fmvol);
     musicCom.SetPSGVolume(psgvol);
-    musicCom.SetNoiseAdjustment(noiseAdjustment);
     musicCom.SetSoundTempo(soundtempo);
 }
 

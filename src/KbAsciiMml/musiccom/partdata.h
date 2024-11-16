@@ -18,6 +18,7 @@ namespace MusicCom
                      KeyOffFrame(0),
                      Octave(4),
                      LastOctave(4),
+                     ReservedOctave(4),
                      Volume(15),
                      Tone(0),
                      LastTone(0),
@@ -50,6 +51,7 @@ namespace MusicCom
 
         int Octave;
         int LastOctave;
+        int ReservedOctave;
         int Volume;
         int Tone;
         int LastTone;

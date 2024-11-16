@@ -19,7 +19,6 @@ namespace MusicCom
         void Mix(FM_SAMPLETYPE* dest, int nsamples);
         void SetFMVolume(int vol);
         void SetPSGVolume(int vol);
-        void SetNoiseAdjustment(bool on);
         void SetSoundTempo(int tempo);
 
         static const int SOUND_EFFECT_DEFAULT_TEMPO;
@@ -36,7 +35,6 @@ namespace MusicCom
         std::unique_ptr<SoundData> psounddata;
         int fmVolume;
         int psgVolume;
-        bool adjustment;
         int soundTempo;
     };
 

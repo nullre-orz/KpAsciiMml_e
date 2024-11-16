@@ -28,9 +28,8 @@ Dパートの再生に対応しました。MMLファイルと同じディレク�
 
 ビルドに使用した環境は次の通りです。
 
-- Visual Studio Community 2022 Version 17.10.4 (「C++ ネイティブ開発」ワークロードあり)
-- Boost 1.85.0 (ヘッダーファイルのみ)
-  - Visual Studio 2022 Version 17.10以降では b2 が動作しないため、旧バージョンでインストールしておく必要があります。
+- Visual Studio Community 2022 Version 17.12.0 (「C++ ネイティブ開発」ワークロードあり)
+- Boost 1.86.0 (ヘッダーファイルのみ)
 - KbMedia PlayerプラグインSDK 2024/07/12版
 
 なお、動作確認には KbMedia Player 3.15 を使用しています。
@@ -55,8 +54,9 @@ project M88 http://www.retropc.net/cisc/m88/
 
 なお、fmgenには下記の改変を行っています。
 
-- PSG音源のノイズ周波数の調整(周波数を2倍にする)設定を追加
+- ~~PSG音源のノイズ周波数の調整(周波数を2倍にする)設定を追加~~  
 - 警告・エラー除去
+  - 不足していたincludeを追加
   - Windows API呼び出しをUnicode版からマルチバイト文字版に変更 (※実際には使用されていない)
   - uint8に負数を設定していたのをuint8にキャストして設定するよう変更
   - intとunsigned intで比較していた箇所をunsigned int同士の比較に変更

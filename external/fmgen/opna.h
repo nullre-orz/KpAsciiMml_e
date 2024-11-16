@@ -91,7 +91,6 @@ namespace FM
 		
 		void	SetVolumeFM(int db);
 		void	SetVolumePSG(int db);
-		void	SetNoiseAdjustment(bool on);
 		void	SetLPFCutoff(uint freq) {}	// obsolete
 
 	protected:
@@ -415,12 +414,6 @@ inline void FM::OPNBase::RebuildTimeTable()
 inline void FM::OPNBase::SetVolumePSG(int db)
 {
 	psg.SetVolume(db);
-}
-
-
-inline void	FM::OPNBase::SetNoiseAdjustment(bool on)
-{
-	psg.SetNoiseAdjustment(on);
 }
 
 #endif // FM_OPNA_H
