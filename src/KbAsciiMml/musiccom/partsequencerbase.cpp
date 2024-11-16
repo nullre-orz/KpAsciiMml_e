@@ -357,6 +357,9 @@ namespace MusicCom
                 part_data.KeyOnFrame = current_frame;
             }
 
+            // オクターブの変更を反映
+            part_data.Octave = part_data.ReservedOctave;
+
             UpdateTone(command.GetArg(0), part_data);
             KeyOn();
 
@@ -381,7 +384,8 @@ namespace MusicCom
             {
                 // &R でなければキーオフ
                 KeyOff();
-                part_data.LastTone = TONE_KEY_OFF;
+
+                // 休符後のトーンエフェクトを無効にするためキーオフ状態を設定
                 part_data.Tone = TONE_KEY_OFF;
             }
             else
@@ -413,13 +417,13 @@ namespace MusicCom
             part_data.DefaultNoteLength = command.GetArg(0);
             break;
         case CommandType::TYPE_OCTAVE:
-            part_data.Octave = std::min(std::max(command.GetArg(0), 1), 8);
+            part_data.ReservedOctave = std::min(std::max(command.GetArg(0), 1), 8);
             break;
         case CommandType::TYPE_OCTAVE_DOWN:
-            part_data.Octave = std::max(part_data.Octave - 1, 0);
+            part_data.ReservedOctave = std::max(part_data.ReservedOctave - 1, 0);
             break;
         case CommandType::TYPE_OCTAVE_UP:
-            part_data.Octave = std::min(part_data.Octave + 1, 8);
+            part_data.ReservedOctave = std::min(part_data.ReservedOctave + 1, 8);
             break;
         case CommandType::TYPE_VOLUME:
             part_data.Volume = std::min(std::max(command.GetArg(0), 0), 15);
@@ -469,6 +473,15 @@ namespace MusicCom
         // エフェクト等の処理
         // ディレイはKeyOnFrameを基準とする
 
+        // ビブラート用サブ関数
+        static auto set_vibrato = [](PartSequencerBase& sequencer, int keyon_length, int base_tone)
+        {
+            auto part_data = sequencer.part_data_;
+            int depth = (((keyon_length - part_data.IDelay) / part_data.ILength) & 1) ? -part_data.IDepth : part_data.IDepth;
+            int tone = static_cast<int>(base_tone * pow(2.0, depth / (255.0 * 12.0)) + 0.5);
+            sequencer.SetTone(part_data.Octave, tone);
+        };
+
         // 一時停止中の場合は何もしない
         if (!part_data_.Playing)
         {
@@ -510,14 +523,15 @@ namespace MusicCom
         }
         else if (part_data_.ILength != 0 && keyon_length >= part_data_.IDelay)
         {
-            int depth;
-            if (((keyon_length - part_data_.IDelay) / part_data_.ILength) & 1)
-                depth = -part_data_.IDepth;
-            else
-                depth = part_data_.IDepth;
-
-            int tone = static_cast<int>(part_data_.Tone * pow(2.0, depth / (255.0 * 12.0)) + 0.5);
-            SetTone(part_data_.Octave, tone);
+            if (part_data_.Tone != TONE_KEY_OFF)
+            {
+                set_vibrato(*this, keyon_length, part_data_.Tone);
+            }
+            else if (part_data_.LastTone != TONE_KEY_OFF)
+            {
+                set_vibrato(*this, keyon_length, part_data_.LastTone);
+                part_data_.LastTone = TONE_KEY_OFF;
+            }
         }
     }
 
