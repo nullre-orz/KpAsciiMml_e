@@ -355,6 +355,7 @@ namespace MusicCom
                     switch (a[0][0])
                     {
                     case '+':
+                    case '#':
                         note++;
                         break;
                     case '-':
@@ -514,7 +515,7 @@ namespace MusicCom
                     mml_note[ProcessNote(s)] | mml_ctrl[ProcessCtrl(s)] | mml_call[ProcessCall(s)];
                 mml_note =
                     as_lower_d[range_p('a', 'g')][BeginCommand(s)]
-                    >> (ch_p('+') | ch_p('-') | eps_p)[PushArg(s)]
+                    >> (ch_p('+') | ch_p('#') | ch_p('-') | eps_p)[PushArg(s)]
                     >> *ch_p(',') // 引数の前にカンマを置くMML対策
                     >> (arg | eps_p[PushArg(s)])
                     >> *ch_p(','); // 引数の後にカンマを置くMML対策
