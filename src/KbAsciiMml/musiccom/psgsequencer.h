@@ -27,7 +27,7 @@ namespace MusicCom
         virtual void KeyOff();
         virtual void UpdateTone(int base_tone, PartData& part_data);
         virtual int AdjustVolume(int volume, int length, const PartData& part_data);
-        virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, double coefficient);
+        virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length);
         virtual void SetTone(int octave, int tone);
         virtual void SetVolume(int volume);
         virtual const CommandIterator GetHead() const;
@@ -38,6 +38,8 @@ namespace MusicCom
         int channel_;
         SSGWrap& ssgwrap_;
         bool ring_deterrence_;
+        int last_period_;
+        int current_period_;
 
         std::function<const SSGEnv&(int)> GetSSGEnv;
         std::function<CommandIterator()> GetHeadImpl;

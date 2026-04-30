@@ -1,5 +1,6 @@
 ﻿#include "psgsequencer.h"
 #include "fmwrap.h"
+#include <algorithm>
 
 namespace MusicCom
 {
@@ -25,6 +26,8 @@ namespace MusicCom
           channel_(channel - 3),
           ssgwrap_(ssgwrap),
           ring_deterrence_(false),
+          last_period_(SSG_TONE_NUM[1][0]),
+          current_period_(SSG_TONE_NUM[1][0]),
           GetSSGEnv([this](int no) -> const SSGEnv&
                     { return GetMusicData().GetSSGEnv(no); }),
           GetHeadImpl([this, channel]()
@@ -39,7 +42,10 @@ namespace MusicCom
     void PsgSequencer::InitializeImpl(PartData& part_data)
     {
         // 初手ポルタメント対応
-        part_data.Tone = CalculateTone(1, 1, 0);
+        part_data.LastOctave = 0;
+        part_data.LastTone = CalculateTone(0, 0, 0);
+        last_period_ = SSG_TONE_NUM[1][0];
+        current_period_ = SSG_TONE_NUM[1][0];
     }
 
     void PsgSequencer::UpdateDeterrence(SoundSequencer::PlayStatus status)
@@ -100,6 +106,8 @@ namespace MusicCom
 
     void PsgSequencer::UpdateTone(int base_tone, PartData& part_data)
     {
+        last_period_ = current_period_;
+        current_period_ = CalculateTone(1, base_tone, part_data.Detune);
         part_data.Tone = CalculateTone(part_data.Octave, base_tone, part_data.Detune);
         SetTone(part_data.Octave, part_data.Tone);
     }
@@ -120,11 +128,21 @@ namespace MusicCom
         return adjust_volume;
     }
 
-    void PsgSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, double coefficient)
+    void PsgSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length)
     {
         // octaveは使用しない(SetToneの第1引数はダミー)
-        double new_tone = last_tone + (tone - last_tone) * coefficient;
-        SetTone(octave, static_cast<int>(new_tone + 0.5));
+        if (tick == length + 1)
+        {
+            SetTone(octave, tone);
+            return;
+        }
+
+        int base_octave = std::min(octave, last_octave);
+        int initial_period = last_period_ >> (last_octave - base_octave);
+        int target_period = current_period_ >> (octave - base_octave);
+        int delta = (target_period - initial_period) / (length + 1);
+        int portamento_period = initial_period + delta * tick;
+        SetTone(base_octave, (portamento_period * 2) >> base_octave);
     }
 
     void PsgSequencer::SetTone(int octave, int tone)

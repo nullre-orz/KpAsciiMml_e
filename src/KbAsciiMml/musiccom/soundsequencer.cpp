@@ -222,7 +222,7 @@ namespace MusicCom
         // nothing todo.
     }
 
-    void SoundSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, double coefficient)
+    void SoundSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length)
     {
         // nothing todo.
     }

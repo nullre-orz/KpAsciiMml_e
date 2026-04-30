@@ -35,6 +35,7 @@ namespace MusicCom
                      UDepth(0),
                      UDelay(0),
                      LinkedItem(std::nullopt),
+                     HasPreviousNote(false),
                      Playing(false),
                      InfiniteLooping(false)
         {
@@ -74,6 +75,7 @@ namespace MusicCom
         int UDelay;
 
         std::optional<CommandType> LinkedItem;
+        bool HasPreviousNote;
         bool Playing;
         // 無限ループ検出
         bool InfiniteLooping;

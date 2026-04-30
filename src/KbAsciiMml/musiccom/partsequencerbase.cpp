@@ -28,6 +28,7 @@ namespace MusicCom
     void PartSequencerBase::Initialize()
     {
         part_data_.Playing = true;
+        part_data_.HasPreviousNote = false;
         ReturnToHead();
 
         // フレーム初期化
@@ -120,7 +121,7 @@ namespace MusicCom
 
     void PartSequencerBase::PreProcess(int current_frame)
     {
-        if (part_data_.NoteEndFrame <= current_frame)
+        if (part_data_.HasPreviousNote && part_data_.NoteEndFrame <= current_frame)
         {
             part_data_.LastOctave = part_data_.Octave;
             part_data_.LastTone = part_data_.Tone;
@@ -362,6 +363,7 @@ namespace MusicCom
 
             UpdateTone(command.GetArg(0), part_data);
             KeyOn();
+            part_data.HasPreviousNote = true;
 
             if (part_data.LastTone == TONE_KEY_OFF)
             {
@@ -377,6 +379,7 @@ namespace MusicCom
         }
         case CommandType::TYPE_REST:
         {
+            part_data.HasPreviousNote = true;
             int length = get_length(part_data, command.GetArg(0));
             update_note_frames(part_data, current_frame, length);
 
@@ -438,25 +441,20 @@ namespace MusicCom
             break;
         case CommandType::TYPE_PORTAMENTO:
             part_data.PLength = std::max(command.GetArg(0), 0);
-            // 排他
-            part_data.ILength = 0;
-            part_data.ULength = 0;
+            // Iのみ排他
+            part_data.IDepth = 0;
             break;
         case CommandType::TYPE_TREMOLO:
             part_data.UDepth = command.GetArg(0);
-            part_data.ULength = std::max(command.GetArg(1), 0);
+            part_data.ULength = std::max(command.GetArg(1), 1);
             part_data.UDelay = std::max(command.GetArg(2), 0);
-            // 排他
-            part_data.ILength = 0;
-            part_data.PLength = 0;
             break;
         case CommandType::TYPE_VIBRATO:
             part_data.IDepth = command.GetArg(0);
-            part_data.ILength = std::max(command.GetArg(1), 0);
+            part_data.ILength = std::max(command.GetArg(1), 1);
             part_data.IDelay = std::max(command.GetArg(2), 0);
-            // 排他
+            // Pのみ排他
             part_data.PLength = 0;
-            part_data.ULength = 0;
             break;
         //case CommandType::TYPE_ENV_FORM:
         //case CommandType::TYPE_ENV_PERIOD:
@@ -512,16 +510,15 @@ namespace MusicCom
         // Tone
         if (part_data_.PLength != 0 && part_data_.Tone != TONE_KEY_OFF)
         {
-            // ポルタメントは音程が変わった時点で適用する
-            // KeyOnFrameではなくNoteBeginFrameを基準とする
-            int diff = current_frame - part_data_.NoteBeginFrame;
-            if (diff <= part_data_.PLength)
+            // ポルタメントは音程が変わった時点で適用する。
+            // P+1を分母として整数差分を求め、P+1 tick目に目標音程へ切り替える。
+            int tick = current_frame - part_data_.NoteBeginFrame;
+            if (tick <= part_data_.PLength + 1)
             {
-                double coefficient = diff / static_cast<double>(part_data_.PLength);
-                ApplyPortamentoEffect(part_data_.Octave, part_data_.Tone, part_data_.LastOctave, part_data_.LastTone, coefficient);
+                ApplyPortamentoEffect(part_data_.Octave, part_data_.Tone, part_data_.LastOctave, part_data_.LastTone, tick, part_data_.PLength);
             }
         }
-        else if (part_data_.ILength != 0 && keyon_length >= part_data_.IDelay)
+        else if (part_data_.IDepth != 0 && keyon_length >= part_data_.IDelay)
         {
             if (part_data_.Tone != TONE_KEY_OFF)
             {

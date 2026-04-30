@@ -1,5 +1,6 @@
 ﻿#include "fmsequencer.h"
 #include "fmwrap.h"
+#include <algorithm>
 #include <cmath>
 
 namespace MusicCom
@@ -30,7 +31,8 @@ namespace MusicCom
     void FmSequencer::InitializeImpl(PartData& part_data)
     {
         // 初手ポルタメント対応
-        part_data.Tone = CalculateTone(1, 0);
+        part_data.LastOctave = 0;
+        part_data.LastTone = CalculateTone(0, 0);
     }
 
     CommandIterator FmSequencer::ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data)
@@ -66,18 +68,19 @@ namespace MusicCom
         SetTone(part_data.Octave, part_data.Tone);
     }
 
-    void FmSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, double coefficient)
+    void FmSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length)
     {
-        int base = last_tone * (1 << last_octave);
-        double new_tone = base + (tone * (1 << octave) - base) * coefficient;
-        int new_octave = 0;
-        while (new_tone >= 2048.0)
+        if (tick == length + 1)
         {
-            new_octave++;
-            new_tone /= 2;
+            SetTone(octave, tone);
+            return;
         }
 
-        SetTone(new_octave, static_cast<int>(new_tone + 0.5));
+        int block = std::max(octave, last_octave);
+        int initial_tone = last_tone >> (block - last_octave);
+        int target_tone = tone >> (block - octave);
+        int delta = (target_tone - initial_tone) / (length + 1);
+        SetTone(block, initial_tone + delta * tick);
     }
 
     void FmSequencer::SetTone(int octave, int tone)
