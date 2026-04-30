@@ -61,7 +61,7 @@ namespace MusicCom
         {
         case CommandType::TYPE_TONE:
             part_data.SoundNo = command.GetArg(0);
-            part_data.SSGEnvOn = true;
+            part_data.SSGEnvOn = part_data.SoundNo != 0;
             break;
         case CommandType::TYPE_ENV_FORM:
             part_data.SSGEnvOn = false;
