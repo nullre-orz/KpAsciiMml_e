@@ -363,6 +363,7 @@ namespace MusicCom
                         break;
                     }
                 }
+                note = std::clamp(note, 0, 11);
                 int len = ParseLength(state.args[1]);
 
                 AddCommand(state, Command(CommandType::TYPE_NOTE, note, len));
