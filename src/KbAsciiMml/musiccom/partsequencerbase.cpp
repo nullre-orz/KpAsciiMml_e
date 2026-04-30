@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fmgen/opna.h>
+#include <limits>
 
 namespace MusicCom
 {
@@ -338,13 +339,23 @@ namespace MusicCom
 
         static auto update_keyoff_frames = [](const PartSequencerBase& sequencer, PartData& part_data, CommandIterator ptr, int current_frame, int length)
         {
-            if ((part_data.LinkedItem = sequencer.FindLinkedItem(CommandIterator(ptr))) == CommandType::TYPE_TIE)
+            part_data.LinkedItem = sequencer.FindLinkedItem(CommandIterator(ptr));
+            if (ptr->GetType() == CommandType::TYPE_TIE)
             {
                 part_data.KeyOffFrame = part_data.NoteEndFrame;
             }
             else
             {
-                part_data.KeyOffFrame = current_frame + std::max(length * part_data.GateTime / 8, 1);
+                if (part_data.GateTime >= 8)
+                {
+                    // Q8以上では途中キーオフを無効化する
+                    part_data.KeyOffFrame = std::numeric_limits<int>::max();
+                }
+                else
+                {
+                    // 64分音符単位でゲート時間を計算する
+                    part_data.KeyOffFrame = current_frame + (length - 1) * part_data.GateTime / 8 + 1;
+                }
             }
         };
 
@@ -400,18 +411,15 @@ namespace MusicCom
         }
         case CommandType::TYPE_WAIT:
         {
+            auto linked_item = part_data.LinkedItem;
             int length = get_length(part_data, command.GetArg(0));
             update_note_frames(part_data, current_frame, length);
+            update_keyoff_frames(*this, part_data, ptr, current_frame, length);
 
-            if (part_data.LinkedItem == CommandType::TYPE_TIE)
+            // W開始前のタイはWを越えて維持する
+            if (linked_item == CommandType::TYPE_TIE)
             {
-                // &W は後方にも & があるとみなす (music.comのバグ?)
-                // LinkedItemは更新不要
-                part_data.KeyOffFrame = part_data.NoteEndFrame;
-            }
-            else
-            {
-                update_keyoff_frames(*this, part_data, ptr, current_frame, length);
+                part_data.LinkedItem = linked_item;
             }
 
             break;
