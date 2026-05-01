@@ -2,11 +2,13 @@
 #include "musdata.h"
 
 #include <algorithm>
+#include <array>
 #include <boost/lexical_cast.hpp>
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_file_iterator.hpp>
 #include <boost/spirit/include/classic_utility.hpp>
 #include <format>
+#include <map>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -101,6 +103,9 @@ namespace MusicCom
                   ChNumber(),
                   CommandType(),
                   SoundNumber(),
+                  ChannelLoopDepth(),
+                  RhythmLoopDepth(0),
+                  MacroLoopDepth(),
                   Finished(false)
             {
             }
@@ -118,9 +123,29 @@ namespace MusicCom
             CommandType CommandType;
             string MacroName;
 
+            int& GetLoopDepthRef()
+            {
+                switch (LineType)
+                {
+                case CH:
+                    return ChannelLoopDepth[ChNumber];
+                case RHYTHM:
+                    return RhythmLoopDepth;
+                case STR:
+                    return MacroLoopDepth[MacroName];
+                default:
+                    assert(0);
+                    return RhythmLoopDepth;
+                }
+            }
+
             // Sound
             FMSound Sound;
             int SoundNumber;
+
+            array<int, 6> ChannelLoopDepth;
+            int RhythmLoopDepth;
+            map<string, int> MacroLoopDepth;
 
             bool Finished;
         };
@@ -453,6 +478,24 @@ namespace MusicCom
                 if (pctrldef->IsNoteLength && state.args.size() > 0)
                 {
                     a[0] = ParseLength(state.args[0]);
+                }
+
+                if (state.CommandType == CommandType::TYPE_LOOP)
+                {
+                    int& loop_depth = state.GetLoopDepthRef();
+                    if (loop_depth >= 15)
+                    {
+                        throw runtime_error("loop nesting too deep");
+                    }
+                    loop_depth++;
+                }
+                else if (state.CommandType == CommandType::TYPE_EXIT)
+                {
+                    int& loop_depth = state.GetLoopDepthRef();
+                    if (loop_depth > 0)
+                    {
+                        loop_depth--;
+                    }
                 }
 
                 // Tのみ特別処理
