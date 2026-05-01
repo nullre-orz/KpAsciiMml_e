@@ -126,11 +126,6 @@ namespace MusicCom
         {
             part_data_.LastOctave = part_data_.Octave;
             part_data_.LastTone = part_data_.Tone;
-            // 前回のコマンド先読みで & や W が検出された場合はキーオフせず継続
-            if (!part_data_.LinkedItem)
-            {
-                KeyOff();
-            }
         }
     }
 
@@ -314,6 +309,10 @@ namespace MusicCom
                 auto result = ProcessLoop(ptr);
                 if (!result)
                 {
+                    if (part_data_.HasPreviousNote && !part_data_.LinkedItem)
+                    {
+                        KeyOff();
+                    }
                     return;
                 }
                 ptr = *result;
@@ -366,6 +365,10 @@ namespace MusicCom
         {
             if (!part_data.LinkedItem)
             {
+                if (part_data.HasPreviousNote)
+                {
+                    KeyOff();
+                }
                 part_data.KeyOnFrame = current_frame;
             }
 
@@ -373,7 +376,10 @@ namespace MusicCom
             part_data.Octave = part_data.ReservedOctave;
 
             UpdateTone(command.GetArg(0), part_data);
-            KeyOn();
+            if (part_data.LinkedItem != CommandType::TYPE_TIE)
+            {
+                KeyOn();
+            }
             part_data.HasPreviousNote = true;
 
             if (part_data.LastTone == TONE_KEY_OFF)
