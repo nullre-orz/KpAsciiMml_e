@@ -67,7 +67,31 @@ namespace MusicCom
         cl.insert(cl.end(), command);
     }
 
-    void MusicData::AddCommandToMacro(std::string name, const Command& command)
+    optional<string> MusicData::GetUndefinedMacroReference() const
+    {
+        auto find_undefined = [this](const CommandList& commands) -> optional<string>
+        {
+            for (const Command& command : commands)
+            {
+                if (command.GetType() == CommandType::TYPE_MACRO && !IsMacroPresent(command.GetStrArg()))
+                {
+                    return command.GetStrArg();
+                }
+            }
+            return nullopt;
+        };
+
+        for (const CommandList& commands : channels)
+        {
+            if (const auto name = find_undefined(commands))
+            {
+                return name;
+            }
+        }
+        return find_undefined(rhythm_part);
+    }
+
+    void MusicData::DefineMacro(const string& name)
     {
         if (!IsMacroPresent(name))
         {
@@ -75,6 +99,11 @@ namespace MusicCom
             // マクロからのreturnを追加
             cl.push_back(Command(CommandType::TYPE_RETURN));
         }
+    }
+
+    void MusicData::AddCommandToMacro(std::string name, const Command& command)
+    {
+        DefineMacro(name);
 
         CommandList& cl = macros[name];
         cl.insert(--cl.end(), command);

@@ -8,7 +8,7 @@
 namespace MusicCom
 {
     const int TONE_KEY_OFF = -1;
-    const int MAX_MACRO_COUNT = 100;
+    const int MAX_MACRO_COUNT = 24;
 
     PartSequencerBase::PartSequencerBase(FM::OPN& opn, const MusicData& music, CommandIterator command_tail, int rate)
         : opn_(opn),

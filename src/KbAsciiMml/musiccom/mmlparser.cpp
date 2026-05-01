@@ -224,6 +224,10 @@ namespace MusicCom
             void operator()(IteratorT first, IteratorT last) const
             {
                 state.MacroName.assign(first, last);
+                if (state.LineType == STR)
+                {
+                    state.pMusicData->DefineMacro(state.MacroName);
+                }
             }
 
             MMLParserState& state;
@@ -475,6 +479,10 @@ namespace MusicCom
             template<typename IteratorT>
             void operator()(IteratorT first, IteratorT last) const
             {
+                if (state.LineType == STR && !state.pMusicData->IsMacroPresent(state.args[0]))
+                {
+                    throw runtime_error(format("undefined STR: ${}$", state.args[0]));
+                }
                 AddCommand(state, Command(CommandType::TYPE_MACRO, state.args[0]));
             }
 
@@ -635,6 +643,14 @@ namespace MusicCom
             {
                 error_list.push_back(format("({:d}): {}", state.LineNumber, e.what()));
                 break;
+            }
+        }
+
+        if (error_list.empty())
+        {
+            if (const auto name = pMusicData->GetUndefinedMacroReference())
+            {
+                error_list.push_back(format("undefined STR: ${}$", *name));
             }
         }
 
