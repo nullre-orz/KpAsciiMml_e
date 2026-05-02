@@ -574,7 +574,7 @@ namespace MusicCom
                 // '&' はコマンドとして扱う
                 //				>> (ch_p('&') | eps_p)[PushArg(s)];
                 mml_ctrl =
-                    as_lower_d[chset<>("h-z@{}<>&")][BeginCommand(s)]
+                    as_lower_d[chset<>("rlovtqsmywnpui@{}<>&")][BeginCommand(s)]
                     >> *ch_p(',') // 第1引数の前にカンマを置くMML対策
                     >> !args;
                 //				>> !ch_p('&');	// 変なところに&を置くMML対策
