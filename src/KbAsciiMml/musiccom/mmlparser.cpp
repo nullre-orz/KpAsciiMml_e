@@ -551,6 +551,15 @@ namespace MusicCom
                     >> *ch_p(',');
                 arg =
                     (int_p || ch_p('.'))[PushArg(s)];
+                commas =
+                    *ch_p(',');
+                note_length =
+                    lexeme_d[((str_p("32") | str_p("16") | str_p("8") | str_p("4") | str_p("2")) >> !ch_p('.')) // 付点は2～32分音符だけ指定可
+                             | str_p("64") | str_p("1")];
+                optional_note_length =
+                    commas >> (note_length[PushArg(s)] | eps_p[PushArg(s)]) >> commas; // 引数の前後にカンマを許可
+                required_note_length =
+                    commas >> note_length[PushArg(s)] >> commas; // 引数の前後にカンマを許可
                 // LFO/OP用
                 sound_args =
                     sound_arg % *ch_p(',') // !: スペースで区切るMML対策
@@ -564,18 +573,19 @@ namespace MusicCom
                 macro_name =
                     lexeme_d[+(~chset<>("$,=") - blank_p - cntrl_p)];
                 mml_Command =
-                    mml_note[ProcessNote(s)] | mml_ctrl[ProcessCtrl(s)] | mml_call[ProcessCall(s)];
+                    mml_note[ProcessNote(s)] | mml_length_ctrl[ProcessCtrl(s)] | mml_ctrl[ProcessCtrl(s)] | mml_call[ProcessCall(s)];
                 mml_note =
                     as_lower_d[range_p('a', 'g')][BeginCommand(s)]
                     >> (ch_p('+') | ch_p('#') | ch_p('-') | eps_p)[PushArg(s)]
-                    >> *ch_p(',') // 引数の前にカンマを置くMML対策
-                    >> (arg | eps_p[PushArg(s)])
-                    >> *ch_p(','); // 引数の後にカンマを置くMML対策
+                    >> optional_note_length;
+                mml_length_ctrl =
+                    (as_lower_d[chset<>("rw")][BeginCommand(s)] >> optional_note_length)
+                    | (as_lower_d[ch_p('l')][BeginCommand(s)] >> required_note_length);
                 // '&' はコマンドとして扱う
                 //				>> (ch_p('&') | eps_p)[PushArg(s)];
                 mml_ctrl =
-                    as_lower_d[chset<>("rlovtqsmywnpui@{}<>&")][BeginCommand(s)]
-                    >> *ch_p(',') // 第1引数の前にカンマを置くMML対策
+                    as_lower_d[chset<>("ovtqsmywnpui@{}<>&")][BeginCommand(s)]
+                    >> commas // 第1引数の前にカンマを許可
                     >> !args;
                 //				>> !ch_p('&');	// 変なところに&を置くMML対策
                 mml_call =
@@ -630,8 +640,9 @@ namespace MusicCom
 
             rule<ScannerT> line;
             rule<ScannerT> blank_line, ch_line, drum_line, sound_line, lfo_line, op_line, ssgenv_line, str_line, arrow_line;
-            rule<ScannerT> mml_Command, mml_note, mml_ctrl, mml_call;
-            rule<ScannerT> args, arg, sound_args, sound_arg, sound_invalid_arg, macro_name, comment;
+            rule<ScannerT> mml_Command, mml_note, mml_length_ctrl, mml_ctrl, mml_call;
+            rule<ScannerT> args, arg, commas, note_length, optional_note_length, required_note_length;
+            rule<ScannerT> sound_args, sound_arg, sound_invalid_arg, macro_name, comment;
 
             rule<ScannerT> const&
             start() const { return line; }
