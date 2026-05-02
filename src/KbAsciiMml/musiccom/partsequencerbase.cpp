@@ -508,18 +508,21 @@ namespace MusicCom
 
         // Volume
         int keyon_length = current_frame - part_data_.KeyOnFrame;
-        int final_volume = part_data_.Volume;
-
-        if (part_data_.UDepth != 0 && keyon_length >= part_data_.UDelay)
+        if (part_data_.UDepth != 0 || part_data_.SSGEnvOn)
         {
-            if (((keyon_length - part_data_.UDelay) / part_data_.ULength) & 1)
-                final_volume -= part_data_.UDepth;
+            int final_volume = part_data_.Volume;
+
+            if (part_data_.UDepth != 0 && keyon_length >= part_data_.UDelay)
+            {
+                if (((keyon_length - part_data_.UDelay) / part_data_.ULength) & 1)
+                    final_volume -= part_data_.UDepth;
+            }
+
+            final_volume = AdjustVolume(final_volume, keyon_length, part_data_);
+
+            final_volume = std::min(std::max(final_volume, 0), 15);
+            SetVolume(final_volume);
         }
-
-        final_volume = AdjustVolume(final_volume, keyon_length, part_data_);
-
-        final_volume = std::min(std::max(final_volume, 0), 15);
-        SetVolume(final_volume);
 
         // Tone
         if (part_data_.PLength != 0 && part_data_.Tone != TONE_KEY_OFF)
