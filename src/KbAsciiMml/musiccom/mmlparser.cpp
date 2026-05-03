@@ -408,74 +408,17 @@ namespace MusicCom
             template<typename IteratorT>
             void operator()(IteratorT first, IteratorT last) const
             {
-                const static struct CtrlDef
-                {
-                    CommandType Type;
-                    bool IsNoteLength;
-                    int MinArgs;
-                    int MaxArgs;
-                    int Defaults[3];
-                } ctrl_defs[] = {
-                    {CommandType::TYPE_TIE, false, 0, 0, {}},
-                    {CommandType::TYPE_TEMPO, false, 1, 1, {}},
-                    {CommandType::TYPE_REST, true, 0, 1, {0}},
-                    {CommandType::TYPE_WAIT, true, 0, 1, {0}},
-                    {CommandType::TYPE_LENGTH, true, 1, 1, {}},
-                    {CommandType::TYPE_OCTAVE, false, 1, 1, {}},
-                    {CommandType::TYPE_OCTAVE_DOWN, false, 0, 0, {}},
-                    {CommandType::TYPE_OCTAVE_UP, false, 0, 0, {}},
-                    {CommandType::TYPE_VOLUME, false, 1, 1, {}},
-                    {CommandType::TYPE_TONE, false, 1, 1, {}},
-                    {CommandType::TYPE_GATE_TIME, false, 1, 1, {}},
-                    {CommandType::TYPE_DETUNE, false, 1, 1, {}},
-                    {CommandType::TYPE_PORTAMENTO, false, 1, 1, {}},
-                    {CommandType::TYPE_TREMOLO, false, 1, 3, {0, 0, 0}},
-                    {CommandType::TYPE_VIBRATO, false, 1, 3, {0, 0, 0}},
-                    {CommandType::TYPE_ENV_FORM, false, 1, 1, {}},
-                    {CommandType::TYPE_ENV_PERIOD, false, 1, 1, {}},
-                    {CommandType::TYPE_DIRECT, false, 2, 2, {}},
-                    {CommandType::TYPE_LOOP, false, 0, 1, {0}},
-                    {CommandType::TYPE_EXIT, false, 0, 0, {}},
-                };
-
-                const CtrlDef* pctrldef = NULL;
-                for (int i = 0; i < sizeof(ctrl_defs) / sizeof(ctrl_defs[0]); i++)
-                {
-                    if (ctrl_defs[i].Type == state.CommandType)
-                    {
-                        pctrldef = &ctrl_defs[i];
-                        break;
-                    }
-                }
-
-                if (pctrldef == NULL)
-                {
-                    //ostringstream ss;
-                    //ss << "unknown command '" << state.CommandType << "'";
-                    //throw runtime_error(ss.str());
-                    return;
-                }
-
-                int args_supplied = (int)state.args.size();
-                if (args_supplied < pctrldef->MinArgs || pctrldef->MaxArgs < args_supplied)
-                {
-                    //ostringstream ss;
-                    //ss << "illegal number of argument (" << args_supplied << ") for command '" << state.CommandType << "'";
-                    //throw runtime_error(ss.str());
-                    return;
-                }
-
                 // 引数を取得
                 vector<int> a;
                 // とりあえずintに変換
                 transform(state.args.begin(), state.args.end(), back_inserter(a), StringToInt);
-                // 引数が足りなければデフォルト引数を補充
-                for (int i = args_supplied; i < pctrldef->MaxArgs; i++)
-                {
-                    a.push_back(pctrldef->Defaults[i]);
-                }
+                // 引数が足りなければ0を補充
+                a.resize(3, 0);
                 // 音長指定なら音長で変換し直す
-                if (pctrldef->IsNoteLength && state.args.size() > 0)
+                if ((state.CommandType == CommandType::TYPE_REST
+                     || state.CommandType == CommandType::TYPE_WAIT
+                     || state.CommandType == CommandType::TYPE_LENGTH)
+                    && !state.args.empty())
                 {
                     a[0] = ParseLength(state.args[0]);
                 }
@@ -546,13 +489,12 @@ namespace MusicCom
                     >> !comment
                     >> (eol_p[ChangeLine(s)] | end_p[Finish(s)] | ch_p(0x1a));
 
-                args =
-                    arg % *ch_p(',') // !: スペースで区切るMML対策
-                    >> *ch_p(',');
                 arg =
                     (int_p || ch_p('.'))[PushArg(s)];
                 commas =
                     *ch_p(',');
+                ctrl_arg =
+                    arg >> commas;
                 note_length =
                     lexeme_d[((str_p("32") | str_p("16") | str_p("8") | str_p("4") | str_p("2")) >> !ch_p('.')) // 付点は2～32分音符だけ指定可
                              | str_p("64") | str_p("1")];
@@ -582,12 +524,12 @@ namespace MusicCom
                     (as_lower_d[chset<>("rw")][BeginCommand(s)] >> optional_note_length)
                     | (as_lower_d[ch_p('l')][BeginCommand(s)] >> required_note_length);
                 // '&' はコマンドとして扱う
-                //				>> (ch_p('&') | eps_p)[PushArg(s)];
+                // 各コマンドの第1引数の前にカンマを許可
                 mml_ctrl =
-                    as_lower_d[chset<>("ovtqsmywnpui@{}<>&")][BeginCommand(s)]
-                    >> commas // 第1引数の前にカンマを許可
-                    >> !args;
-                //				>> !ch_p('&');	// 変なところに&を置くMML対策
+                    (as_lower_d[chset<>("}<>&")][BeginCommand(s)] >> commas)
+                    | (as_lower_d[chset<>("ovtqsmnp@{")][BeginCommand(s)] >> commas >> repeat_p(0, 1)[ctrl_arg])
+                    | (as_lower_d[ch_p('y')][BeginCommand(s)] >> commas >> repeat_p(0, 2)[ctrl_arg])
+                    | (as_lower_d[chset<>("ui")][BeginCommand(s)] >> commas >> repeat_p(0, 3)[ctrl_arg]);
                 mml_call =
                     ch_p('$')[BeginCommand(s)]
                     >> macro_name[PushArg(s)]
@@ -641,7 +583,7 @@ namespace MusicCom
             rule<ScannerT> line;
             rule<ScannerT> blank_line, ch_line, drum_line, sound_line, lfo_line, op_line, ssgenv_line, str_line, arrow_line;
             rule<ScannerT> mml_Command, mml_note, mml_length_ctrl, mml_ctrl, mml_call;
-            rule<ScannerT> args, arg, commas, note_length, optional_note_length, required_note_length;
+            rule<ScannerT> arg, commas, ctrl_arg, note_length, optional_note_length, required_note_length;
             rule<ScannerT> sound_args, sound_arg, sound_invalid_arg, macro_name, comment;
 
             rule<ScannerT> const&
