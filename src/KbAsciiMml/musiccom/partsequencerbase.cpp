@@ -434,7 +434,7 @@ namespace MusicCom
             part_data.DefaultNoteLength = command.GetArg(0);
             break;
         case CommandType::TYPE_OCTAVE:
-            part_data.ReservedOctave = std::min(std::max(command.GetArg(0), 1), 8);
+            part_data.ReservedOctave = std::clamp(command.GetArg(0), 0, 8);
             break;
         case CommandType::TYPE_OCTAVE_DOWN:
             part_data.ReservedOctave = std::max(part_data.ReservedOctave - 1, 0);

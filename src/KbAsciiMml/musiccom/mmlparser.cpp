@@ -269,6 +269,11 @@ namespace MusicCom
                 state.args.push_back(s);
             }
 
+            void operator()(int value) const
+            {
+                state.args.push_back(to_string(value));
+            }
+
             MMLParserState& state;
         };
 
@@ -495,6 +500,10 @@ namespace MusicCom
                     *ch_p(',');
                 ctrl_arg =
                     arg >> commas;
+                octave_arg =
+                    limit_d(0, 8)[int_p][PushArg(s)] >> commas;
+                tone_arg =
+                    limit_d(0, 20)[int_p][PushArg(s)] >> commas;
                 note_length =
                     lexeme_d[((str_p("32") | str_p("16") | str_p("8") | str_p("4") | str_p("2")) >> !ch_p('.')) // 付点は2～32分音符だけ指定可
                              | str_p("64") | str_p("1")];
@@ -512,6 +521,15 @@ namespace MusicCom
                 sound_invalid_arg =
                     lexeme_d[+(~digit_p - sign_p - blank_p - cntrl_p - ch_p(','))];
 
+                ssgenv_number =
+                    limit_d(1, 20)[int_p][PushArg(s)];
+                ssgenv_arg =
+                    (int_p | eps_p)[PushArg(s)];
+                ssgenv_separator =
+                    ((eol_p[ChangeLine(s)] % !(comment | blank_line)) >> str_p("->")) | ch_p(',');
+                ssgenv_args =
+                    ssgenv_number >> *(ssgenv_separator >> ssgenv_arg);
+
                 macro_name =
                     lexeme_d[+(~chset<>("$,=") - blank_p - cntrl_p)];
                 mml_Command =
@@ -527,7 +545,9 @@ namespace MusicCom
                 // 各コマンドの第1引数の前にカンマを許可
                 mml_ctrl =
                     (as_lower_d[chset<>("}<>&")][BeginCommand(s)] >> commas)
-                    | (as_lower_d[chset<>("ovtqsmnp@{")][BeginCommand(s)] >> commas >> repeat_p(0, 1)[ctrl_arg])
+                    | (as_lower_d[chset<>("vtqsmnp{")][BeginCommand(s)] >> commas >> repeat_p(0, 1)[ctrl_arg])
+                    | (as_lower_d[ch_p('o')][BeginCommand(s)] >> commas >> repeat_p(0, 1)[octave_arg])
+                    | (ch_p('@')[BeginCommand(s)] >> commas >> repeat_p(0, 1)[tone_arg])
                     | (as_lower_d[ch_p('y')][BeginCommand(s)] >> commas >> repeat_p(0, 2)[ctrl_arg])
                     | (as_lower_d[chset<>("ui")][BeginCommand(s)] >> commas >> repeat_p(0, 3)[ctrl_arg]);
                 mml_call =
@@ -557,7 +577,7 @@ namespace MusicCom
                 sound_line =
                     (as_lower_d[str_p("sound")] >> ch_p(':'))[BeginLine<SOUND>(s)]
                     >> !ch_p('@')
-                    >> int_p[assign(s.SoundNumber)];
+                    >> limit_d(0, 20)[int_p][assign(s.SoundNumber)];
                 lfo_line =
                     (as_lower_d[str_p("lfo")] >> ch_p(':'))[BeginLine<LFO>(s)]
                     >> sound_args[ProcessLFO(s)];
@@ -568,7 +588,7 @@ namespace MusicCom
                 ssgenv_line =
                     (as_lower_d[str_p("ssgenv")] >> ch_p(':'))[BeginLine<SSGENV>(s)]
                     >> !ch_p('@')
-                    >> ((int_p | eps_p)[PushArg(s)] % (((eol_p[ChangeLine(s)] % !(comment | blank_line)) >> str_p("->") | ch_p(','))))[ProcessSSGEnv(s)];
+                    >> ssgenv_args[ProcessSSGEnv(s)];
                 str_line =
                     (as_lower_d[str_p("str")] >> ch_p(':'))[BeginLine<STR>(s)]
                     >> macro_name[SetMacroName(s)]
@@ -583,8 +603,8 @@ namespace MusicCom
             rule<ScannerT> line;
             rule<ScannerT> blank_line, ch_line, drum_line, sound_line, lfo_line, op_line, ssgenv_line, str_line, arrow_line;
             rule<ScannerT> mml_Command, mml_note, mml_length_ctrl, mml_ctrl, mml_call;
-            rule<ScannerT> arg, commas, ctrl_arg, note_length, optional_note_length, required_note_length;
-            rule<ScannerT> sound_args, sound_arg, sound_invalid_arg, macro_name, comment;
+            rule<ScannerT> arg, commas, ctrl_arg, octave_arg, tone_arg, note_length, optional_note_length, required_note_length;
+            rule<ScannerT> sound_args, sound_arg, sound_invalid_arg, ssgenv_number, ssgenv_arg, ssgenv_separator, ssgenv_args, macro_name, comment;
 
             rule<ScannerT> const&
             start() const { return line; }
