@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "command.h"
+#include <algorithm>
 #include <cassert>
 #include <list>
 #include <map>
@@ -79,7 +80,7 @@ namespace MusicCom
         void SetDt2(int op, int dt2)
         {
             assert(0 <= op && op < 4);
-            Op[op].Dt2 = dt2 & 0x3;
+            Op[op].Dt2 = std::clamp(dt2 & 0xff, 0, 3);
         }
 
         int GetAlg() const

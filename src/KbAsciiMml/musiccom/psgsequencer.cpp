@@ -118,12 +118,16 @@ namespace MusicCom
         if (part_data.SSGEnvOn)
         {
             auto env = GetSSGEnv(part_data.SoundNo);
+            if (env.Env.empty())
+            {
+                return adjust_volume;
+            }
             size_t pos = length / env.Unit;
             if (pos >= env.Env.size())
             {
                 pos = env.Env.size() - 1;
             }
-            adjust_volume = volume + (env.Env[pos] - 15);
+            adjust_volume = std::max(((volume + env.Env[pos]) & 0xff) - 15, 0);
         }
         return adjust_volume;
     }

@@ -16,7 +16,6 @@
 
 using namespace std;
 using namespace boost::spirit::classic;
-using boost::bad_lexical_cast;
 using boost::lexical_cast;
 
 namespace MusicCom
@@ -49,33 +48,35 @@ namespace MusicCom
         return len;
     }
 
-    int StringToInt(string s)
+    // 10進数を16bitで循環させ、負数は16bitの補数として扱う
+    int StringToWord(const string& s)
     {
-        try
+        bool negative = !s.empty() && s.front() == '-';
+        unsigned int value = 0;
+        for (char c : s)
         {
-            return lexical_cast<int>(s);
+            if ('0' <= c && c <= '9')
+            {
+                value = (value * 10 + c - '0') & 0xffff;
+            }
         }
-        catch (bad_lexical_cast)
-        {
-            return 0;
-        }
+        return negative ? ((0u - value) & 0xffff) : value;
     }
 
     // LFO/OP用
-    vector<int> ParseSoundArgs(vector<string>& args, int num)
+    vector<int> ParseSoundArgs(const vector<string>& args, int num)
     {
-        vector<int> container(args.size());
-        try
-        {
-            transform(args.begin(), args.end(), container.begin(), [](std::string& s)
-                      { return lexical_cast<int>(s); });
-        }
-        catch (bad_lexical_cast)
-        {
-            // 数値以外が含まれていた場合は処理を中断
-            // 以降の値はすべて 0 として扱う
-        }
-        container.resize(num, 0);
+        vector<int> container(num, 0);
+        // 最初の非数値引数の位置を求める
+        auto invalid = find_if(args.begin(), args.begin() + min(args.size(), container.size()), [](const string& arg) {
+            size_t digit_pos = !arg.empty() && arg.front() == '-' ? 1 : 0;
+            return digit_pos == arg.size()
+                || !all_of(arg.begin() + digit_pos, arg.end(), [](char c) { return '0' <= c && c <= '9'; });
+        });
+
+        // 引数を16bit化して保持する
+        // 数値以外が含まれていた場合は処理を中断し、以降を0として扱う
+        transform(args.begin(), invalid, container.begin(), StringToWord);
 
         return container;
     }
@@ -111,6 +112,7 @@ namespace MusicCom
             }
 
             vector<string> args;
+            vector<string> errors;
 
             MusicData* pMusicData;
 
@@ -173,6 +175,12 @@ namespace MusicCom
                 assert(0);
                 break;
             }
+        }
+
+        template<typename IteratorT>
+        static void AddParseError(MMLParserState& state, IteratorT first, IteratorT last)
+        {
+            state.errors.push_back(format("({:d}): parse error at \"{}\"", state.LineNumber, string(first, last)));
         }
 
         struct ChangeLine
@@ -277,6 +285,25 @@ namespace MusicCom
             MMLParserState& state;
         };
 
+        struct SetSoundNumber
+        {
+            SetSoundNumber(MMLParserState& s) : state(s) {}
+
+            template<typename IteratorT>
+            void operator()(IteratorT first, IteratorT last) const
+            {
+                int number = StringToWord(string(first, last));
+                if (number > 20)
+                {
+                    AddParseError(state, first, last);
+                    return;
+                }
+                state.SoundNumber = number;
+            }
+
+            MMLParserState& state;
+        };
+
         // Sound
         struct ProcessLFO
         {
@@ -333,16 +360,22 @@ namespace MusicCom
             {
                 SSGEnv env;
 
-                if (state.args.size() < 3)
+                int no = StringToWord(state.args[0]);
+                if (no < 1 || no > 20)
                 {
-                    //throw std::runtime_error("SSGEnvの引数が足りない");
+                    AddParseError(state, first, last);
                     return;
                 }
-
-                int no = StringToInt(state.args[0]);
-                env.Unit = StringToInt(state.args[1]);
-                env.Env.clear();
-                transform(state.args.begin() + 2, state.args.end(), back_inserter(env.Env), StringToInt);
+                // 省略された周期は0として扱う
+                state.args.resize(max(state.args.size(), size_t(2)));
+                // 周期0は1と同じく毎tick更新として扱う
+                env.Unit = max(StringToWord(state.args[1]) & 0xff, 1);
+                env.Env.resize(state.args.size() - 2);
+                transform(state.args.begin() + 2, state.args.end(), env.Env.begin(), [](const string& arg) {
+                    return static_cast<unsigned char>(StringToWord(arg));
+                });
+                // 0xff以降は終端として破棄する
+                env.Env.erase(find(env.Env.begin(), env.Env.end(), 0xff), env.Env.end());
                 state.pMusicData->SetSSGEnv(no, env);
             }
 
@@ -416,48 +449,85 @@ namespace MusicCom
                 // 引数を取得
                 vector<int> a;
                 // とりあえずintに変換
-                transform(state.args.begin(), state.args.end(), back_inserter(a), StringToInt);
+                transform(state.args.begin(), state.args.end(), back_inserter(a), StringToWord);
                 // 引数が足りなければ0を補充
                 a.resize(3, 0);
-                // 音長指定なら音長で変換し直す
-                if ((state.CommandType == CommandType::TYPE_REST
-                     || state.CommandType == CommandType::TYPE_WAIT
-                     || state.CommandType == CommandType::TYPE_LENGTH)
-                    && !state.args.empty())
+                switch (state.CommandType)
                 {
-                    a[0] = ParseLength(state.args[0]);
-                }
-
-                if (state.CommandType == CommandType::TYPE_LOOP)
+                case CommandType::TYPE_REST:
+                case CommandType::TYPE_WAIT:
+                case CommandType::TYPE_LENGTH:
+                    if (!state.args.empty())
+                    {
+                        a[0] = ParseLength(state.args[0]);
+                    }
+                    break;
+                case CommandType::TYPE_OCTAVE:
+                    if (a[0] > 8)
+                    {
+                        AddParseError(state, first, last);
+                        return;
+                    }
+                    break;
+                case CommandType::TYPE_TONE:
+                    if (a[0] > 20)
+                    {
+                        AddParseError(state, first, last);
+                        return;
+                    }
+                    break;
+                case CommandType::TYPE_TEMPO:
+                    // Tのみ全体設定として扱い、コマンド列には追加しない
+                    state.pMusicData->SetTempo(a[0]);
+                    return;
+                case CommandType::TYPE_VOLUME:
+                case CommandType::TYPE_GATE_TIME:
+                case CommandType::TYPE_ENV_FORM:
+                case CommandType::TYPE_PORTAMENTO:
+                    a[0] &= 0xff;
+                    break;
+                case CommandType::TYPE_LOOP:
                 {
+                    a[0] &= 0xff;
                     int& loop_depth = state.GetLoopDepthRef();
                     if (loop_depth >= 15)
                     {
                         throw runtime_error("loop nesting too deep");
                     }
                     loop_depth++;
+                    break;
                 }
-                else if (state.CommandType == CommandType::TYPE_EXIT)
+                case CommandType::TYPE_EXIT:
                 {
                     int& loop_depth = state.GetLoopDepthRef();
                     if (loop_depth > 0)
                     {
                         loop_depth--;
                     }
+                    break;
                 }
-
-                // Tのみ特別処理
-                if (state.CommandType == CommandType::TYPE_TEMPO)
-                {
-                    state.pMusicData->SetTempo(a[0]);
+                case CommandType::TYPE_TREMOLO:
+                case CommandType::TYPE_VIBRATO:
+                    a[0] &= 0xff;
+                    a[1] &= 0xff;
+                    a[2] &= 0xff;
+                    break;
+                case CommandType::TYPE_DIRECT:
+                    a[0] &= 0xff;
+                    a[1] &= 0xff;
+                    break;
+                case CommandType::TYPE_DETUNE:
+                    if ((a[0] & 0x8000) != 0)
+                    {
+                        a[0] = -((-a[0]) & 0xff);
+                    }
+                    else
+                    {
+                        a[0] &= 0xff;
+                    }
+                    break;
                 }
-                else
-                {
-                    AddCommand(state, Command(state.CommandType, a.begin(), a.end()));
-                }
-                //cout << state.CommandType << "(";
-                //copy(state.args.begin(), state.args.end(), ostream_iterator<string>(cout, ","));
-                //cout << ");";
+                AddCommand(state, Command(state.CommandType, a.begin(), a.end()));
             }
 
             MMLParserState& state;
@@ -494,16 +564,14 @@ namespace MusicCom
                     >> !comment
                     >> (eol_p[ChangeLine(s)] | end_p[Finish(s)] | ch_p(0x1a));
 
-                arg =
-                    (int_p || ch_p('.'))[PushArg(s)];
                 commas =
                     *ch_p(',');
+                word =
+                    lexeme_d[!ch_p('-') >> +digit_p];
+                word_arg =
+                    word[PushArg(s)];
                 ctrl_arg =
-                    arg >> commas;
-                octave_arg =
-                    limit_d(0, 8)[int_p][PushArg(s)] >> commas;
-                tone_arg =
-                    limit_d(0, 20)[int_p][PushArg(s)] >> commas;
+                    word_arg >> commas;
                 note_length =
                     lexeme_d[((str_p("32") | str_p("16") | str_p("8") | str_p("4") | str_p("2")) >> !ch_p('.')) // 付点は2～32分音符だけ指定可
                              | str_p("64") | str_p("1")];
@@ -516,15 +584,15 @@ namespace MusicCom
                     sound_arg % *ch_p(',') // !: スペースで区切るMML対策
                     >> *ch_p(',');
                 sound_arg =
-                    ((sound_invalid_arg | int_p) >> eps_p)[PushArg(s)]
+                    ((sound_invalid_arg | word) >> eps_p)[PushArg(s)]
                     >> *sound_invalid_arg[PushArg(s)];
                 sound_invalid_arg =
                     lexeme_d[+(~digit_p - sign_p - blank_p - cntrl_p - ch_p(','))];
 
                 ssgenv_number =
-                    limit_d(1, 20)[int_p][PushArg(s)];
+                    word_arg;
                 ssgenv_arg =
-                    (int_p | eps_p)[PushArg(s)];
+                    (word | eps_p)[PushArg(s)];
                 ssgenv_separator =
                     ((eol_p[ChangeLine(s)] % !(comment | blank_line)) >> str_p("->")) | ch_p(',');
                 ssgenv_args =
@@ -546,8 +614,8 @@ namespace MusicCom
                 mml_ctrl =
                     (as_lower_d[chset<>("}<>&")][BeginCommand(s)] >> commas)
                     | (as_lower_d[chset<>("vtqsmnp{")][BeginCommand(s)] >> commas >> repeat_p(0, 1)[ctrl_arg])
-                    | (as_lower_d[ch_p('o')][BeginCommand(s)] >> commas >> repeat_p(0, 1)[octave_arg])
-                    | (ch_p('@')[BeginCommand(s)] >> commas >> repeat_p(0, 1)[tone_arg])
+                    | (as_lower_d[ch_p('o')][BeginCommand(s)] >> commas >> repeat_p(0, 1)[ctrl_arg])
+                    | (ch_p('@')[BeginCommand(s)] >> commas >> repeat_p(0, 1)[ctrl_arg])
                     | (as_lower_d[ch_p('y')][BeginCommand(s)] >> commas >> repeat_p(0, 2)[ctrl_arg])
                     | (as_lower_d[chset<>("ui")][BeginCommand(s)] >> commas >> repeat_p(0, 3)[ctrl_arg]);
                 mml_call =
@@ -577,7 +645,7 @@ namespace MusicCom
                 sound_line =
                     (as_lower_d[str_p("sound")] >> ch_p(':'))[BeginLine<SOUND>(s)]
                     >> !ch_p('@')
-                    >> limit_d(0, 20)[int_p][assign(s.SoundNumber)];
+                    >> word[SetSoundNumber(s)];
                 lfo_line =
                     (as_lower_d[str_p("lfo")] >> ch_p(':'))[BeginLine<LFO>(s)]
                     >> sound_args[ProcessLFO(s)];
@@ -603,7 +671,7 @@ namespace MusicCom
             rule<ScannerT> line;
             rule<ScannerT> blank_line, ch_line, drum_line, sound_line, lfo_line, op_line, ssgenv_line, str_line, arrow_line;
             rule<ScannerT> mml_Command, mml_note, mml_length_ctrl, mml_ctrl, mml_call;
-            rule<ScannerT> arg, commas, ctrl_arg, octave_arg, tone_arg, note_length, optional_note_length, required_note_length;
+            rule<ScannerT> commas, word, word_arg, ctrl_arg, note_length, optional_note_length, required_note_length;
             rule<ScannerT> sound_args, sound_arg, sound_invalid_arg, ssgenv_number, ssgenv_arg, ssgenv_separator, ssgenv_args, macro_name, comment;
 
             rule<ScannerT> const&
@@ -654,6 +722,8 @@ namespace MusicCom
                 {
                     first = info.stop;
                 }
+                error_list.insert(error_list.end(), state.errors.begin(), state.errors.end());
+                state.errors.clear();
             }
             catch (exception& e)
             {
