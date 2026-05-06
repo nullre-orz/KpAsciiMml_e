@@ -443,8 +443,8 @@ namespace MusicCom
             part_data.ReservedOctave = std::min(part_data.ReservedOctave + 1, 8);
             break;
         case CommandType::TYPE_VOLUME:
-            part_data.Volume = std::min(std::max(command.GetArg(0), 0), 15);
-            SetVolume(part_data.Volume);
+            part_data.Volume = command.GetArg(0);
+            SetVolume(std::clamp(part_data.Volume, 0, 15));
             break;
         //case CommandType::TYPE_TONE:
         case CommandType::TYPE_GATE_TIME:
