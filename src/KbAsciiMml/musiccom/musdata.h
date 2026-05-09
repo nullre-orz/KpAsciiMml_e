@@ -145,7 +145,6 @@ namespace MusicCom
             return macros.find(name) != macros.end();
         }
 
-        std::optional<std::string> GetUndefinedMacroReference() const;
         void DefineMacro(const std::string& name);
         void AddCommandToChannel(int channel, const Command& command);
         void AddCommandToRhythmPart(const Command& command);

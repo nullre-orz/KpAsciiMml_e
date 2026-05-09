@@ -67,30 +67,6 @@ namespace MusicCom
         cl.insert(cl.end(), command);
     }
 
-    optional<string> MusicData::GetUndefinedMacroReference() const
-    {
-        auto find_undefined = [this](const CommandList& commands) -> optional<string>
-        {
-            for (const Command& command : commands)
-            {
-                if (command.GetType() == CommandType::TYPE_MACRO && !IsMacroPresent(command.GetStrArg()))
-                {
-                    return command.GetStrArg();
-                }
-            }
-            return nullopt;
-        };
-
-        for (const CommandList& commands : channels)
-        {
-            if (const auto name = find_undefined(commands))
-            {
-                return name;
-            }
-        }
-        return find_undefined(rhythm_part);
-    }
-
     void MusicData::DefineMacro(const string& name)
     {
         if (!IsMacroPresent(name))

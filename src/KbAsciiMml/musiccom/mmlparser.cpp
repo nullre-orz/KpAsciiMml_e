@@ -95,6 +95,12 @@ namespace MusicCom
             STR
         };
 
+        struct MacroReference
+        {
+            string Name;
+            int LineNumber;
+        };
+
         struct MMLParserState
         {
             MMLParserState()
@@ -141,6 +147,25 @@ namespace MusicCom
                 }
             }
 
+            std::optional<MacroReference> GetUndefinedMacroReference() const
+            {
+                auto find_undefined = [this](const vector<MacroReference>& references) -> std::optional<MacroReference> {
+                    auto reference = find_if(references.begin(), references.end(), [this](const MacroReference& reference) {
+                        return !pMusicData->IsMacroPresent(reference.Name);
+                    });
+                    return reference != references.end() ? std::optional<MacroReference>(*reference) : std::nullopt;
+                };
+
+                for (const auto& references : ChannelMacroReferences)
+                {
+                    if (const auto reference = find_undefined(references))
+                    {
+                        return reference;
+                    }
+                }
+                return find_undefined(RhythmMacroReferences);
+            }
+
             // Sound
             FMSound Sound;
             int SoundNumber;
@@ -148,6 +173,8 @@ namespace MusicCom
             array<int, 6> ChannelLoopDepth;
             int RhythmLoopDepth;
             map<string, int> MacroLoopDepth;
+            array<vector<MacroReference>, 6> ChannelMacroReferences;
+            vector<MacroReference> RhythmMacroReferences;
 
             bool Finished;
         };
@@ -177,10 +204,26 @@ namespace MusicCom
             }
         }
 
+        static void AddParseErrorMessage(MMLParserState& state, int line_number, const string& message)
+        {
+            state.errors.push_back(format("({:d}): {}", line_number, message));
+        }
+
+        static void AddParseErrorMessage(MMLParserState& state, const string& message)
+        {
+            AddParseErrorMessage(state, state.LineNumber, message);
+        }
+
         template<typename IteratorT>
         static void AddParseError(MMLParserState& state, IteratorT first, IteratorT last)
         {
-            state.errors.push_back(format("({:d}): parse error at \"{}\"", state.LineNumber, string(first, last)));
+            AddParseErrorMessage(state, format("parse error at \"{}\"", string(first, last)));
+        }
+
+        template<typename IteratorT>
+        static void AddParseError(MMLParserState& state, IteratorT first, IteratorT last, int line_number)
+        {
+            AddParseErrorMessage(state, line_number, format("parse error at \"{}\"", string(first, last)));
         }
 
         struct ChangeLine
@@ -232,6 +275,10 @@ namespace MusicCom
             {
                 state.args.clear();
                 state.LineType = t;
+                if (t == SSGENV)
+                {
+                    state.SSGEnvLineNumber = state.LineNumber;
+                }
             }
 
             MMLParserState& state;
@@ -363,7 +410,7 @@ namespace MusicCom
                 int no = StringToWord(state.args[0]);
                 if (no < 1 || no > 20)
                 {
-                    AddParseError(state, first, last);
+                    AddParseError(state, first, last, state.SSGEnvLineNumber);
                     return;
                 }
                 // 省略された周期は0として扱う
@@ -492,7 +539,12 @@ namespace MusicCom
                     int& loop_depth = state.GetLoopDepthRef();
                     if (loop_depth >= 15)
                     {
-                        throw runtime_error("loop nesting too deep");
+                        if (loop_depth == 15)
+                        {
+                            AddParseErrorMessage(state, "loop nesting too deep");
+                        }
+                        loop_depth++;
+                        return;
                     }
                     loop_depth++;
                     break;
@@ -542,7 +594,17 @@ namespace MusicCom
             {
                 if (state.LineType == STR && !state.pMusicData->IsMacroPresent(state.args[0]))
                 {
-                    throw runtime_error(format("undefined STR: ${}$", state.args[0]));
+                    AddParseErrorMessage(state, format("undefined STR: ${}$", state.args[0]));
+                    return;
+                }
+                MacroReference reference{state.args[0], state.LineNumber};
+                if (state.LineType == CH)
+                {
+                    state.ChannelMacroReferences[state.ChNumber].push_back(reference);
+                }
+                else if (state.LineType == RHYTHM)
+                {
+                    state.RhythmMacroReferences.push_back(reference);
                 }
                 AddCommand(state, Command(CommandType::TYPE_MACRO, state.args[0]));
             }
@@ -699,6 +761,10 @@ namespace MusicCom
         iterator_t last = first.make_end();
 
         vector<string> error_list = {};
+        auto collect_parse_errors = [&]() {
+            error_list.insert(error_list.end(), state.errors.begin(), state.errors.end());
+            state.errors.clear();
+        };
 
         while (!state.Finished)
         {
@@ -706,6 +772,7 @@ namespace MusicCom
             try
             {
                 info = parse(first, last, mmlparser, blank_p);
+                collect_parse_errors();
                 if (!info.hit)
                 {
                     iterator_t i = find_if(
@@ -722,11 +789,10 @@ namespace MusicCom
                 {
                     first = info.stop;
                 }
-                error_list.insert(error_list.end(), state.errors.begin(), state.errors.end());
-                state.errors.clear();
             }
             catch (exception& e)
             {
+                collect_parse_errors();
                 error_list.push_back(format("({:d}): {}", state.LineNumber, e.what()));
                 break;
             }
@@ -734,9 +800,9 @@ namespace MusicCom
 
         if (error_list.empty())
         {
-            if (const auto name = pMusicData->GetUndefinedMacroReference())
+            if (const auto reference = state.GetUndefinedMacroReference())
             {
-                error_list.push_back(format("undefined STR: ${}$", *name));
+                error_list.push_back(format("({:d}): undefined STR: ${}$", reference->LineNumber, reference->Name));
             }
         }
 
