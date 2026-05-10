@@ -148,7 +148,7 @@ namespace MusicCom
         void DefineMacro(const std::string& name);
         void AddCommandToChannel(int channel, const Command& command);
         void AddCommandToRhythmPart(const Command& command);
-        void AddCommandToMacro(std::string name, const Command& command);
+        void AddCommandToMacro(const std::string& name, const Command& command);
 
         CommandIterator GetChannelHead(int channel) const;
         CommandIterator GetChannelTail(int channel) const;

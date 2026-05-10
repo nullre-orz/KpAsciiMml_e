@@ -113,6 +113,8 @@ namespace MusicCom
                   ChannelLoopDepth(),
                   RhythmLoopDepth(0),
                   MacroLoopDepth(),
+                  SSGEnvLineNumber(0),
+                  StoreMacroCommands(false),
                   Finished(false)
             {
             }
@@ -175,6 +177,8 @@ namespace MusicCom
             map<string, int> MacroLoopDepth;
             array<vector<MacroReference>, 6> ChannelMacroReferences;
             vector<MacroReference> RhythmMacroReferences;
+            int SSGEnvLineNumber;
+            bool StoreMacroCommands;
 
             bool Finished;
         };
@@ -196,7 +200,10 @@ namespace MusicCom
                 state.pMusicData->AddCommandToRhythmPart(command);
                 break;
             case STR:
-                state.pMusicData->AddCommandToMacro(state.MacroName, command);
+                if (state.StoreMacroCommands)
+                {
+                    state.pMusicData->AddCommandToMacro(state.MacroName, command);
+                }
                 break;
             default:
                 assert(0);
@@ -306,7 +313,11 @@ namespace MusicCom
                 state.MacroName.assign(first, last);
                 if (state.LineType == STR)
                 {
-                    state.pMusicData->DefineMacro(state.MacroName);
+                    state.StoreMacroCommands = !state.pMusicData->IsMacroPresent(state.MacroName);
+                    if (state.StoreMacroCommands)
+                    {
+                        state.pMusicData->DefineMacro(state.MacroName);
+                    }
                 }
             }
 

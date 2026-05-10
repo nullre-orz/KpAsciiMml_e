@@ -77,9 +77,9 @@ namespace MusicCom
         }
     }
 
-    void MusicData::AddCommandToMacro(std::string name, const Command& command)
+    void MusicData::AddCommandToMacro(const string& name, const Command& command)
     {
-        DefineMacro(name);
+        assert(IsMacroPresent(name));
 
         CommandList& cl = macros[name];
         cl.insert(--cl.end(), command);
