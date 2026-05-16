@@ -2,6 +2,7 @@
 #include "resource.h"
 #include <Windows.h>
 #include <boost/lexical_cast.hpp>
+#include <iterator>
 #include <kmp_pi.h>
 #include <shlwapi.h>
 
@@ -20,7 +21,7 @@ T GetSetting(LPCWSTR fileName, LPCWSTR key, T defaultValue)
     try
     {
         wchar_t buf[256];
-        GetPrivateProfileStringW(L"KbAsciiMml", key, NULL, buf, sizeof(buf), fileName);
+        GetPrivateProfileStringW(L"KbAsciiMml", key, NULL, buf, std::size(buf), fileName);
         return boost::lexical_cast<int>(buf);
     }
     catch (boost::bad_lexical_cast)
@@ -47,7 +48,7 @@ private:
 KbAsciiMml::KbAsciiMml()
 {
     wchar_t iniName[MAX_PATH];
-    GetModuleFileNameW(hDllModule, iniName, sizeof(iniName));
+    GetModuleFileNameW(hDllModule, iniName, std::size(iniName));
     PathRemoveExtensionW(iniName);
     PathAddExtensionW(iniName, L".ini");
 
