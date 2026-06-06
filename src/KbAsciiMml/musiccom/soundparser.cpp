@@ -1,10 +1,13 @@
 ﻿#include "soundparser.h"
 #include "sounddata.h"
+#include <algorithm>
 #include <boost/spirit/home/x3.hpp>
 #include <boost/spirit/include/classic_file_iterator.hpp>
 #include <filesystem>
-#include <iostream>
+#include <format>
 #include <memory>
+#include <numeric>
+#include <stdexcept>
 
 namespace x3 = boost::spirit::x3;
 
@@ -60,6 +63,7 @@ Noise:	3, 20 ,-5 ,4,0
               tone_multiplier(1),
               volume_multiplier(1),
               args(),
+              errors(),
               finished(false)
         {
         }
@@ -79,6 +83,7 @@ Noise:	3, 20 ,-5 ,4,0
         int tone_multiplier;
         int volume_multiplier;
         std::vector<int> args;
+        std::vector<std::string> errors;
 
         bool finished;
     };
@@ -157,22 +162,23 @@ Noise:	3, 20 ,-5 ,4,0
                 return [](auto& ctx)
                 {
                     SoundParserState& state = x3::get<SoundParserState>(ctx);
-                    if (state.args.size() < 3 || !state.editing_data)
+                    if (!state.editing_data)
                     {
                         return;
                     }
 
+                    state.args.resize(3);
                     int len = state.args[0];
-                    if (len > 0)
-                    {
-                        // ブロックを追加
-                        Block block({len});
-                        state.GetEditingBlocks().push_back(block);
+                    // 音長0は60として扱う
+                    len = len == 0 ? 60 : len;
 
-                        // 周期の倍率設定
-                        state.tone_multiplier = state.args[1];
-                        state.volume_multiplier = state.args[2];
-                    }
+                    // ブロックを追加
+                    Block block({len});
+                    state.GetEditingBlocks().push_back(block);
+
+                    // 周期の倍率0は1として扱う
+                    state.tone_multiplier = state.args[1] == 0 ? 1 : state.args[1];
+                    state.volume_multiplier = state.args[2] == 0 ? 1 : state.args[2];
                 };
             };
 
@@ -181,11 +187,12 @@ Noise:	3, 20 ,-5 ,4,0
                 return [](auto& ctx)
                 {
                     SoundParserState& state = x3::get<SoundParserState>(ctx);
-                    if (state.args.size() < 4 || !state.editing_data)
+                    if (!state.editing_data)
                     {
                         return;
                     }
 
+                    state.args.resize(4);
                     auto& editing_blocks = state.GetEditingBlocks();
                     if (!editing_blocks.empty())
                     {
@@ -205,11 +212,12 @@ Noise:	3, 20 ,-5 ,4,0
                 return [](auto& ctx)
                 {
                     SoundParserState& state = x3::get<SoundParserState>(ctx);
-                    if (state.args.size() < 4 || !state.editing_data)
+                    if (!state.editing_data)
                     {
                         return;
                     }
 
+                    state.args.resize(4);
                     auto& editing_blocks = state.GetEditingBlocks();
                     if (!editing_blocks.empty())
                     {
@@ -228,11 +236,12 @@ Noise:	3, 20 ,-5 ,4,0
                 return [](auto& ctx)
                 {
                     SoundParserState& state = x3::get<SoundParserState>(ctx);
-                    if (state.args.size() < 5 || !state.editing_data)
+                    if (!state.editing_data)
                     {
                         return;
                     }
 
+                    state.args.resize(5);
                     auto& editing_blocks = state.GetEditingBlocks();
                     if (!editing_blocks.empty())
                     {
@@ -272,26 +281,30 @@ Noise:	3, 20 ,-5 ,4,0
         const x3::rule<class comment_line, std::string> comment_line = "comment";
         const x3::rule<class blank_line, std::string> blank_line = "blank";
 
+        // カンマは単なる区切りとして扱い、省略された末尾引数は処理側で0補完する
+        const auto arguments = *x3::lit(',') >> *((x3::int_)[detail::append_arg()] >> *x3::lit(','));
+        const auto trailing_text = x3::lexeme[*(x3::char_ - x3::eol)];
+
         const auto line_def =
             (sound_line[detail::set_sound()] | tone_line[detail::set_tone()] | volume_line[detail::set_volume()] | noise_line[detail::set_noise()] | comment_line | blank_line)
             >> (x3::eoi[detail::finish()] | x3::eol[detail::increment_line()] | x3::char_(0x1a));
 
         const auto sound_line_def =
             (x3::no_case["sound:"])[detail::begin_operator()]
-            >> -(x3::lit('@') >> (x3::uint_)[detail::set_current_sound()] >> ',')
-            >> (x3::int_)[detail::append_arg()] % ',';
+            >> -(x3::lit('@') >> (x3::uint_)[detail::set_current_sound()])
+            >> arguments >> trailing_text;
 
         const auto tone_line_def =
             (x3::no_case["tone"] >> x3::char_('1', '2')[detail::set_current_channel()] >> x3::lit(':'))[detail::begin_operator()]
-            >> (x3::int_)[detail::append_arg()] % ',';
+            >> arguments >> trailing_text;
 
         const auto volume_line_def =
             (x3::no_case["vol"] >> x3::char_('1', '2')[detail::set_current_channel()] >> x3::lit(':'))[detail::begin_operator()]
-            >> (x3::int_)[detail::append_arg()] % ',';
+            >> arguments >> trailing_text;
 
         const auto noise_line_def =
             (x3::no_case["noise:"])[detail::begin_operator()]
-            >> (x3::int_)[detail::append_arg()] % ',';
+            >> arguments >> trailing_text;
 
         const auto comment_line_def =
             x3::lit(';')
@@ -310,21 +323,37 @@ Noise:	3, 20 ,-5 ,4,0
     } // namespace grammer
 
     template<typename Iterator>
-    SoundData* ParseSoundImpl(const Iterator begin, const Iterator end)
+    SoundData* ParseSoundImpl(const Iterator begin, const Iterator end, const std::string& source_name)
     {
         auto data = std::make_unique<SoundData>();
         SoundParserState state(*data);
         const auto parser = x3::with<SoundParserState>(state)[grammer::line];
 
-        bool success = false;
         auto current = Iterator(begin);
         while (!state.finished)
         {
-            success = x3::phrase_parse(current, end, parser, x3::blank);
+            const auto line_begin = current;
+            const bool success = x3::phrase_parse(current, end, parser, x3::blank);
             if (!success)
             {
-                break;
+                const auto line_end = std::find_if(line_begin, end, [](char c)
+                                                   { return c == '\r' || c == '\n'; });
+                state.errors.push_back(std::format("({:d}): parse error at \"{}\"", state.line, std::string(line_begin, line_end)));
+                current = line_end;
             }
+        }
+
+        if (!state.errors.empty())
+        {
+            const auto message = std::accumulate(
+                state.errors.begin(),
+                state.errors.end(),
+                source_name,
+                [](const std::string& accumulated, const std::string& error)
+                {
+                    return std::format("{}\n{}", accumulated, error);
+                });
+            throw std::runtime_error(message);
         }
 
         return data.release();
@@ -335,7 +364,7 @@ Noise:	3, 20 ,-5 ,4,0
         auto begin(std::cbegin(DEFAULT_SOUND_DAT));
         const auto end(std::cend(DEFAULT_SOUND_DAT));
 
-        return ParseSoundImpl(begin, end);
+        return ParseSoundImpl(begin, end, "embedded SOUND.DAT");
     }
 
     SoundData* ParseSound(const std::string& mml_filename)
@@ -356,7 +385,7 @@ Noise:	3, 20 ,-5 ,4,0
                 return ParseDefaultSound();
             }
             file_iterator end = begin.make_end();
-            return ParseSoundImpl(begin, end);
+            return ParseSoundImpl(begin, end, sound_dat_path.string());
         }
         catch (...)
         {
