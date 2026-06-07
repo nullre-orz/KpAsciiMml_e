@@ -201,7 +201,7 @@ Noise:	3, 20 ,-5 ,4,0
                         tone.enabled = true;
                         tone.initial_value = state.args[0];
                         tone.final_value = state.args[0] + state.args[1];
-                        tone.period = state.args[2] * state.tone_multiplier;
+                        tone.period = (state.args[2] == 0 ? 1 : state.args[2]) * state.tone_multiplier;
                         tone.loop = (state.args[3] == 0);
                     }
                 };
@@ -225,7 +225,7 @@ Noise:	3, 20 ,-5 ,4,0
                         auto& volume = target.volume[state.channel];
                         volume.initial_value = state.args[0];
                         volume.final_value = state.args[0] + state.args[1];
-                        volume.period = state.args[2] * state.volume_multiplier;
+                        volume.period = (state.args[2] == 0 ? 1 : state.args[2]) * state.volume_multiplier;
                         volume.loop = (state.args[3] == 0);
                     }
                 };
@@ -250,7 +250,7 @@ Noise:	3, 20 ,-5 ,4,0
                         noise.channel_type = state.args[0];
                         noise.initial_value = state.args[1];
                         noise.final_value = state.args[1] + state.args[2];
-                        noise.period = state.args[3] * state.tone_multiplier;
+                        noise.period = (state.args[3] == 0 ? 1 : state.args[3]) * state.tone_multiplier;
                         noise.loop = (state.args[4] == 0);
                     }
                 };

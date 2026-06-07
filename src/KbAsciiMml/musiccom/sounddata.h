@@ -70,8 +70,8 @@ namespace MusicCom
             struct diff_cache
             {
                 int tone[2];
-                double volume[2];
-                double noise;
+                int volume[2];
+                int noise;
             };
 
             friend class RhythmData;
