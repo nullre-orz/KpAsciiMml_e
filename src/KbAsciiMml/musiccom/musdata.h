@@ -39,9 +39,10 @@ namespace MusicCom
         }
         void SetLFO(int form, int speed, int depth)
         {
-            LFOForm = form;
-            LFOSpeed = speed;
-            LFODepth = depth;
+            // 各LFO値は下位8bitだけを保存
+            LFOForm = form & 0xff;
+            LFOSpeed = speed & 0xff;
+            LFODepth = depth & 0xff;
         }
         void SetAlgFb(int alg, int fb)
         {

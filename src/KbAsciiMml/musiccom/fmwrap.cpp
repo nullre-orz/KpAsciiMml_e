@@ -75,7 +75,7 @@ namespace MusicCom
         opn.SetReg(0x28, val);
     }
 
-    void FMWrap::SetTone(int ch, int block, int fnumber)
+    void FMWrap::SetTone(int ch, int block, int fnumber, int pitch_offset)
     {
         assert(0 <= ch && ch < 3);
 
@@ -92,12 +92,13 @@ namespace MusicCom
             for (int op = 0; op < 4; op++)
             {
                 int i = op_table[op];
-                SetToneReg(addrs[i][0], addrs[i][1], block, (int)(fnumber * detune2_table[s.Op[op].Dt2]));
+                int operator_fnumber = static_cast<int>(fnumber * detune2_table[s.Op[op].Dt2]);
+                SetToneReg(addrs[i][0], addrs[i][1], block, operator_fnumber + pitch_offset);
             }
         }
         else
         {
-            SetToneReg(0xa4 + ch, 0xa0 + ch, block, fnumber);
+            SetToneReg(0xa4 + ch, 0xa0 + ch, block, fnumber + pitch_offset);
         }
     }
 

@@ -21,6 +21,7 @@ namespace MusicCom
 
     protected: // for PartSequencerBase
         virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
+        virtual void ProcessEffect(int current_frame);
 
     private: // for PartSequencerBase
         virtual void InitializeImpl(PartData& part_data);
@@ -34,9 +35,22 @@ namespace MusicCom
 
     private:
         int CalculateTone(int base_tone, int detune) const;
+        void InitializeSoundLFO(int note);
+        bool UpdateSoundLFO();
+        int GetSoundLFOAmplitude() const;
+        int GetSoundLFOOffset() const;
+        void WriteTone(int octave, int tone);
 
         int channel_;
         FMWrap& fmwrap_;
+        int sound_no_;
+        int lfo_accumulator_;
+        int lfo_phase_;
+        int lfo_value_;
+        int lfo_note_;
+        int current_octave_;
+        int current_tone_;
+        bool note_active_;
 
         std::function<const FMSound&(int)> GetSound;
         std::function<CommandIterator()> GetHeadImpl;

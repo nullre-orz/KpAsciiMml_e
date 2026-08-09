@@ -15,7 +15,7 @@ namespace MusicCom
     public:
         FMWrap(FM::OPN& o);
         void SetSound(int ch, const FMSound& sound);
-        void SetTone(int ch, int block, int fnumber);
+        void SetTone(int ch, int block, int fnumber, int pitch_offset = 0);
         void SetVolume(int ch, int vol);
 
         void KeyOnOff(int ch, bool on);
