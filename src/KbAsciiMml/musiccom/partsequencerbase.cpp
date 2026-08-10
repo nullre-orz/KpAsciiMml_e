@@ -490,8 +490,7 @@ namespace MusicCom
         {
             auto part_data = sequencer.part_data_;
             int depth = (((keyon_length - part_data.IDelay) / part_data.ILength) & 1) ? -part_data.IDepth : part_data.IDepth;
-            int tone = static_cast<int>(base_tone * pow(2.0, depth / (255.0 * 12.0)) + 0.5);
-            sequencer.SetTone(part_data.Octave, tone);
+            sequencer.ApplyVibratoEffect(part_data.Octave, base_tone, depth);
         };
 
         // 一時停止中の場合は何もしない
@@ -553,6 +552,12 @@ namespace MusicCom
     {
         // デフォルト実装は何もしない
         return volume;
+    }
+
+    void PartSequencerBase::ApplyVibratoEffect(int octave, int tone, int depth)
+    {
+        int adjusted_tone = static_cast<int>(tone * pow(2.0, depth / (255.0 * 12.0)) + 0.5);
+        SetTone(octave, adjusted_tone);
     }
 
 } // namespace MusicCom

@@ -27,6 +27,7 @@ namespace MusicCom
         virtual void KeyOff();
         virtual void UpdateTone(int base_tone, PartData& part_data);
         virtual int AdjustVolume(int volume, int length, const PartData& part_data);
+        virtual void ApplyVibratoEffect(int octave, int tone, int depth);
         virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length);
         virtual void SetTone(int octave, int tone);
         virtual void SetVolume(int volume);
@@ -34,10 +35,14 @@ namespace MusicCom
 
     private:
         int CalculateTone(int base_octave, int base_tone, int detune) const;
+        int CalculateTonePeriod(int note, int depth) const;
+        int CalculateTonePeriodOffset(int note, int depth) const;
+        int ApplyOctave(int period, int octave) const;
 
         int channel_;
         SSGWrap& ssgwrap_;
         bool ring_deterrence_;
+        int current_note_;
         int last_period_;
         int current_period_;
 

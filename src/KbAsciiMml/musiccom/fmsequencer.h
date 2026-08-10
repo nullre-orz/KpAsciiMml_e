@@ -28,6 +28,7 @@ namespace MusicCom
         virtual void KeyOn();
         virtual void KeyOff();
         virtual void UpdateTone(int base_tone, PartData& part_data);
+        virtual void ApplyVibratoEffect(int octave, int tone, int depth);
         virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length);
         virtual void SetTone(int octave, int tone);
         virtual void SetVolume(int volume);
@@ -35,6 +36,8 @@ namespace MusicCom
 
     private:
         int CalculateTone(int base_tone, int detune) const;
+        int CalculateFNumberOffset(int note, int depth) const;
+        int GetOperatorFNumber(int op, int note, int tone) const;
         void InitializeSoundLFO(int note);
         bool UpdateSoundLFO();
         int GetSoundLFOAmplitude() const;
@@ -48,8 +51,11 @@ namespace MusicCom
         int lfo_phase_;
         int lfo_value_;
         int lfo_note_;
+        int last_note_;
         int current_octave_;
         int current_tone_;
+        int current_operator_fnumber_[4];
+        bool operator_portamento_active_;
         bool note_active_;
 
         std::function<const FMSound&(int)> GetSound;

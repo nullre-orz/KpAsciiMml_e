@@ -45,6 +45,7 @@ namespace MusicCom
         virtual void KeyOff() = 0;
         virtual void UpdateTone(int base_tone, PartData& part_data) = 0;
         virtual int AdjustVolume(int volume, int length, const PartData& part_data);
+        virtual void ApplyVibratoEffect(int octave, int tone, int depth);
         virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length) = 0;
         virtual void SetTone(int octave, int tone) = 0;
         virtual void SetVolume(int volume) = 0;

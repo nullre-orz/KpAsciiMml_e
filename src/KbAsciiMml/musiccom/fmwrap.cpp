@@ -6,10 +6,6 @@ using namespace std;
 
 namespace MusicCom
 {
-    // detune2による周波数の倍率
-    const double FMWrap::detune2_table[4] = {
-        1.0, 1.41421356, 1.581, 1.7320508};
-
     // TLをvolume変化に使用するかどうか
     // [alg][op]
     const bool FMWrap::vol_tl_flag[8][4] = {
@@ -79,26 +75,33 @@ namespace MusicCom
     {
         assert(0 <= ch && ch < 3);
 
-        const FMSound& s = sound[ch];
         if (ch == 2)
         {
-            static const int addrs[4][2] = {
-                {0xad, 0xa9},
-                {0xae, 0xaa},
-                {0xac, 0xa8},
-                {0xa6, 0xa2},
-            };
-
-            for (int op = 0; op < 4; op++)
-            {
-                int i = op_table[op];
-                int operator_fnumber = static_cast<int>(fnumber * detune2_table[s.Op[op].Dt2]);
-                SetToneReg(addrs[i][0], addrs[i][1], block, operator_fnumber + pitch_offset);
-            }
+            int operator_fnumber[4] = {fnumber, fnumber, fnumber, fnumber};
+            SetOperatorTones(ch, block, operator_fnumber, pitch_offset);
         }
         else
         {
             SetToneReg(0xa4 + ch, 0xa0 + ch, block, fnumber + pitch_offset);
+        }
+    }
+
+    void FMWrap::SetOperatorTones(int ch, int block, const int fnumber[4], int pitch_offset)
+    {
+        assert(ch == 2);
+
+        static const int addrs[4][2] = {
+            {0xad, 0xa9},
+            {0xae, 0xaa},
+            {0xac, 0xa8},
+            {0xa6, 0xa2},
+        };
+
+        const FMSound& s = sound[ch];
+        for (int op = 0; op < 4; op++)
+        {
+            int operator_block = block + (s.Op[op].Dt2 != 0 ? 1 : 0);
+            SetToneReg(addrs[op][0], addrs[op][1], operator_block, fnumber[op] + pitch_offset);
         }
     }
 

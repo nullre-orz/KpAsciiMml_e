@@ -5,19 +5,16 @@
 namespace MusicCom
 {
     // clang-format off
-    const int SSG_TONE_NUM[10][12] = {
-        // 124800 / Hz
-        //0  C,1 C#,2  D,3 D#,4  E,5  F,6 F#,7  G,8 G#,9  A,10A#,11 B
-	    { 3816,3602,3400,3209,3029,2859,2698,2547,2404,2269,2142,4043},	// O0
-	    { 3816,3602,3400,3209,3029,2859,2698,2547,2404,2269,2142,2022}, // O1
-	    { 1908,1801,1700,1604,1514,1429,1349,1273,1202,1135,1071,1011},
-	    {  954, 900, 850, 802, 757, 715, 675, 637, 601, 567, 535, 505},
-	    {  477, 450, 425, 401, 379, 357, 337, 318, 301, 284, 268, 253},	// O4
-	    {  239, 225, 212, 201, 189, 179, 169, 159, 150, 142, 134, 126},
-	    {  119, 113, 106, 100,  95,  89,  84,  80,  75,  71,  67,  63},
-	    {   60,  56,  53,  50,  47,  45,  42,  40,  38,  35,  33,  32},
-	    {   30,  28,  27,  25,  24,  22,  21,  20,  19,  18,  17,  16},	// O8
-	    {   15,  14,  13,  13,  12,  11,  11,  10,   9,   9,   8,   8},
+    // O1におけるトーン周期
+    const int SSG_TONE_PERIOD[12] = {
+        // C,  C#,   D,  D#,   E,   F,  F#,   G,  G#,   A,  A#,   B
+        3816,3602,3400,3209,3029,2859,2698,2547,2404,2269,2142,2022
+    };
+
+    // N/Iからトーン周期補正値を求める係数
+    const int SSG_TONE_ADJUST_COEFFICIENT[13] = {
+        // C-,  C, C#,  D, D#,  E,  F, F#,  G, G#,  A, A#,  B
+          228,214,202,191,180,170,161,151,143,135,127,120,114
     };
     // clang-format on
 
@@ -26,8 +23,9 @@ namespace MusicCom
           channel_(channel - 3),
           ssgwrap_(ssgwrap),
           ring_deterrence_(false),
-          last_period_(SSG_TONE_NUM[1][0]),
-          current_period_(SSG_TONE_NUM[1][0]),
+          current_note_(0),
+          last_period_(SSG_TONE_PERIOD[0]),
+          current_period_(SSG_TONE_PERIOD[0]),
           GetSSGEnv([this](int no) -> const SSGEnv&
                     { return GetMusicData().GetSSGEnv(no); }),
           GetHeadImpl([this, channel]()
@@ -44,8 +42,9 @@ namespace MusicCom
         // 初手ポルタメント対応
         part_data.LastOctave = 0;
         part_data.LastTone = CalculateTone(0, 0, 0);
-        last_period_ = SSG_TONE_NUM[1][0];
-        current_period_ = SSG_TONE_NUM[1][0];
+        current_note_ = 0;
+        last_period_ = SSG_TONE_PERIOD[0];
+        current_period_ = SSG_TONE_PERIOD[0];
     }
 
     void PsgSequencer::UpdateDeterrence(SoundSequencer::PlayStatus status)
@@ -107,9 +106,16 @@ namespace MusicCom
     void PsgSequencer::UpdateTone(int base_tone, PartData& part_data)
     {
         last_period_ = current_period_;
-        current_period_ = CalculateTone(1, base_tone, part_data.Detune);
-        part_data.Tone = CalculateTone(part_data.Octave, base_tone, part_data.Detune);
+        current_note_ = base_tone;
+        current_period_ = CalculateTonePeriod(base_tone, part_data.Detune);
+        part_data.Tone = ApplyOctave(current_period_, part_data.Octave);
         SetTone(part_data.Octave, part_data.Tone);
+    }
+
+    void PsgSequencer::ApplyVibratoEffect(int octave, int tone, int depth)
+    {
+        int period = current_period_ + CalculateTonePeriodOffset(current_note_, depth);
+        SetTone(octave, ApplyOctave(period, octave));
     }
 
     int PsgSequencer::AdjustVolume(int volume, int length, const PartData& part_data)
@@ -146,7 +152,7 @@ namespace MusicCom
         int target_period = current_period_ >> (octave - base_octave);
         int delta = (target_period - initial_period) / (length + 1);
         int portamento_period = initial_period + delta * tick;
-        SetTone(base_octave, (portamento_period * 2) >> base_octave);
+        SetTone(base_octave, ApplyOctave(portamento_period, base_octave));
     }
 
     void PsgSequencer::SetTone(int octave, int tone)
@@ -167,20 +173,31 @@ namespace MusicCom
 
     int PsgSequencer::CalculateTone(int base_octave, int base_tone, int detune) const
     {
-        int tone = SSG_TONE_NUM[base_octave][base_tone];
-        if (detune != 0)
+        return ApplyOctave(CalculateTonePeriod(base_tone, detune), base_octave);
+    }
+
+    int PsgSequencer::CalculateTonePeriod(int note, int depth) const
+    {
+        return SSG_TONE_PERIOD[note] + CalculateTonePeriodOffset(note, depth);
+    }
+
+    int PsgSequencer::CalculateTonePeriodOffset(int note, int depth) const
+    {
+        if (depth == 0)
         {
-            int tone2 = static_cast<int>(tone * pow(0.5, detune / (255.0 * 12.0)) + 0.5);
-            if (tone == tone2)
-            {
-                tone = (detune < 0) ? tone + 1 : tone - 1;
-            }
-            else
-            {
-                tone = tone2;
-            }
+            return 0;
         }
-        return tone;
+
+        int magnitude = depth < 0 ? -depth : depth;
+        magnitude &= 0xff;
+        int coefficient = SSG_TONE_ADJUST_COEFFICIENT[note + (depth > 0 ? 1 : 0)];
+        int offset = magnitude * coefficient / 0x100;
+        return depth > 0 ? -offset : offset;
+    }
+
+    int PsgSequencer::ApplyOctave(int period, int octave) const
+    {
+        return (period * 2) >> octave;
     }
 
 } // namespace MusicCom

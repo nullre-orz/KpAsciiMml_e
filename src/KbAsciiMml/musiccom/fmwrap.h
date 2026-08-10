@@ -16,6 +16,7 @@ namespace MusicCom
         FMWrap(FM::OPN& o);
         void SetSound(int ch, const FMSound& sound);
         void SetTone(int ch, int block, int fnumber, int pitch_offset = 0);
+        void SetOperatorTones(int ch, int block, const int fnumber[4], int pitch_offset = 0);
         void SetVolume(int ch, int vol);
 
         void KeyOnOff(int ch, bool on);
@@ -26,7 +27,6 @@ namespace MusicCom
         FM::OPN& opn;
         FMSound sound[3];
         int vol[3];
-        static const double detune2_table[4];
         static const bool vol_tl_flag[8][4];
         static const int op_table[4];
     };
