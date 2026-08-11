@@ -55,7 +55,7 @@ namespace MusicCom
         {
             int d = op_table[op] * 4 + ch;
             if (vol_tl_flag[s.GetAlg()][op_table[op]])
-                opn.SetReg(0x40 + d, s.Op[op].Tl + 4 * (15 - v));
+                opn.SetReg(0x40 + d, std::min(s.Op[op].Tl + 4 * (16 - v), 127));
         }
     }
 

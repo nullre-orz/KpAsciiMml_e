@@ -110,7 +110,9 @@ namespace MusicCom
 
     int PartSequencerBase::CalculatePerFrame(int tempo)
     {
-        return static_cast<int>(rate_ * (60.0 / (tempo * 16.0)) / 1.1 + 0.5); // 1.1: music.comの演奏は速いので補正
+        // music.comの挙動に合わせ、テンポを補正する(10%強の高速化)
+        // テンポが30未満の場合は30として扱う
+        return static_cast<int>(rate_ * 3.0 * (5880 / std::max(tempo, 30)) / 5200.0);
     }
 
     void PartSequencerBase::ReturnToHead()
