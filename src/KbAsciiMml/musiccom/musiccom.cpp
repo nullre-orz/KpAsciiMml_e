@@ -38,7 +38,7 @@ namespace MusicCom
 
     bool MusicCom::PrepareMix(uint rate)
     {
-        pseq = std::make_unique<Sequencer>(opn, pmusicdata.get(), psounddata.get(), soundTempo);
+        pseq = std::make_unique<Sequencer>(opn, *pmusicdata, *psounddata, soundTempo);
         if (!pseq->Init(rate))
         {
             return false;

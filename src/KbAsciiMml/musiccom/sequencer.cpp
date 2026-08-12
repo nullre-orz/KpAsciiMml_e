@@ -18,12 +18,12 @@ namespace MusicCom
 {
     const unsigned int OPN_CLOCKFREQ = 3993600; // OPNのクロック周波数
 
-    Sequencer::Sequencer(FM::OPN& o, MusicData* pmd, SoundData* psd, int stempo)
+    Sequencer::Sequencer(FM::OPN& o, MusicData& md, SoundData& sd, int stempo)
         : opn(o),
           fmwrap(o),
           ssgwrap(o),
-          musicdata(*pmd),
-          sounddata(*psd),
+          musicdata(md),
+          sounddata(sd),
           soundtempo(stempo)
     {
     }

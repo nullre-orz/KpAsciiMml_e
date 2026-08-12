@@ -72,11 +72,7 @@ namespace MusicCom
           current_tone_(0),
           current_operator_fnumber_{0, 0, 0, 0},
           operator_portamento_active_(false),
-          note_active_(false),
-          GetSound([this](int no) -> const FMSound&
-                   { return GetMusicData().GetFMSound(no); }),
-          GetHeadImpl([this, channel]()
-                      { return GetMusicData().GetChannelHead(channel); })
+          note_active_(false)
     {
     }
 
@@ -111,7 +107,7 @@ namespace MusicCom
         case CommandType::TYPE_TONE:
             part_data.SoundNo = command.GetArg(0);
             sound_no_ = part_data.SoundNo;
-            fmwrap_.SetSound(channel_, GetSound(part_data.SoundNo));
+            fmwrap_.SetSound(channel_, GetMusicData().GetFMSound(part_data.SoundNo));
             lfo_value_ = 0;
             break;
         case CommandType::TYPE_REST:
@@ -178,7 +174,7 @@ namespace MusicCom
             return;
         }
 
-        const FMSound& sound = GetSound(sound_no_);
+        const FMSound& sound = GetMusicData().GetFMSound(sound_no_);
         int operator_fnumber[4];
         for (int op = 0; op < 4; op++)
         {
@@ -212,7 +208,7 @@ namespace MusicCom
         lfo_note_ = note;
         note_active_ = true;
 
-        const FMSound& sound = GetSound(sound_no_);
+        const FMSound& sound = GetMusicData().GetFMSound(sound_no_);
         int amplitude = GetSoundLFOAmplitude();
         int scale = sound.LFOForm == SOUND_LFO_SQUARE ? 1 : 2;
         lfo_value_ = WrapSignedWord(-amplitude * scale);
@@ -220,7 +216,7 @@ namespace MusicCom
 
     bool FmSequencer::UpdateSoundLFO()
     {
-        const FMSound& sound = GetSound(sound_no_);
+        const FMSound& sound = GetMusicData().GetFMSound(sound_no_);
         if (!note_active_ || sound.LFODepth == 0)
         {
             return false;
@@ -287,7 +283,7 @@ namespace MusicCom
 
     int FmSequencer::GetSoundLFOAmplitude() const
     {
-        const FMSound& sound = GetSound(sound_no_);
+        const FMSound& sound = GetMusicData().GetFMSound(sound_no_);
         return ToSignedByte(sound.LFODepth) * SOUND_LFO_FNUMBER_COEFFICIENT[lfo_note_];
     }
 
@@ -330,7 +326,7 @@ namespace MusicCom
 
     const CommandIterator FmSequencer::GetHead() const
     {
-        return GetHeadImpl();
+        return GetMusicData().GetChannelHead(channel_);
     }
 
     int FmSequencer::CalculateTone(int base_tone, int detune) const
@@ -354,7 +350,7 @@ namespace MusicCom
 
     int FmSequencer::GetOperatorFNumber(int op, int note, int tone) const
     {
-        const FMSound& sound = GetSound(sound_no_);
+        const FMSound& sound = GetMusicData().GetFMSound(sound_no_);
         int dt2 = sound.Op[op].Dt2;
         return F_NUMBER_TABLE[dt2][note] + tone - F_NUMBER_TABLE[0][note];
     }

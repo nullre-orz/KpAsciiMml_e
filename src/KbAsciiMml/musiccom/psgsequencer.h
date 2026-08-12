@@ -2,13 +2,11 @@
 
 #include "partsequencerbase.h"
 #include "soundsequencer.h"
-#include <functional>
 
 namespace MusicCom
 {
     class SSGWrap;
     class MusicData;
-    struct SSGEnv;
     class PsgSequencer : public PartSequencerBase
     {
     public:
@@ -45,8 +43,5 @@ namespace MusicCom
         int current_note_;
         int last_period_;
         int current_period_;
-
-        std::function<const SSGEnv&(int)> GetSSGEnv;
-        std::function<CommandIterator()> GetHeadImpl;
     };
 } // namespace MusicCom

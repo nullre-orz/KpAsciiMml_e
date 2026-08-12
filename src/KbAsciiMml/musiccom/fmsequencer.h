@@ -1,13 +1,11 @@
 ﻿#pragma once
 
 #include "partsequencerbase.h"
-#include <functional>
 
 namespace MusicCom
 {
     class FMWrap;
     class MusicData;
-    struct FMSound;
     class FmSequencer : public PartSequencerBase
     {
     public:
@@ -52,8 +50,5 @@ namespace MusicCom
         int current_operator_fnumber_[4];
         bool operator_portamento_active_;
         bool note_active_;
-
-        std::function<const FMSound&(int)> GetSound;
-        std::function<CommandIterator()> GetHeadImpl;
     };
 } // namespace MusicCom

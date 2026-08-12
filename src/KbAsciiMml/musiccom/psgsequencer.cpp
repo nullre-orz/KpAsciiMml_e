@@ -25,11 +25,7 @@ namespace MusicCom
           ring_deterrence_(false),
           current_note_(0),
           last_period_(SSG_TONE_PERIOD[0]),
-          current_period_(SSG_TONE_PERIOD[0]),
-          GetSSGEnv([this](int no) -> const SSGEnv&
-                    { return GetMusicData().GetSSGEnv(no); }),
-          GetHeadImpl([this, channel]()
-                      { return GetMusicData().GetChannelHead(channel); })
+          current_period_(SSG_TONE_PERIOD[0])
     {
     }
 
@@ -128,7 +124,7 @@ namespace MusicCom
         int adjust_volume = volume;
         if (part_data.SSGEnvOn)
         {
-            auto env = GetSSGEnv(part_data.SoundNo);
+            auto env = GetMusicData().GetSSGEnv(part_data.SoundNo);
             if (env.Env.empty())
             {
                 return adjust_volume;
@@ -173,7 +169,7 @@ namespace MusicCom
 
     const CommandIterator PsgSequencer::GetHead() const
     {
-        return GetHeadImpl();
+        return GetMusicData().GetChannelHead(channel_ + 3);
     }
 
     int PsgSequencer::CalculateTone(int base_octave, int base_tone, int detune) const

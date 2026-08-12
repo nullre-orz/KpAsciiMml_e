@@ -27,8 +27,6 @@ namespace MusicCom
           ssgwrap_(ssgwrap),
           sound_(sound),
           current_sound_data_(std::nullopt),
-          GetHeadImpl([this]()
-                      { return GetMusicData().GetRhythmPartHead(); }),
           sound_interrupt_enabled_(false),
           sound_interrupt_per_frame_(CalculatePerFrame(soundtempo)),
           sound_interrupt_left_(0)
@@ -239,7 +237,7 @@ namespace MusicCom
 
     const CommandIterator SoundSequencer::GetHead() const
     {
-        return GetHeadImpl();
+        return GetMusicData().GetRhythmPartHead();
     }
 
 } // namespace MusicCom
