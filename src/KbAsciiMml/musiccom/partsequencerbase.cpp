@@ -2,7 +2,6 @@
 #include "musdata.h"
 #include <algorithm>
 #include <cmath>
-#include <fmgen/opna.h>
 #include <limits>
 
 namespace MusicCom
@@ -10,8 +9,8 @@ namespace MusicCom
     const int TONE_KEY_OFF = -1;
     const int MAX_MACRO_COUNT = 24;
 
-    PartSequencerBase::PartSequencerBase(FM::OPN& opn, const MusicData& music, CommandIterator command_tail, int rate)
-        : opn_(opn),
+    PartSequencerBase::PartSequencerBase(const RegisterWriter& register_writer, const MusicData& music, CommandIterator command_tail, int rate)
+        : register_writer_(register_writer),
           part_data_(),
           music_data_(music),
           command_tail_(command_tail),
@@ -475,7 +474,7 @@ namespace MusicCom
         //case CommandType::TYPE_ENV_FORM:
         //case CommandType::TYPE_ENV_PERIOD:
         case CommandType::TYPE_DIRECT:
-            opn_.SetReg(command.GetArg(0), command.GetArg(1));
+            register_writer_(command.GetArg(0), command.GetArg(1));
             break;
         }
 

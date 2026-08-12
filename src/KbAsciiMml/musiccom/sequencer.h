@@ -26,6 +26,7 @@ namespace MusicCom
         void Mix(__int16* dest, int nsamples);
 
     private:
+        void WriteRegister(int address, int value);
         void InitializeSequencer(int rate);
 
         FM::OPN& opn;

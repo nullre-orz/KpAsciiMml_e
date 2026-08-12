@@ -43,8 +43,26 @@ namespace MusicCom
         return true;
     }
 
+    void Sequencer::WriteRegister(int address, int value)
+    {
+        if (address == 0x07)
+        {
+            ssgwrap.SetMixer(value);
+        }
+        else
+        {
+            opn.SetReg(address, value);
+        }
+    }
+
     void Sequencer::InitializeSequencer(int rate)
     {
+        // YコマンドによるYM2203レジスタ書込みを各パートから受け取る
+        RegisterWriter register_writer = [this](int address, int value)
+        {
+            WriteRegister(address, value);
+        };
+
         std::vector<PsgSequencer*> observer_list;
         for (int ch = 0; ch < 6; ch++)
         {
@@ -53,11 +71,11 @@ namespace MusicCom
                 std::unique_ptr<PartSequencerBase> ptr;
                 if (ch < 3)
                 {
-                    ptr = std::make_unique<FmSequencer>(opn, fmwrap, musicdata, ch, rate);
+                    ptr = std::make_unique<FmSequencer>(register_writer, fmwrap, musicdata, ch, rate);
                 }
                 else
                 {
-                    auto psg = std::make_unique<PsgSequencer>(opn, ssgwrap, musicdata, ch, rate);
+                    auto psg = std::make_unique<PsgSequencer>(register_writer, ssgwrap, musicdata, ch, rate);
                     // チャンネル4,5(プログラム上は3,4)は効果音再生状態通知を受け取る
                     // D:パートの初期化時に設定するためここではポインタのみ保持
                     if (ch == 3 || ch == 4)
@@ -72,7 +90,7 @@ namespace MusicCom
         }
         if (musicdata.IsRhythmPartPresent())
         {
-            auto ptr = std::make_unique<SoundSequencer>(opn, ssgwrap, musicdata, sounddata, soundtempo, rate);
+            auto ptr = std::make_unique<SoundSequencer>(register_writer, ssgwrap, musicdata, sounddata, soundtempo, rate);
             ptr->Initialize();
             // 効果音再生状態通知(効果音フレームの更新およびチャンネル4,5の抑止のため)
             for (auto item : observer_list)

@@ -122,7 +122,7 @@ namespace MusicCom
         opn.SetReg(lowaddr, fnumber & 0xff);
     }
 
-    SSGWrap::SSGWrap(FM::OPN& o) : opn(o)
+    SSGWrap::SSGWrap(FM::OPN& o) : opn(o), mixer_control_(0x80)
     {
         fill_n(tone, 3, true);
         fill_n(noise, 3, false);
@@ -186,6 +186,12 @@ namespace MusicCom
         opn.SetReg(0x08 + ch, v & 0x0f);
     }
 
+    void SSGWrap::SetMixer(int value)
+    {
+        mixer_control_ = value & 0xc0;
+        SetNoiseToneEnable();
+    }
+
     void SSGWrap::SetEnv(int ch, bool on)
     {
         assert(0 <= ch && ch < 3);
@@ -217,7 +223,7 @@ namespace MusicCom
             int t = static_cast<int>(!(tone[ch] && keyon[ch]));
             val |= (n | t) << ch;
         }
-        val |= 0x80;
+        val |= mixer_control_;
 
         opn.SetReg(0x07, val);
     }

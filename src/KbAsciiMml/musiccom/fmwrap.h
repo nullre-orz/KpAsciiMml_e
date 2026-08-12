@@ -45,6 +45,8 @@ namespace MusicCom
         void SetNoiseEnabled(int ch, bool on);
         void SetVolume(int ch, int vol);
         void SetEffectVolume(int ch, int vol);
+        // YM2203のSSGミキサーレジスタ(07h)を更新する
+        void SetMixer(int value);
 
         void KeyOnOff(int ch, bool on);
         void SetNoiseToneEnable();
@@ -57,6 +59,7 @@ namespace MusicCom
         bool env[3];
         int env_form[3];
         int vol[3];
+        int mixer_control_; // レジスタ07hのI/Oポート制御bit(D7-D6)
     };
 
 } // namespace MusicCom

@@ -3,11 +3,6 @@
 #include "partsequencerbase.h"
 #include <functional>
 
-namespace FM
-{
-    class OPN;
-}
-
 namespace MusicCom
 {
     class FMWrap;
@@ -16,7 +11,7 @@ namespace MusicCom
     class FmSequencer : public PartSequencerBase
     {
     public:
-        FmSequencer(FM::OPN& opn, FMWrap& fmwrap, const MusicData& music, int channel, int rate);
+        FmSequencer(const RegisterWriter& register_writer, FMWrap& fmwrap, const MusicData& music, int channel, int rate);
         ~FmSequencer();
 
     protected: // for PartSequencerBase

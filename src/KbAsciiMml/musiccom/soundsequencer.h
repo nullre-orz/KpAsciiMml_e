@@ -6,11 +6,6 @@
 #include <optional>
 #include <vector>
 
-namespace FM
-{
-    class OPN;
-}
-
 namespace MusicCom
 {
     class SSGWrap;
@@ -19,7 +14,7 @@ namespace MusicCom
     class SoundSequencer : public PartSequencerBase
     {
     public:
-        SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate);
+        SoundSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate);
         ~SoundSequencer();
 
         enum class PlayStatus : int

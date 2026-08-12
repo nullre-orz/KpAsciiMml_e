@@ -1,19 +1,17 @@
 ﻿#pragma once
 
 #include "partdata.h"
-
-namespace FM
-{
-    class OPN;
-}
+#include <functional>
 
 namespace MusicCom
 {
     class MusicData;
+    using RegisterWriter = std::function<void(int, int)>;
+
     class PartSequencerBase
     {
     public:
-        PartSequencerBase(FM::OPN& opn, const MusicData& music, CommandIterator command_tail, int rate);
+        PartSequencerBase(const RegisterWriter& register_writer, const MusicData& music, CommandIterator command_tail, int rate);
         virtual ~PartSequencerBase();
 
         void Initialize();
@@ -51,7 +49,7 @@ namespace MusicCom
         virtual void SetVolume(int volume) = 0;
         virtual const CommandIterator GetHead() const = 0;
 
-        FM::OPN& opn_;
+        RegisterWriter register_writer_;
         PartData part_data_;
         const MusicData& music_data_;
         const CommandIterator command_tail_;

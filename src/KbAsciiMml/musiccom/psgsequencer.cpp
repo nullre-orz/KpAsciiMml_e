@@ -18,8 +18,8 @@ namespace MusicCom
     };
     // clang-format on
 
-    PsgSequencer::PsgSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, int channel, int rate)
-        : PartSequencerBase(opn, music, music.GetChannelTail(channel), rate),
+    PsgSequencer::PsgSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, int channel, int rate)
+        : PartSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),
           channel_(channel - 3),
           ssgwrap_(ssgwrap),
           ring_deterrence_(false),

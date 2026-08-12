@@ -22,8 +22,8 @@ namespace MusicCom
     };
     // clang-format on
 
-    SoundSequencer::SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate)
-        : PartSequencerBase(opn, music, music.GetRhythmPartTail(), rate),
+    SoundSequencer::SoundSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate)
+        : PartSequencerBase(register_writer, music, music.GetRhythmPartTail(), rate),
           ssgwrap_(ssgwrap),
           sound_(sound),
           current_sound_data_(std::nullopt),

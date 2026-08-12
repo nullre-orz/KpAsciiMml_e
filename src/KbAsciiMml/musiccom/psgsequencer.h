@@ -12,7 +12,7 @@ namespace MusicCom
     class PsgSequencer : public PartSequencerBase
     {
     public:
-        PsgSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, int channel, int rate);
+        PsgSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, int channel, int rate);
         ~PsgSequencer();
 
         void UpdateDeterrence(SoundSequencer::PlayStatus status);

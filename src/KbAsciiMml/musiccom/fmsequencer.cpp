@@ -58,8 +58,8 @@ namespace MusicCom
     };
     // clang-format on
 
-    FmSequencer::FmSequencer(FM::OPN& opn, FMWrap& fmwrap, const MusicData& music, int channel, int rate)
-        : PartSequencerBase(opn, music, music.GetChannelTail(channel), rate),
+    FmSequencer::FmSequencer(const RegisterWriter& register_writer, FMWrap& fmwrap, const MusicData& music, int channel, int rate)
+        : PartSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),
           channel_(channel),
           fmwrap_(fmwrap),
           sound_no_(0),
