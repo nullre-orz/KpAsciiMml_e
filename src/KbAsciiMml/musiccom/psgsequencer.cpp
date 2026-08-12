@@ -61,11 +61,15 @@ namespace MusicCom
         case CommandType::TYPE_TONE:
             part_data.SoundNo = command.GetArg(0);
             part_data.SSGEnvOn = part_data.SoundNo != 0;
+            if (part_data.SSGEnvOn)
+            {
+                ssgwrap_.SetEnv(channel_, false);
+            }
             break;
         case CommandType::TYPE_ENV_FORM:
             part_data.SSGEnvOn = false;
             ssgwrap_.SetEnv(channel_, true);
-            ssgwrap_.SetEnvForm(command.GetArg(0));
+            ssgwrap_.SetEnvForm(channel_, command.GetArg(0));
             break;
         case CommandType::TYPE_ENV_PERIOD:
             part_data.SSGEnvOn = false;
@@ -91,6 +95,7 @@ namespace MusicCom
     {
         if (!ring_deterrence_)
         {
+            ssgwrap_.PrepareKeyOn(channel_);
             ssgwrap_.KeyOnOff(channel_, true);
         }
     }

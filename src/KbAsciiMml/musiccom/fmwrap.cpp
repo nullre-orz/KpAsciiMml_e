@@ -128,18 +128,35 @@ namespace MusicCom
         fill_n(noise, 3, false);
         fill_n(keyon, 3, false);
         fill_n(env, 3, false);
+        fill_n(env_form, 3, 0);
         fill_n(vol, 3, 15);
     }
 
-    void SSGWrap::SetEnvForm(int form)
+    void SSGWrap::SetEnvForm(int ch, int form)
     {
-        opn.SetReg(0x0d, form);
+        assert(0 <= ch && ch < 3);
+        env_form[ch] = form;
     }
 
     void SSGWrap::SetEnvPeriod(int period)
     {
         opn.SetReg(0x0b, period & 0xff);
         opn.SetReg(0x0c, (period >> 8) & 0xff);
+    }
+
+    void SSGWrap::PrepareKeyOn(int ch)
+    {
+        assert(0 <= ch && ch < 3);
+
+        if (env[ch])
+        {
+            opn.SetReg(0x08 + ch, 0x10);
+            opn.SetReg(0x0d, env_form[ch]);
+        }
+        else
+        {
+            opn.SetReg(0x08 + ch, vol[ch] & 0x0f);
+        }
     }
 
     void SSGWrap::SetTonePeriod(int ch, int tone)
@@ -158,17 +175,21 @@ namespace MusicCom
     void SSGWrap::SetVolume(int ch, int v)
     {
         assert(0 <= ch && ch < 3);
+        env[ch] = false;
         vol[ch] = v;
-        int d = ch;
+        opn.SetReg(0x08 + ch, v & 0x0f);
+    }
 
-        int val = (env[ch] ? 0x10 : 0x00) | (v & 0x0f);
-        opn.SetReg(0x08 + d, val);
+    void SSGWrap::SetEffectVolume(int ch, int v)
+    {
+        assert(0 <= ch && ch < 3);
+        opn.SetReg(0x08 + ch, v & 0x0f);
     }
 
     void SSGWrap::SetEnv(int ch, bool on)
     {
+        assert(0 <= ch && ch < 3);
         env[ch] = on;
-        SetVolume(ch, vol[ch]);
     }
     void SSGWrap::SetToneEnabled(int ch, bool on)
     {

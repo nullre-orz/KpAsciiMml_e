@@ -36,13 +36,15 @@ namespace MusicCom
     public:
         SSGWrap(FM::OPN& o);
         void SetEnv(int ch, bool on);
-        void SetEnvForm(int form);
+        void SetEnvForm(int ch, int form);
         void SetEnvPeriod(int period);
+        void PrepareKeyOn(int ch);
         void SetTonePeriod(int ch, int tone);
         void SetNoisePeriod(int period);
         void SetToneEnabled(int ch, bool on);
         void SetNoiseEnabled(int ch, bool on);
         void SetVolume(int ch, int vol);
+        void SetEffectVolume(int ch, int vol);
 
         void KeyOnOff(int ch, bool on);
         void SetNoiseToneEnable();
@@ -53,6 +55,7 @@ namespace MusicCom
         bool noise[3];
         bool keyon[3];
         bool env[3];
+        int env_form[3];
         int vol[3];
     };
 

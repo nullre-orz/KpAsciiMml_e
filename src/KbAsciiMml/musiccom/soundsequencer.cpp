@@ -102,7 +102,7 @@ namespace MusicCom
         for (int ch = 0; ch < 2; ch++)
         {
             ssgwrap_.SetTonePeriod(ch, data.tone[ch]);
-            ssgwrap_.SetVolume(ch, data.volume[ch]);
+            ssgwrap_.SetEffectVolume(ch, data.volume[ch]);
             ssgwrap_.SetToneEnabled(ch, data.tone_enabled[ch]);
             ssgwrap_.SetNoiseEnabled(ch, data.noise_enabled[ch]);
         }
