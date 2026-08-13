@@ -5,6 +5,7 @@
 #include "sounddata.h"
 #include "soundparser.h"
 #include "soundsequencer.h"
+#include <algorithm>
 
 namespace MusicCom
 {
@@ -54,17 +55,17 @@ namespace MusicCom
 
     void MusicCom::SetFMVolume(int vol)
     {
-        fmVolume = std::min(std::max(vol, -192), 20);
+        fmVolume = std::clamp(vol, -192, 20);
     }
 
     void MusicCom::SetPSGVolume(int vol)
     {
-        psgVolume = std::min(std::max(vol, -192), 20);
+        psgVolume = std::clamp(vol, -192, 20);
     }
 
     void MusicCom::SetSoundTempo(int tempo)
     {
-        soundTempo = std::min(std::max(tempo, 128), 255);
+        soundTempo = std::clamp(tempo, 128, 255);
     }
 
 } // namespace MusicCom

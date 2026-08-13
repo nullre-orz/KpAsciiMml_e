@@ -518,7 +518,7 @@ namespace MusicCom
 
             final_volume = AdjustVolume(final_volume, keyon_length, part_data_);
 
-            final_volume = std::min(std::max(final_volume, 0), 15);
+            final_volume = std::clamp(final_volume, 0, 15);
             SetVolume(final_volume);
         }
 
