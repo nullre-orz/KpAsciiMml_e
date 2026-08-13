@@ -33,10 +33,7 @@ namespace MusicCom
     {
     }
 
-    SoundSequencer::~SoundSequencer()
-    {
-        observer_list_.clear();
-    }
+    SoundSequencer::~SoundSequencer() = default;
 
     void SoundSequencer::InitializeImpl(PartData& part_data)
     {

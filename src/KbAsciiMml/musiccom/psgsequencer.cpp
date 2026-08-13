@@ -29,9 +29,7 @@ namespace MusicCom
     {
     }
 
-    PsgSequencer::~PsgSequencer()
-    {
-    }
+    PsgSequencer::~PsgSequencer() = default;
 
     void PsgSequencer::InitializeImpl(PartData& part_data)
     {

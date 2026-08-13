@@ -61,9 +61,7 @@ KbAsciiMml::KbAsciiMml()
     musicCom.SetSoundTempo(soundtempo);
 }
 
-KbAsciiMml::~KbAsciiMml()
-{
-}
+KbAsciiMml::~KbAsciiMml() = default;
 
 BOOL KbAsciiMml::Open(const char* cszFileName, SOUNDINFO* pInfo)
 {

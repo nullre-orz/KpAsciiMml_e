@@ -18,9 +18,7 @@ namespace MusicCom
     {
     }
 
-    MusicCom::~MusicCom()
-    {
-    }
+    MusicCom::~MusicCom() = default;
 
     bool MusicCom::Load(const char* filename)
     {

@@ -76,9 +76,7 @@ namespace MusicCom
     {
     }
 
-    FmSequencer::~FmSequencer()
-    {
-    }
+    FmSequencer::~FmSequencer() = default;
 
     void FmSequencer::InitializeImpl(PartData& part_data)
     {

@@ -21,9 +21,7 @@ namespace MusicCom
     {
     }
 
-    PartSequencerBase::~PartSequencerBase()
-    {
-    }
+    PartSequencerBase::~PartSequencerBase() = default;
 
     void PartSequencerBase::Initialize()
     {
