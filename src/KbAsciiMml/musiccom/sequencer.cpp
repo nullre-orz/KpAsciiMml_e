@@ -16,7 +16,25 @@ using namespace std;
 
 namespace MusicCom
 {
-    const unsigned int OPN_CLOCKFREQ = 3993600; // OPNのクロック周波数
+    namespace
+    {
+        enum YM2203Register : int
+        {
+            YM2203_MODE_REGISTER = 0x27,
+        };
+
+        enum SSGRegister : int
+        {
+            SSG_MIXER_REGISTER = 0x07,
+        };
+
+        enum YM2203Control : int
+        {
+            YM2203_CH3_SPECIAL_MODE = 0x40,
+        };
+
+        constexpr unsigned int OPN_CLOCKFREQ = 3993600; // OPNのクロック周波数
+    }
 
     Sequencer::Sequencer(FM::OPN& o, MusicData& md, SoundData& sd, int stempo)
         : opn(o),
@@ -38,14 +56,14 @@ namespace MusicCom
         InitializeSequencer(rate);
 
         // 効果音モード on
-        opn.SetReg(0x27, 0x40);
+        opn.SetReg(YM2203_MODE_REGISTER, YM2203_CH3_SPECIAL_MODE);
 
         return true;
     }
 
     void Sequencer::WriteRegister(int address, int value)
     {
-        if (address == 0x07)
+        if (address == SSG_MIXER_REGISTER)
         {
             ssgwrap.SetMixer(value);
         }
