@@ -13,7 +13,9 @@ asmichi氏の [ASCII music.com MML Player (KbAsciiMml)](https://github.com/asmic
 
 LOGIN SOFCOM No.8に収録されていた楽曲集 MML700 のうち、ASCII music.comでも文法エラーとなる2曲を除いて、すべて再生できるようになりました。
 
-Dパートの再生に対応しました。MMLファイルと同じディレクトリにSOUND.datファイルがあればそれを参照します。読み込みに失敗した場合は、組み込みの効果音としてRPGツクール Dante98 II相当のデータを使用します。
+Dパートの再生に対応しました。MMLファイルと同じディレクトリにSOUND.datファイルがあればそれを参照します。読み込みに失敗した場合は、組み込みの効果音としてRPGツクール Dante98相当のデータを使用します。
+
+SOUNDコマンドのLFOに対応しました。
 
 
 ## ビルド
@@ -28,7 +30,7 @@ Dパートの再生に対応しました。MMLファイルと同じディレク�
 
 ビルドに使用した環境は次の通りです。
 
-- Visual Studio Community 2022 Version 17.12.0 (「C++ ネイティブ開発」ワークロードあり)
+- Visual Studio Community 2022 Version 17.14.38 (「C++ ネイティブ開発」ワークロードあり)
 - Boost 1.86.0 (ヘッダーファイルのみ)
 - KbMedia PlayerプラグインSDK 2024/07/12版
 
@@ -54,7 +56,6 @@ project M88 http://www.retropc.net/cisc/m88/
 
 なお、fmgenには下記の改変を行っています。
 
-- ~~PSG音源のノイズ周波数の調整(周波数を2倍にする)設定を追加~~  
 - 警告・エラー除去
   - 不足していたincludeを追加
   - Windows API呼び出しをUnicode版からマルチバイト文字版に変更 (※実際には使用されていない)
