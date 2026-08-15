@@ -2,9 +2,7 @@
 
 #include "partsequencerbase.h"
 #include "sounddata.h"
-#include <functional>
 #include <optional>
-#include <vector>
 
 namespace MusicCom
 {
@@ -16,14 +14,6 @@ namespace MusicCom
     public:
         SoundSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate);
         ~SoundSequencer();
-
-        enum class PlayStatus : int
-        {
-            STOP,
-            PLAYING
-        };
-        using PlayStatusObserver = std::function<void(PlayStatus)>;
-        void AppendPlayStatusObserver(PlayStatusObserver observer);
 
     protected: // for PartSequencerBase
         virtual int GetRemainFrameSizeImpl();
@@ -50,8 +40,6 @@ namespace MusicCom
     private:
         SSGWrap& ssgwrap_;
         const SoundData& sound_;
-
-        std::vector<PlayStatusObserver> observer_list_;
 
         struct CurrentSoundData
         {

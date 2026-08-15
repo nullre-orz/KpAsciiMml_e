@@ -35,30 +35,52 @@ namespace MusicCom
     {
     public:
         SSGWrap(FM::OPN& o);
+
         void SetEnv(int ch, bool on);
         void SetEnvForm(int ch, int form);
         void SetEnvPeriod(int period);
         void PrepareKeyOn(int ch);
         void SetTonePeriod(int ch, int tone);
         void SetNoisePeriod(int period);
-        void SetToneEnabled(int ch, bool on);
-        void SetNoiseEnabled(int ch, bool on);
         void SetVolume(int ch, int vol);
-        void SetEffectVolume(int ch, int vol);
-        // YM2203のSSGミキサーレジスタ(07h)を更新する
-        void SetMixer(int value);
-
         void KeyOnOff(int ch, bool on);
-        void SetNoiseToneEnable();
+
+        void BeginEffect();
+        void SetEffectFrame(int noise_period, const int tone_period[2], const int volume[2], const bool tone_enabled[2], const bool noise_enabled[2]);
+        void EffectKeyOnOff(bool on);
+        void EndEffect();
+
+        void WriteMusicRegister(int address, int value);
 
     private:
+        enum class WriteSource : int
+        {
+            MUSIC,
+            EFFECT,
+        };
+
+        void WriteRegister(int address, int value, WriteSource source);
+
+        void SetToneEnabled(int ch, bool on);
+        void SetNoiseEnabled(int ch, bool on);
+        // YM2203のSSGミキサーレジスタ(07h)を更新する
+        void SetMixer(int value);
+        void SetNoiseToneEnable();
+
+        void SetEffectNoiseToneEnable();
+
         FM::OPN& opn;
         bool tone[3];
         bool noise[3];
         bool keyon[3];
+        bool effect_tone_[2];
+        bool effect_noise_[2];
+        bool effect_keyon_[2];
         bool env[3];
         int env_form[3];
         int vol[3];
+        bool effect_active_;
+        int mixer_value_;
         int mixer_control_; // レジスタ07hのI/Oポート制御bit(D7-D6)
     };
 

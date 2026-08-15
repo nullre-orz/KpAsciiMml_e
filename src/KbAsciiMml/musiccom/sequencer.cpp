@@ -23,17 +23,13 @@ namespace MusicCom
             YM2203_MODE_REGISTER = 0x27,
         };
 
-        enum SSGRegister : int
-        {
-            SSG_MIXER_REGISTER = 0x07,
-        };
-
         enum YM2203Control : int
         {
             YM2203_CH3_SPECIAL_MODE = 0x40,
         };
 
         constexpr unsigned int OPN_CLOCKFREQ = 3993600; // OPNのクロック周波数
+        constexpr int SSG_REGISTER_LIMIT = 0x10;
     }
 
     Sequencer::Sequencer(FM::OPN& o, MusicData& md, SoundData& sd, int stempo)
@@ -63,9 +59,9 @@ namespace MusicCom
 
     void Sequencer::WriteRegister(int address, int value)
     {
-        if (address == SSG_MIXER_REGISTER)
+        if (address < SSG_REGISTER_LIMIT)
         {
-            ssgwrap.SetMixer(value);
+            ssgwrap.WriteMusicRegister(address, value);
         }
         else
         {
@@ -81,7 +77,6 @@ namespace MusicCom
             WriteRegister(address, value);
         };
 
-        std::vector<PsgSequencer*> observer_list;
         for (int ch = 0; ch < 6; ch++)
         {
             if (musicdata.IsChannelPresent(ch))
@@ -93,14 +88,7 @@ namespace MusicCom
                 }
                 else
                 {
-                    auto psg = std::make_unique<PsgSequencer>(register_writer, ssgwrap, musicdata, ch, rate);
-                    // チャンネル4,5(プログラム上は3,4)は効果音再生状態通知を受け取る
-                    // D:パートの初期化時に設定するためここではポインタのみ保持
-                    if (ch == 3 || ch == 4)
-                    {
-                        observer_list.push_back(psg.get());
-                    }
-                    ptr = std::move(psg);
+                    ptr = std::make_unique<PsgSequencer>(register_writer, ssgwrap, musicdata, ch, rate);
                 }
                 ptr->Initialize();
                 partSequencer.emplace_back(std::move(ptr));
@@ -110,15 +98,6 @@ namespace MusicCom
         {
             auto ptr = std::make_unique<SoundSequencer>(register_writer, ssgwrap, musicdata, sounddata, soundtempo, rate);
             ptr->Initialize();
-            // 効果音再生状態通知(効果音フレームの更新およびチャンネル4,5の抑止のため)
-            for (auto item : observer_list)
-            {
-                ptr->AppendPlayStatusObserver(
-                    [item](SoundSequencer::PlayStatus status)
-                    {
-                        item->UpdateDeterrence(status);
-                    });
-            }
             partSequencer.emplace_back(std::move(ptr));
         }
     }

@@ -22,7 +22,6 @@ namespace MusicCom
         : PartSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),
           channel_(channel - 3),
           ssgwrap_(ssgwrap),
-          ring_deterrence_(false),
           current_note_(0),
           last_period_(SSG_TONE_PERIOD[0]),
           current_period_(SSG_TONE_PERIOD[0])
@@ -39,11 +38,6 @@ namespace MusicCom
         current_note_ = 0;
         last_period_ = SSG_TONE_PERIOD[0];
         current_period_ = SSG_TONE_PERIOD[0];
-    }
-
-    void PsgSequencer::UpdateDeterrence(SoundSequencer::PlayStatus status)
-    {
-        ring_deterrence_ = (status == SoundSequencer::PlayStatus::PLAYING);
     }
 
     CommandIterator PsgSequencer::ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data)
@@ -77,29 +71,15 @@ namespace MusicCom
         return return_ptr;
     }
 
-    void PsgSequencer::ProcessEffect(int current_frame)
-    {
-        if (!ring_deterrence_)
-        {
-            PartSequencerBase::ProcessEffect(current_frame);
-        }
-    }
-
     void PsgSequencer::KeyOn()
     {
-        if (!ring_deterrence_)
-        {
-            ssgwrap_.PrepareKeyOn(channel_);
-            ssgwrap_.KeyOnOff(channel_, true);
-        }
+        ssgwrap_.PrepareKeyOn(channel_);
+        ssgwrap_.KeyOnOff(channel_, true);
     }
 
     void PsgSequencer::KeyOff()
     {
-        if (!ring_deterrence_)
-        {
-            ssgwrap_.KeyOnOff(channel_, false);
-        }
+        ssgwrap_.KeyOnOff(channel_, false);
     }
 
     void PsgSequencer::UpdateTone(int base_tone, PartData& part_data)

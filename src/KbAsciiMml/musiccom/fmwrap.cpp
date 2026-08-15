@@ -52,6 +52,7 @@ namespace MusicCom
         {
             SSG_ENV_ENABLE = 0x10,
             SSG_MIXER_IO_INITIAL_VALUE = 0x80,
+            SSG_MIXER_ALL_CHANNELS_DISABLED = 0x3f,
         };
 
         enum FMMask : int
@@ -76,6 +77,7 @@ namespace MusicCom
         constexpr int FM_BLOCK_COUNT = 8;
         constexpr int FM_BLOCK_MAX = 7;
         constexpr int SSG_NOISE_DISABLE_SHIFT = 3;
+        constexpr int SSG_EFFECT_PRESERVED_MIXER_MASK = 0xe4; // I/O制御bitおよびSSGチャンネルCのミキサーbit
 
         constexpr FMRegister FM_CH3_OPERATOR_TONE_REGISTERS[4][2] = {
             {FM_CH3_OPERATOR1_TONE_HIGH_REGISTER, FM_CH3_OPERATOR1_TONE_LOW_REGISTER},
@@ -194,14 +196,27 @@ namespace MusicCom
         opn.SetReg(lowaddr, fnumber & BYTE_MASK);
     }
 
-    SSGWrap::SSGWrap(FM::OPN& o) : opn(o), mixer_control_(SSG_MIXER_IO_INITIAL_VALUE)
+    SSGWrap::SSGWrap(FM::OPN& o)
+        : opn(o),
+          effect_active_(false),
+          mixer_value_(SSG_MIXER_IO_INITIAL_VALUE | SSG_MIXER_ALL_CHANNELS_DISABLED),
+          mixer_control_(SSG_MIXER_IO_INITIAL_VALUE)
     {
         fill_n(tone, 3, true);
         fill_n(noise, 3, false);
         fill_n(keyon, 3, false);
+        fill_n(effect_tone_, 2, true);
+        fill_n(effect_noise_, 2, false);
+        fill_n(effect_keyon_, 2, false);
         fill_n(env, 3, false);
         fill_n(env_form, 3, 0);
         fill_n(vol, 3, 15);
+    }
+
+    void SSGWrap::SetEnv(int ch, bool on)
+    {
+        assert(0 <= ch && ch < 3);
+        env[ch] = on;
     }
 
     void SSGWrap::SetEnvForm(int ch, int form)
@@ -212,8 +227,8 @@ namespace MusicCom
 
     void SSGWrap::SetEnvPeriod(int period)
     {
-        opn.SetReg(SSG_ENV_PERIOD_LOW_REGISTER, period & BYTE_MASK);
-        opn.SetReg(SSG_ENV_PERIOD_HIGH_REGISTER, (period >> BYTE_SHIFT) & BYTE_MASK);
+        WriteRegister(SSG_ENV_PERIOD_LOW_REGISTER, period & BYTE_MASK, WriteSource::MUSIC);
+        WriteRegister(SSG_ENV_PERIOD_HIGH_REGISTER, (period >> BYTE_SHIFT) & BYTE_MASK, WriteSource::MUSIC);
     }
 
     void SSGWrap::PrepareKeyOn(int ch)
@@ -222,12 +237,12 @@ namespace MusicCom
 
         if (env[ch])
         {
-            opn.SetReg(SSG_VOLUME_REGISTER_BASE + ch, SSG_ENV_ENABLE);
-            opn.SetReg(SSG_ENV_FORM_REGISTER, env_form[ch]);
+            WriteRegister(SSG_VOLUME_REGISTER_BASE + ch, SSG_ENV_ENABLE, WriteSource::MUSIC);
+            WriteRegister(SSG_ENV_FORM_REGISTER, env_form[ch], WriteSource::MUSIC);
         }
         else
         {
-            opn.SetReg(SSG_VOLUME_REGISTER_BASE + ch, vol[ch] & SSG_VOLUME_MASK);
+            WriteRegister(SSG_VOLUME_REGISTER_BASE + ch, vol[ch] & SSG_VOLUME_MASK, WriteSource::MUSIC);
         }
     }
 
@@ -236,12 +251,13 @@ namespace MusicCom
         assert(0 <= ch && ch < 3);
 
         int d = ch * 2;
-        opn.SetReg(SSG_TONE_PERIOD_LOW_REGISTER_BASE + d, tone & BYTE_MASK);
-        opn.SetReg(SSG_TONE_PERIOD_HIGH_REGISTER_BASE + d, (tone >> BYTE_SHIFT) & SSG_TONE_PERIOD_HIGH_MASK);
+        WriteRegister(SSG_TONE_PERIOD_LOW_REGISTER_BASE + d, tone & BYTE_MASK, WriteSource::MUSIC);
+        WriteRegister(SSG_TONE_PERIOD_HIGH_REGISTER_BASE + d, (tone >> BYTE_SHIFT) & SSG_TONE_PERIOD_HIGH_MASK, WriteSource::MUSIC);
     }
+
     void SSGWrap::SetNoisePeriod(int period)
     {
-        opn.SetReg(SSG_NOISE_PERIOD_REGISTER, period & SSG_NOISE_PERIOD_MASK);
+        WriteRegister(SSG_NOISE_PERIOD_REGISTER, period & SSG_NOISE_PERIOD_MASK, WriteSource::MUSIC);
     }
 
     void SSGWrap::SetVolume(int ch, int v)
@@ -249,40 +265,93 @@ namespace MusicCom
         assert(0 <= ch && ch < 3);
         env[ch] = false;
         vol[ch] = v;
-        opn.SetReg(SSG_VOLUME_REGISTER_BASE + ch, v & SSG_VOLUME_MASK);
+        WriteRegister(SSG_VOLUME_REGISTER_BASE + ch, v & SSG_VOLUME_MASK, WriteSource::MUSIC);
     }
 
-    void SSGWrap::SetEffectVolume(int ch, int v)
+    void SSGWrap::KeyOnOff(int ch, bool on)
     {
         assert(0 <= ch && ch < 3);
-        opn.SetReg(SSG_VOLUME_REGISTER_BASE + ch, v & SSG_VOLUME_MASK);
-    }
-
-    void SSGWrap::SetMixer(int value)
-    {
-        mixer_control_ = value & SSG_MIXER_IO_MASK;
+        keyon[ch] = on;
         SetNoiseToneEnable();
     }
 
-    void SSGWrap::SetEnv(int ch, bool on)
+    void SSGWrap::BeginEffect()
     {
-        assert(0 <= ch && ch < 3);
-        env[ch] = on;
+        effect_active_ = true;
+        fill_n(effect_tone_, 2, true);
+        fill_n(effect_noise_, 2, false);
+        fill_n(effect_keyon_, 2, false);
     }
+
+    void SSGWrap::SetEffectFrame(int noise_period, const int tone_period[2], const int volume[2], const bool tone_enabled[2], const bool noise_enabled[2])
+    {
+        WriteRegister(SSG_NOISE_PERIOD_REGISTER, noise_period & SSG_NOISE_PERIOD_MASK, WriteSource::EFFECT);
+        for (int ch = 0; ch < 2; ch++)
+        {
+            int d = ch * 2;
+            WriteRegister(SSG_TONE_PERIOD_LOW_REGISTER_BASE + d, tone_period[ch] & BYTE_MASK, WriteSource::EFFECT);
+            WriteRegister(SSG_TONE_PERIOD_HIGH_REGISTER_BASE + d, (tone_period[ch] >> BYTE_SHIFT) & SSG_TONE_PERIOD_HIGH_MASK, WriteSource::EFFECT);
+            WriteRegister(SSG_VOLUME_REGISTER_BASE + ch, volume[ch] & SSG_VOLUME_MASK, WriteSource::EFFECT);
+            effect_tone_[ch] = tone_enabled[ch];
+            effect_noise_[ch] = noise_enabled[ch];
+        }
+        SetEffectNoiseToneEnable();
+    }
+
+    void SSGWrap::EffectKeyOnOff(bool on)
+    {
+        fill_n(effect_keyon_, 2, on);
+        SetEffectNoiseToneEnable();
+    }
+
+    void SSGWrap::EndEffect()
+    {
+        effect_active_ = false;
+    }
+
+    void SSGWrap::WriteMusicRegister(int address, int value)
+    {
+        if (address == SSG_MIXER_REGISTER)
+        {
+            SetMixer(value);
+            return;
+        }
+        WriteRegister(address, value, WriteSource::MUSIC);
+    }
+
+    void SSGWrap::WriteRegister(int address, int value, WriteSource source)
+    {
+        if (effect_active_ && source == WriteSource::MUSIC)
+        {
+            return;
+        }
+
+        opn.SetReg(address, value);
+        if (address == SSG_MIXER_REGISTER)
+        {
+            mixer_value_ = value;
+        }
+    }
+
     void SSGWrap::SetToneEnabled(int ch, bool on)
     {
         assert(0 <= ch && ch < 3);
         tone[ch] = on;
     }
+
     void SSGWrap::SetNoiseEnabled(int ch, bool on)
     {
         assert(0 <= ch && ch < 3);
         noise[ch] = on;
     }
-    void SSGWrap::KeyOnOff(int ch, bool on)
+
+    void SSGWrap::SetMixer(int value)
     {
-        assert(0 <= ch && ch < 3);
-        keyon[ch] = on;
+        if (effect_active_)
+        {
+            return;
+        }
+        mixer_control_ = value & SSG_MIXER_IO_MASK;
         SetNoiseToneEnable();
     }
 
@@ -297,7 +366,20 @@ namespace MusicCom
         }
         val |= mixer_control_;
 
-        opn.SetReg(SSG_MIXER_REGISTER, val);
+        WriteRegister(SSG_MIXER_REGISTER, val, WriteSource::MUSIC);
+    }
+
+    void SSGWrap::SetEffectNoiseToneEnable()
+    {
+        int val = mixer_value_ & SSG_EFFECT_PRESERVED_MIXER_MASK;
+        for (int ch = 0; ch < 2; ch++)
+        {
+            int n = static_cast<int>(!(effect_noise_[ch] && effect_keyon_[ch]) << SSG_NOISE_DISABLE_SHIFT);
+            int t = static_cast<int>(!(effect_tone_[ch] && effect_keyon_[ch]));
+            val |= (n | t) << ch;
+        }
+
+        WriteRegister(SSG_MIXER_REGISTER, val, WriteSource::EFFECT);
     }
 
 } // namespace MusicCom
