@@ -1,9 +1,11 @@
 ﻿#pragma once
 
 #include "command.h"
+#include <algorithm>
 #include <cassert>
 #include <list>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -37,9 +39,10 @@ namespace MusicCom
         }
         void SetLFO(int form, int speed, int depth)
         {
-            LFOForm = form;
-            LFOSpeed = speed;
-            LFODepth = depth;
+            // 各LFO値は下位8bitだけを保存
+            LFOForm = form & 0xff;
+            LFOSpeed = speed & 0xff;
+            LFODepth = depth & 0xff;
         }
         void SetAlgFb(int alg, int fb)
         {
@@ -78,7 +81,7 @@ namespace MusicCom
         void SetDt2(int op, int dt2)
         {
             assert(0 <= op && op < 4);
-            Op[op].Dt2 = dt2 & 0x3;
+            Op[op].Dt2 = std::clamp(dt2 & 0xff, 0, 3);
         }
 
         int GetAlg() const
@@ -143,9 +146,10 @@ namespace MusicCom
             return macros.find(name) != macros.end();
         }
 
+        void DefineMacro(const std::string& name);
         void AddCommandToChannel(int channel, const Command& command);
         void AddCommandToRhythmPart(const Command& command);
-        void AddCommandToMacro(std::string name, const Command& command);
+        void AddCommandToMacro(const std::string& name, const Command& command);
 
         CommandIterator GetChannelHead(int channel) const;
         CommandIterator GetChannelTail(int channel) const;

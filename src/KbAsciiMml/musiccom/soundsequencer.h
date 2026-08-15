@@ -2,14 +2,7 @@
 
 #include "partsequencerbase.h"
 #include "sounddata.h"
-#include <functional>
 #include <optional>
-#include <vector>
-
-namespace FM
-{
-    class OPN;
-}
 
 namespace MusicCom
 {
@@ -19,16 +12,8 @@ namespace MusicCom
     class SoundSequencer : public PartSequencerBase
     {
     public:
-        SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate);
+        SoundSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate);
         ~SoundSequencer();
-
-        enum class PlayStatus : int
-        {
-            STOP,
-            PLAYING
-        };
-        using PlayStatusObserver = std::function<void(PlayStatus)>;
-        void AppendPlayStatusObserver(PlayStatusObserver observer);
 
     protected: // for PartSequencerBase
         virtual int GetRemainFrameSizeImpl();
@@ -45,7 +30,7 @@ namespace MusicCom
         virtual void KeyOn();
         virtual void KeyOff();
         virtual void UpdateTone(int base_tone, PartData& part_data);
-        virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, double coefficient);
+        virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length);
         virtual void SetTone(int octave, int tone);
         virtual void SetVolume(int volume);
         virtual const CommandIterator GetHead() const;
@@ -56,16 +41,12 @@ namespace MusicCom
         SSGWrap& ssgwrap_;
         const SoundData& sound_;
 
-        std::vector<PlayStatusObserver> observer_list_;
-
         struct CurrentSoundData
         {
             RhythmData::const_iterator ptr;
             RhythmData::const_iterator end_ptr;
         };
         std::optional<CurrentSoundData> current_sound_data_;
-
-        std::function<CommandIterator()> GetHeadImpl;
 
         // 効果音フレーム
         bool sound_interrupt_enabled_;

@@ -2,15 +2,15 @@
 #include "musdata.h"
 #include <algorithm>
 #include <cmath>
-#include <fmgen/opna.h>
+#include <limits>
 
 namespace MusicCom
 {
     const int TONE_KEY_OFF = -1;
-    const int MAX_MACRO_COUNT = 100;
+    const int MAX_MACRO_COUNT = 24;
 
-    PartSequencerBase::PartSequencerBase(FM::OPN& opn, const MusicData& music, CommandIterator command_tail, int rate)
-        : opn_(opn),
+    PartSequencerBase::PartSequencerBase(const RegisterWriter& register_writer, const MusicData& music, CommandIterator command_tail, int rate)
+        : register_writer_(register_writer),
           part_data_(),
           music_data_(music),
           command_tail_(command_tail),
@@ -21,13 +21,12 @@ namespace MusicCom
     {
     }
 
-    PartSequencerBase::~PartSequencerBase()
-    {
-    }
+    PartSequencerBase::~PartSequencerBase() = default;
 
     void PartSequencerBase::Initialize()
     {
         part_data_.Playing = true;
+        part_data_.HasPreviousNote = false;
         ReturnToHead();
 
         // フレーム初期化
@@ -108,7 +107,9 @@ namespace MusicCom
 
     int PartSequencerBase::CalculatePerFrame(int tempo)
     {
-        return static_cast<int>(rate_ * (60.0 / (tempo * 16.0)) / 1.1 + 0.5); // 1.1: music.comの演奏は速いので補正
+        // music.comの挙動に合わせ、テンポを補正する(10%強の高速化)
+        // テンポが30未満の場合は30として扱う
+        return static_cast<int>(rate_ * 3.0 * (5880 / std::max(tempo, 30)) / 5200.0);
     }
 
     void PartSequencerBase::ReturnToHead()
@@ -120,15 +121,10 @@ namespace MusicCom
 
     void PartSequencerBase::PreProcess(int current_frame)
     {
-        if (part_data_.NoteEndFrame <= current_frame)
+        if (part_data_.HasPreviousNote && part_data_.NoteEndFrame <= current_frame)
         {
             part_data_.LastOctave = part_data_.Octave;
             part_data_.LastTone = part_data_.Tone;
-            // 前回のコマンド先読みで & や W が検出された場合はキーオフせず継続
-            if (!part_data_.LinkedItem)
-            {
-                KeyOff();
-            }
         }
     }
 
@@ -312,6 +308,10 @@ namespace MusicCom
                 auto result = ProcessLoop(ptr);
                 if (!result)
                 {
+                    if (part_data_.HasPreviousNote && !part_data_.LinkedItem)
+                    {
+                        KeyOff();
+                    }
                     return;
                 }
                 ptr = *result;
@@ -337,13 +337,23 @@ namespace MusicCom
 
         static auto update_keyoff_frames = [](const PartSequencerBase& sequencer, PartData& part_data, CommandIterator ptr, int current_frame, int length)
         {
-            if ((part_data.LinkedItem = sequencer.FindLinkedItem(CommandIterator(ptr))) == CommandType::TYPE_TIE)
+            part_data.LinkedItem = sequencer.FindLinkedItem(CommandIterator(ptr));
+            if (ptr->GetType() == CommandType::TYPE_TIE)
             {
                 part_data.KeyOffFrame = part_data.NoteEndFrame;
             }
             else
             {
-                part_data.KeyOffFrame = current_frame + std::max(length * part_data.GateTime / 8, 1);
+                if (part_data.GateTime >= 8)
+                {
+                    // Q8以上では途中キーオフを無効化する
+                    part_data.KeyOffFrame = std::numeric_limits<int>::max();
+                }
+                else
+                {
+                    // 64分音符単位でゲート時間を計算する
+                    part_data.KeyOffFrame = current_frame + (length - 1) * part_data.GateTime / 8 + 1;
+                }
             }
         };
 
@@ -354,6 +364,10 @@ namespace MusicCom
         {
             if (!part_data.LinkedItem)
             {
+                if (part_data.HasPreviousNote)
+                {
+                    KeyOff();
+                }
                 part_data.KeyOnFrame = current_frame;
             }
 
@@ -361,7 +375,11 @@ namespace MusicCom
             part_data.Octave = part_data.ReservedOctave;
 
             UpdateTone(command.GetArg(0), part_data);
-            KeyOn();
+            if (part_data.LinkedItem != CommandType::TYPE_TIE)
+            {
+                KeyOn();
+            }
+            part_data.HasPreviousNote = true;
 
             if (part_data.LastTone == TONE_KEY_OFF)
             {
@@ -377,6 +395,7 @@ namespace MusicCom
         }
         case CommandType::TYPE_REST:
         {
+            part_data.HasPreviousNote = true;
             int length = get_length(part_data, command.GetArg(0));
             update_note_frames(part_data, current_frame, length);
 
@@ -397,18 +416,15 @@ namespace MusicCom
         }
         case CommandType::TYPE_WAIT:
         {
+            auto linked_item = part_data.LinkedItem;
             int length = get_length(part_data, command.GetArg(0));
             update_note_frames(part_data, current_frame, length);
+            update_keyoff_frames(*this, part_data, ptr, current_frame, length);
 
-            if (part_data.LinkedItem == CommandType::TYPE_TIE)
+            // W開始前のタイはWを越えて維持する
+            if (linked_item == CommandType::TYPE_TIE)
             {
-                // &W は後方にも & があるとみなす (music.comのバグ?)
-                // LinkedItemは更新不要
-                part_data.KeyOffFrame = part_data.NoteEndFrame;
-            }
-            else
-            {
-                update_keyoff_frames(*this, part_data, ptr, current_frame, length);
+                part_data.LinkedItem = linked_item;
             }
 
             break;
@@ -417,7 +433,7 @@ namespace MusicCom
             part_data.DefaultNoteLength = command.GetArg(0);
             break;
         case CommandType::TYPE_OCTAVE:
-            part_data.ReservedOctave = std::min(std::max(command.GetArg(0), 1), 8);
+            part_data.ReservedOctave = std::clamp(command.GetArg(0), 0, 8);
             break;
         case CommandType::TYPE_OCTAVE_DOWN:
             part_data.ReservedOctave = std::max(part_data.ReservedOctave - 1, 0);
@@ -426,8 +442,8 @@ namespace MusicCom
             part_data.ReservedOctave = std::min(part_data.ReservedOctave + 1, 8);
             break;
         case CommandType::TYPE_VOLUME:
-            part_data.Volume = std::min(std::max(command.GetArg(0), 0), 15);
-            SetVolume(part_data.Volume);
+            part_data.Volume = command.GetArg(0);
+            SetVolume(std::clamp(part_data.Volume, 0, 15));
             break;
         //case CommandType::TYPE_TONE:
         case CommandType::TYPE_GATE_TIME:
@@ -438,30 +454,25 @@ namespace MusicCom
             break;
         case CommandType::TYPE_PORTAMENTO:
             part_data.PLength = std::max(command.GetArg(0), 0);
-            // 排他
-            part_data.ILength = 0;
-            part_data.ULength = 0;
+            // Iのみ排他
+            part_data.IDepth = 0;
             break;
         case CommandType::TYPE_TREMOLO:
             part_data.UDepth = command.GetArg(0);
-            part_data.ULength = std::max(command.GetArg(1), 0);
+            part_data.ULength = std::max(command.GetArg(1), 1);
             part_data.UDelay = std::max(command.GetArg(2), 0);
-            // 排他
-            part_data.ILength = 0;
-            part_data.PLength = 0;
             break;
         case CommandType::TYPE_VIBRATO:
             part_data.IDepth = command.GetArg(0);
-            part_data.ILength = std::max(command.GetArg(1), 0);
+            part_data.ILength = std::max(command.GetArg(1), 1);
             part_data.IDelay = std::max(command.GetArg(2), 0);
-            // 排他
+            // Pのみ排他
             part_data.PLength = 0;
-            part_data.ULength = 0;
             break;
         //case CommandType::TYPE_ENV_FORM:
         //case CommandType::TYPE_ENV_PERIOD:
         case CommandType::TYPE_DIRECT:
-            opn_.SetReg(command.GetArg(0), command.GetArg(1));
+            register_writer_(command.GetArg(0), command.GetArg(1));
             break;
         }
 
@@ -478,8 +489,7 @@ namespace MusicCom
         {
             auto part_data = sequencer.part_data_;
             int depth = (((keyon_length - part_data.IDelay) / part_data.ILength) & 1) ? -part_data.IDepth : part_data.IDepth;
-            int tone = static_cast<int>(base_tone * pow(2.0, depth / (255.0 * 12.0)) + 0.5);
-            sequencer.SetTone(part_data.Octave, tone);
+            sequencer.ApplyVibratoEffect(part_data.Octave, base_tone, depth);
         };
 
         // 一時停止中の場合は何もしない
@@ -496,32 +506,34 @@ namespace MusicCom
 
         // Volume
         int keyon_length = current_frame - part_data_.KeyOnFrame;
-        int final_volume = part_data_.Volume;
-
-        if (part_data_.UDepth != 0 && keyon_length >= part_data_.UDelay)
+        if (part_data_.UDepth != 0 || part_data_.SSGEnvOn)
         {
-            if (((keyon_length - part_data_.UDelay) / part_data_.ULength) & 1)
-                final_volume -= part_data_.UDepth;
+            int final_volume = part_data_.Volume;
+
+            if (part_data_.UDepth != 0 && keyon_length >= part_data_.UDelay)
+            {
+                if (((keyon_length - part_data_.UDelay) / part_data_.ULength) & 1)
+                    final_volume -= part_data_.UDepth;
+            }
+
+            final_volume = AdjustVolume(final_volume, keyon_length, part_data_);
+
+            final_volume = std::clamp(final_volume, 0, 15);
+            SetVolume(final_volume);
         }
-
-        final_volume = AdjustVolume(final_volume, keyon_length, part_data_);
-
-        final_volume = std::min(std::max(final_volume, 0), 15);
-        SetVolume(final_volume);
 
         // Tone
         if (part_data_.PLength != 0 && part_data_.Tone != TONE_KEY_OFF)
         {
-            // ポルタメントは音程が変わった時点で適用する
-            // KeyOnFrameではなくNoteBeginFrameを基準とする
-            int diff = current_frame - part_data_.NoteBeginFrame;
-            if (diff <= part_data_.PLength)
+            // ポルタメントは音程が変わった時点で適用する。
+            // P+1を分母として整数差分を求め、P+1 tick目に目標音程へ切り替える。
+            int tick = current_frame - part_data_.NoteBeginFrame;
+            if (tick <= part_data_.PLength + 1)
             {
-                double coefficient = diff / static_cast<double>(part_data_.PLength);
-                ApplyPortamentoEffect(part_data_.Octave, part_data_.Tone, part_data_.LastOctave, part_data_.LastTone, coefficient);
+                ApplyPortamentoEffect(part_data_.Octave, part_data_.Tone, part_data_.LastOctave, part_data_.LastTone, tick, part_data_.PLength);
             }
         }
-        else if (part_data_.ILength != 0 && keyon_length >= part_data_.IDelay)
+        else if (part_data_.IDepth != 0 && keyon_length >= part_data_.IDelay)
         {
             if (part_data_.Tone != TONE_KEY_OFF)
             {
@@ -539,6 +551,12 @@ namespace MusicCom
     {
         // デフォルト実装は何もしない
         return volume;
+    }
+
+    void PartSequencerBase::ApplyVibratoEffect(int octave, int tone, int depth)
+    {
+        int adjusted_tone = static_cast<int>(tone * pow(2.0, depth / (255.0 * 12.0)) + 0.5);
+        SetTone(octave, adjusted_tone);
     }
 
 } // namespace MusicCom

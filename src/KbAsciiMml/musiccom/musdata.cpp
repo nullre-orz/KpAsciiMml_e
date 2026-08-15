@@ -67,7 +67,7 @@ namespace MusicCom
         cl.insert(cl.end(), command);
     }
 
-    void MusicData::AddCommandToMacro(std::string name, const Command& command)
+    void MusicData::DefineMacro(const string& name)
     {
         if (!IsMacroPresent(name))
         {
@@ -75,6 +75,11 @@ namespace MusicCom
             // マクロからのreturnを追加
             cl.push_back(Command(CommandType::TYPE_RETURN));
         }
+    }
+
+    void MusicData::AddCommandToMacro(const string& name, const Command& command)
+    {
+        assert(IsMacroPresent(name));
 
         CommandList& cl = macros[name];
         cl.insert(--cl.end(), command);

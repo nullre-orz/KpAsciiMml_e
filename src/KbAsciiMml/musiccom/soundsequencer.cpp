@@ -22,23 +22,18 @@ namespace MusicCom
     };
     // clang-format on
 
-    SoundSequencer::SoundSequencer(FM::OPN& opn, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate)
-        : PartSequencerBase(opn, music, music.GetRhythmPartTail(), rate),
+    SoundSequencer::SoundSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate)
+        : PartSequencerBase(register_writer, music, music.GetRhythmPartTail(), rate),
           ssgwrap_(ssgwrap),
           sound_(sound),
           current_sound_data_(std::nullopt),
-          GetHeadImpl([this]()
-                      { return GetMusicData().GetRhythmPartHead(); }),
           sound_interrupt_enabled_(false),
           sound_interrupt_per_frame_(CalculatePerFrame(soundtempo)),
           sound_interrupt_left_(0)
     {
     }
 
-    SoundSequencer::~SoundSequencer()
-    {
-        observer_list_.clear();
-    }
+    SoundSequencer::~SoundSequencer() = default;
 
     void SoundSequencer::InitializeImpl(PartData& part_data)
     {
@@ -98,22 +93,9 @@ namespace MusicCom
 
         // 効果音の設定
         const auto& data = *current_sound.ptr;
-        ssgwrap_.SetNoisePeriod(data.noise_period);
-        for (int ch = 0; ch < 2; ch++)
-        {
-            ssgwrap_.SetTonePeriod(ch, data.tone[ch]);
-            ssgwrap_.SetVolume(ch, data.volume[ch]);
-            ssgwrap_.SetToneEnabled(ch, data.tone_enabled[ch]);
-            ssgwrap_.SetNoiseEnabled(ch, data.noise_enabled[ch]);
-        }
-        ssgwrap_.SetNoiseToneEnable();
+        ssgwrap_.SetEffectFrame(data.noise_period, data.tone, data.volume, data.tone_enabled, data.noise_enabled);
 
         ++current_sound.ptr;
-    }
-
-    void SoundSequencer::AppendPlayStatusObserver(PlayStatusObserver observer)
-    {
-        observer_list_.push_back(observer);
     }
 
     void SoundSequencer::PreProcess(int current_frame)
@@ -148,6 +130,7 @@ namespace MusicCom
             auto& sound_data = sound_.GetRhythm(sound_no);
             if (sound_data.length() > 0)
             {
+                ssgwrap_.BeginEffect();
                 current_sound_data_ = {sound_data.begin(), sound_data.end()};
                 NextSoundFrame();
                 KeyOn();
@@ -193,28 +176,16 @@ namespace MusicCom
 
     void SoundSequencer::KeyOff()
     {
-        // トーンを有効化, ノイズを無効化しておく
-        ssgwrap_.SetToneEnabled(0, true);
-        ssgwrap_.SetToneEnabled(1, true);
-        ssgwrap_.SetNoiseEnabled(0, false);
-        ssgwrap_.SetNoiseEnabled(1, false);
-
         KeyOnOffImpl(false);
+        ssgwrap_.EndEffect();
     }
 
     void SoundSequencer::KeyOnOffImpl(bool on)
     {
         // チャンネル4,5(SSGチャンネルA,B)を流用
-        ssgwrap_.KeyOnOff(0, on);
-        ssgwrap_.KeyOnOff(1, on);
+        ssgwrap_.EffectKeyOnOff(on);
 
         sound_interrupt_enabled_ = on;
-
-        // 通知
-        for (auto item : observer_list_)
-        {
-            item((on) ? PlayStatus::PLAYING : PlayStatus::STOP);
-        }
     }
 
     void SoundSequencer::UpdateTone(int base_tone, PartData& part_data)
@@ -222,7 +193,7 @@ namespace MusicCom
         // nothing todo.
     }
 
-    void SoundSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, double coefficient)
+    void SoundSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length)
     {
         // nothing todo.
     }
@@ -239,7 +210,7 @@ namespace MusicCom
 
     const CommandIterator SoundSequencer::GetHead() const
     {
-        return GetHeadImpl();
+        return GetMusicData().GetRhythmPartHead();
     }
 
 } // namespace MusicCom

@@ -21,11 +21,12 @@ namespace MusicCom
     class Sequencer
     {
     public:
-        Sequencer(FM::OPN& o, MusicData* pmd, SoundData* psd, int stempo);
+        Sequencer(FM::OPN& o, MusicData& md, SoundData& sd, int stempo);
         bool Init(int rate);
         void Mix(__int16* dest, int nsamples);
 
     private:
+        void WriteRegister(int address, int value);
         void InitializeSequencer(int rate);
 
         FM::OPN& opn;
