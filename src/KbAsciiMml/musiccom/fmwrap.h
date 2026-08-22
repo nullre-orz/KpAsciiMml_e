@@ -80,7 +80,6 @@ namespace MusicCom
         int env_form[3];
         int vol[3];
         bool effect_active_;
-        int mixer_value_;
         int mixer_control_; // レジスタ07hのI/Oポート制御bit(D7-D6)
     };
 
