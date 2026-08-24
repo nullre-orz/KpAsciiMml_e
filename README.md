@@ -24,14 +24,14 @@ SOUNDコマンドのLFOに対応しました。
 
 - 環境変数 `BOOST_ROOT` をBoostのルートディレクトリにセットする
 - 環境変数 `KPISDK_ROOT` をKbMedia PlayerプラグインSDKのルートディレクトリにセットする
-- "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat" を実行する
+- "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat" を実行する
   - 環境によって異なりますので、適切なパスを指定してください。
 - build.cmd を実行する
 
 ビルドに使用した環境は次の通りです。
 
-- Visual Studio Community 2022 Version 17.14.38 (「C++ ネイティブ開発」ワークロードあり)
-- Boost 1.86.0 (ヘッダーファイルのみ)
+- Visual Studio Community 2026 Version 18.9.12112.369 (MSVC v145、「C++ ネイティブ開発」ワークロードあり)
+- Boost 1.92.0 (ヘッダーファイルのみ)
 - KbMedia PlayerプラグインSDK 2024/07/12版
 
 なお、動作確認には KbMedia Player 3.15 を使用しています。
