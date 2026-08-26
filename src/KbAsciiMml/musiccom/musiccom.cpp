@@ -15,6 +15,8 @@ namespace MusicCom
         : pseq(nullptr),
           pmusicdata(nullptr),
           psounddata(nullptr),
+          fmVolume(0),
+          psgVolume(0),
           soundTempo(SOUND_EFFECT_DEFAULT_TEMPO)
     {
     }
