@@ -1,11 +1,11 @@
 ﻿#pragma once
 
+#include "musdata.h"
 #include "partsequencerbase.h"
 
 namespace MusicCom
 {
     class FMWrap;
-    class MusicData;
     class FmSequencer : public PartSequencerBase
     {
     public:
@@ -47,7 +47,7 @@ namespace MusicCom
         int last_note_;
         int current_octave_;
         int current_tone_;
-        int current_operator_fnumber_[4];
+        int current_operator_fnumber_[FMSound::OPERATOR_COUNT];
         bool operator_portamento_active_;
         bool note_active_;
     };

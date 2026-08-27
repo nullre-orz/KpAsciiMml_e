@@ -166,15 +166,15 @@ namespace MusicCom
         int delta = (target_tone - initial_tone) / (length + 1);
         int portamento_tone = initial_tone + delta * tick;
 
-        if (channel_ != 2)
+        if (channel_ != MUSIC_CHANNEL_FM_3)
         {
             SetTone(block, portamento_tone);
             return;
         }
 
         const FMSound& sound = GetMusicData().GetFMSound(sound_no_);
-        int operator_fnumber[4];
-        for (int op = 0; op < 4; op++)
+        int operator_fnumber[FMSound::OPERATOR_COUNT];
+        for (int op = 0; op < FMSound::OPERATOR_COUNT; op++)
         {
             int dt2 = sound.Op[op].Dt2;
             int initial_operator_tone =
@@ -296,7 +296,7 @@ namespace MusicCom
 
     void FmSequencer::WriteTone(int octave, int tone)
     {
-        if (channel_ == 2)
+        if (channel_ == MUSIC_CHANNEL_FM_3)
         {
             if (operator_portamento_active_)
             {
@@ -304,8 +304,8 @@ namespace MusicCom
                 return;
             }
 
-            int operator_fnumber[4];
-            for (int op = 0; op < 4; op++)
+            int operator_fnumber[FMSound::OPERATOR_COUNT];
+            for (int op = 0; op < FMSound::OPERATOR_COUNT; op++)
             {
                 operator_fnumber[op] = GetOperatorFNumber(op, lfo_note_, tone);
             }

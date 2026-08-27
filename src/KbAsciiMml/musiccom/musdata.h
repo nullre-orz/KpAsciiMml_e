@@ -11,6 +11,18 @@
 
 namespace MusicCom
 {
+    enum MusicChannel : int
+    {
+        MUSIC_CHANNEL_FM_1 = 0,
+        MUSIC_CHANNEL_FM_2,
+        MUSIC_CHANNEL_FM_3,
+        MUSIC_CHANNEL_FM_COUNT,
+        MUSIC_CHANNEL_SSG_A = MUSIC_CHANNEL_FM_COUNT,
+        MUSIC_CHANNEL_SSG_B,
+        MUSIC_CHANNEL_SSG_C,
+        MUSIC_CHANNEL_COUNT,
+    };
+
     struct FMSound
     {
         int LFOForm;
@@ -18,6 +30,10 @@ namespace MusicCom
         int LFODepth;
 
         unsigned char AlgFb;
+        enum : int
+        {
+            OPERATOR_COUNT = 4,
+        };
         struct
         {
             unsigned char DtMl;
@@ -27,7 +43,7 @@ namespace MusicCom
             unsigned char Sr;
             unsigned char SlRr;
             unsigned char Dt2;
-        } Op[4];
+        } Op[OPERATOR_COUNT];
 
         struct FMSound()
         {
@@ -50,37 +66,37 @@ namespace MusicCom
         }
         void SetDtMl(int op, int dt, int ml)
         {
-            assert(0 <= op && op < 4);
+            assert(0 <= op && op < OPERATOR_COUNT);
             Op[op].DtMl = ((dt & 0x7) << 4) | (ml & 0xf);
         }
         void SetTl(int op, int tl)
         {
-            assert(0 <= op && op < 4);
+            assert(0 <= op && op < OPERATOR_COUNT);
             Op[op].Tl = tl & 0x7f;
         }
         void SetKsAr(int op, int ks, int ar)
         {
-            assert(0 <= op && op < 4);
+            assert(0 <= op && op < OPERATOR_COUNT);
             Op[op].KsAr = ((ks & 0x3) << 6) | (ar & 0x1f);
         }
         void SetDr(int op, int dr)
         {
-            assert(0 <= op && op < 4);
+            assert(0 <= op && op < OPERATOR_COUNT);
             Op[op].Dr = dr & 0x1f;
         }
         void SetSr(int op, int sr)
         {
-            assert(0 <= op && op < 4);
+            assert(0 <= op && op < OPERATOR_COUNT);
             Op[op].Sr = sr & 0x1f;
         }
         void SetSlRr(int op, int sl, int rr)
         {
-            assert(0 <= op && op < 4);
+            assert(0 <= op && op < OPERATOR_COUNT);
             Op[op].SlRr = ((sl & 0xf) << 4) | (rr & 0xf);
         }
         void SetDt2(int op, int dt2)
         {
-            assert(0 <= op && op < 4);
+            assert(0 <= op && op < OPERATOR_COUNT);
             Op[op].Dt2 = std::clamp(dt2 & 0xff, 0, 3);
         }
 
@@ -134,7 +150,7 @@ namespace MusicCom
         int GetTempo() const { return tempo; }
         bool IsChannelPresent(int channel) const
         {
-            assert(0 <= channel && channel < channel_count);
+            assert(0 <= channel && channel < MUSIC_CHANNEL_COUNT);
             return channel_present[channel];
         }
         bool IsRhythmPartPresent() const
@@ -158,13 +174,11 @@ namespace MusicCom
         CommandIterator GetMacroHead(const std::string& name) const;
 
     private:
-        static const int channel_count = 6;
-
         mutable std::map<int, FMSound> fmsounds;
         mutable std::map<int, SSGEnv> ssgenvs;
         std::map<std::string, CommandList> macros;
-        CommandList channels[channel_count];
-        bool channel_present[channel_count];
+        CommandList channels[MUSIC_CHANNEL_COUNT];
+        bool channel_present[MUSIC_CHANNEL_COUNT];
         CommandList rhythm_part;
         bool rhythm_part_present;
         int tempo;

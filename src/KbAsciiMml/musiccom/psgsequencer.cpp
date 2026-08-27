@@ -20,7 +20,7 @@ namespace MusicCom
 
     PsgSequencer::PsgSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, int channel, int rate)
         : PartSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),
-          channel_(channel - 3),
+          channel_(channel - MUSIC_CHANNEL_SSG_A),
           ssgwrap_(ssgwrap),
           current_note_(0),
           last_period_(SSG_TONE_PERIOD[0]),
@@ -147,7 +147,7 @@ namespace MusicCom
 
     const CommandIterator PsgSequencer::GetHead() const
     {
-        return GetMusicData().GetChannelHead(channel_ + 3);
+        return GetMusicData().GetChannelHead(channel_ + MUSIC_CHANNEL_SSG_A);
     }
 
     int PsgSequencer::CalculateTone(int base_octave, int base_tone, int detune) const

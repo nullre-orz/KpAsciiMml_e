@@ -84,7 +84,7 @@ namespace MusicCom
                    address == SSG_VOLUME_REGISTER_BASE + 1;
         }
 
-        constexpr FMRegister FM_CH3_OPERATOR_TONE_REGISTERS[4][2] = {
+        constexpr FMRegister FM_CH3_OPERATOR_TONE_REGISTERS[FMSound::OPERATOR_COUNT][2] = {
             {FM_CH3_OPERATOR1_TONE_HIGH_REGISTER, FM_CH3_OPERATOR1_TONE_LOW_REGISTER},
             {FM_CH3_OPERATOR2_TONE_HIGH_REGISTER, FM_CH3_OPERATOR2_TONE_LOW_REGISTER},
             {FM_CH3_OPERATOR3_TONE_HIGH_REGISTER, FM_CH3_OPERATOR3_TONE_LOW_REGISTER},
@@ -94,7 +94,7 @@ namespace MusicCom
 
     // TLをvolume変化に使用するかどうか
     // [alg][op]
-    const bool FMWrap::vol_tl_flag[8][4] = {
+    const bool FMWrap::vol_tl_flag[8][FMSound::OPERATOR_COUNT] = {
         {0, 0, 0, 1},
         {0, 0, 0, 1},
         {0, 0, 0, 1},
@@ -104,22 +104,22 @@ namespace MusicCom
         {0, 1, 1, 1},
         {1, 1, 1, 1}};
 
-    const int FMWrap::op_table[4] = {0, 2, 1, 3};
+    const int FMWrap::op_table[FMSound::OPERATOR_COUNT] = {0, 2, 1, 3};
 
     FMWrap::FMWrap(FM::OPN& o) : opn(o)
     {
-        fill_n(vol, 3, 15);
+        fill_n(vol, MUSIC_CHANNEL_FM_COUNT, 15);
     }
 
     void FMWrap::SetSound(int ch, const FMSound& s)
     {
-        assert(0 <= ch && ch < 3);
+        assert(0 <= ch && ch < MUSIC_CHANNEL_FM_COUNT);
 
         sound[ch] = s;
         opn.SetReg(FM_ALGORITHM_FEEDBACK_REGISTER_BASE + ch, s.AlgFb);
-        for (int op = 0; op < 4; op++)
+        for (int op = 0; op < FMSound::OPERATOR_COUNT; op++)
         {
-            int d = op_table[op] * 4 + ch;
+            int d = op_table[op] * FMSound::OPERATOR_COUNT + ch;
             opn.SetReg(FM_DETUNE_MULTIPLE_REGISTER_BASE + d, s.Op[op].DtMl);
             opn.SetReg(FM_TOTAL_LEVEL_REGISTER_BASE + d, s.Op[op].Tl);
             opn.SetReg(FM_KEY_SCALE_ATTACK_RATE_REGISTER_BASE + d, s.Op[op].KsAr);
@@ -133,13 +133,13 @@ namespace MusicCom
 
     void FMWrap::SetVolume(int ch, int v)
     {
-        assert(0 <= ch && ch < 3);
+        assert(0 <= ch && ch < MUSIC_CHANNEL_FM_COUNT);
 
         vol[ch] = v;
         const FMSound& s = sound[ch];
-        for (int op = 0; op < 4; op++)
+        for (int op = 0; op < FMSound::OPERATOR_COUNT; op++)
         {
-            int d = op_table[op] * 4 + ch;
+            int d = op_table[op] * FMSound::OPERATOR_COUNT + ch;
             if (vol_tl_flag[s.GetAlg()][op_table[op]])
                 opn.SetReg(FM_TOTAL_LEVEL_REGISTER_BASE + d, std::min(s.Op[op].Tl + 4 * (16 - v), FM_TOTAL_LEVEL_MAX));
         }
@@ -147,7 +147,7 @@ namespace MusicCom
 
     void FMWrap::KeyOnOff(int ch, bool on)
     {
-        assert(0 <= ch && ch < 3);
+        assert(0 <= ch && ch < MUSIC_CHANNEL_FM_COUNT);
 
         int val;
         if (on)
@@ -159,11 +159,11 @@ namespace MusicCom
 
     void FMWrap::SetTone(int ch, int block, int fnumber, int pitch_offset)
     {
-        assert(0 <= ch && ch < 3);
+        assert(0 <= ch && ch < MUSIC_CHANNEL_FM_COUNT);
 
-        if (ch == 2)
+        if (ch == MUSIC_CHANNEL_FM_3)
         {
-            int operator_fnumber[4] = {fnumber, fnumber, fnumber, fnumber};
+            int operator_fnumber[FMSound::OPERATOR_COUNT] = {fnumber, fnumber, fnumber, fnumber};
             SetOperatorTones(ch, block, operator_fnumber, pitch_offset);
         }
         else
@@ -172,12 +172,12 @@ namespace MusicCom
         }
     }
 
-    void FMWrap::SetOperatorTones(int ch, int block, const int fnumber[4], int pitch_offset)
+    void FMWrap::SetOperatorTones(int ch, int block, const int fnumber[FMSound::OPERATOR_COUNT], int pitch_offset)
     {
-        assert(ch == 2);
+        assert(ch == MUSIC_CHANNEL_FM_3);
 
         const FMSound& s = sound[ch];
-        for (int op = 0; op < 4; op++)
+        for (int op = 0; op < FMSound::OPERATOR_COUNT; op++)
         {
             int operator_block = block + (s.Op[op].Dt2 != 0 ? 1 : 0);
             SetToneReg(FM_CH3_OPERATOR_TONE_REGISTERS[op][0], FM_CH3_OPERATOR_TONE_REGISTERS[op][1], operator_block, fnumber[op] + pitch_offset);

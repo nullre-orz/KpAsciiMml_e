@@ -17,19 +17,27 @@ namespace MusicCom
         FMWrap(FM::OPN& o);
         void SetSound(int ch, const FMSound& sound);
         void SetTone(int ch, int block, int fnumber, int pitch_offset = 0);
-        void SetOperatorTones(int ch, int block, const int fnumber[4], int pitch_offset = 0);
+        void SetOperatorTones(int ch, int block, const int fnumber[FMSound::OPERATOR_COUNT], int pitch_offset = 0);
         void SetVolume(int ch, int vol);
 
         void KeyOnOff(int ch, bool on);
 
     private:
+        enum FMChannel : int
+        {
+            FM_CHANNEL_1 = 0,
+            FM_CHANNEL_2 = 1,
+            FM_CHANNEL_3 = 2,
+            FM_CHANNEL_COUNT = 3,
+        };
+
         void SetToneReg(int highaddr, int lowaddr, int block, int fnumber);
 
         FM::OPN& opn;
-        FMSound sound[3];
-        int vol[3];
-        static const bool vol_tl_flag[8][4];
-        static const int op_table[4];
+        FMSound sound[MUSIC_CHANNEL_FM_COUNT];
+        int vol[MUSIC_CHANNEL_FM_COUNT];
+        static const bool vol_tl_flag[8][FMSound::OPERATOR_COUNT];
+        static const int op_table[FMSound::OPERATOR_COUNT];
     };
 
     class SSGWrap

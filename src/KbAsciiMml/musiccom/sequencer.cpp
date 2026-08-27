@@ -77,12 +77,12 @@ namespace MusicCom
             WriteRegister(address, value);
         };
 
-        for (int ch = 0; ch < 6; ch++)
+        for (int ch = 0; ch < MUSIC_CHANNEL_COUNT; ch++)
         {
             if (musicdata.IsChannelPresent(ch))
             {
                 std::unique_ptr<PartSequencerBase> ptr;
-                if (ch < 3)
+                if (ch < MUSIC_CHANNEL_FM_COUNT)
                 {
                     ptr = std::make_unique<FmSequencer>(register_writer, fmwrap, musicdata, ch, rate);
                 }
