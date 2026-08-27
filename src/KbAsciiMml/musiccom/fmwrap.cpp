@@ -164,7 +164,7 @@ namespace MusicCom
         if (ch == MUSIC_CHANNEL_FM_3)
         {
             std::array<int, FMSound::OPERATOR_COUNT> operator_fnumber = {fnumber, fnumber, fnumber, fnumber};
-            SetOperatorTones(ch, block, operator_fnumber.data(), pitch_offset);
+            SetOperatorTones(ch, block, operator_fnumber, pitch_offset);
         }
         else
         {
@@ -172,7 +172,7 @@ namespace MusicCom
         }
     }
 
-    void FMWrap::SetOperatorTones(int ch, int block, const int fnumber[FMSound::OPERATOR_COUNT], int pitch_offset)
+    void FMWrap::SetOperatorTones(int ch, int block, std::span<const int, FMSound::OPERATOR_COUNT> fnumber, int pitch_offset)
     {
         assert(ch == MUSIC_CHANNEL_FM_3);
 
@@ -276,7 +276,7 @@ namespace MusicCom
         effect_channel.fill({});
     }
 
-    void SSGWrap::SetEffectFrame(int noise_period, const int tone_period[2], const int volume[2], const bool tone_enabled[2], const bool noise_enabled[2])
+    void SSGWrap::SetEffectFrame(int noise_period, std::span<const int, 2> tone_period, std::span<const int, 2> volume, std::span<const bool, 2> tone_enabled, std::span<const bool, 2> noise_enabled)
     {
         WriteRegister(SSG_NOISE_PERIOD_REGISTER, noise_period & SSG_NOISE_PERIOD_MASK, WriteSource::EFFECT);
         for (int ch = 0; ch < SSG_EFFECT_CHANNEL_COUNT; ch++)

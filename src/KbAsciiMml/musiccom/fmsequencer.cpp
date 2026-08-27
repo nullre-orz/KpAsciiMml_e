@@ -189,7 +189,7 @@ namespace MusicCom
         current_octave_ = block;
         current_tone_ = portamento_tone;
         operator_portamento_active_ = true;
-        fmwrap_.SetOperatorTones(channel_, block, operator_fnumber.data(), GetSoundLFOOffset());
+        fmwrap_.SetOperatorTones(channel_, block, operator_fnumber, GetSoundLFOOffset());
     }
 
     void FmSequencer::SetTone(int octave, int tone)
@@ -301,7 +301,7 @@ namespace MusicCom
         {
             if (operator_portamento_active_)
             {
-                fmwrap_.SetOperatorTones(channel_, octave, current_operator_fnumber_.data(), GetSoundLFOOffset());
+                fmwrap_.SetOperatorTones(channel_, octave, current_operator_fnumber_, GetSoundLFOOffset());
                 return;
             }
 
@@ -310,7 +310,7 @@ namespace MusicCom
             {
                 operator_fnumber[op] = GetOperatorFNumber(op, lfo_note_, tone);
             }
-            fmwrap_.SetOperatorTones(channel_, octave, operator_fnumber.data(), GetSoundLFOOffset());
+            fmwrap_.SetOperatorTones(channel_, octave, operator_fnumber, GetSoundLFOOffset());
         }
         else
         {

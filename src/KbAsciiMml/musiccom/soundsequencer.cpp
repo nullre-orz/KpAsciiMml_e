@@ -94,7 +94,7 @@ namespace MusicCom
 
         // 効果音の設定
         const auto& data = *current_sound.ptr;
-        ssgwrap_.SetEffectFrame(data.noise_period, data.tone.data(), data.volume.data(), data.tone_enabled.data(), data.noise_enabled.data());
+        ssgwrap_.SetEffectFrame(data.noise_period, data.tone, data.volume, data.tone_enabled, data.noise_enabled);
 
         ++current_sound.ptr;
     }

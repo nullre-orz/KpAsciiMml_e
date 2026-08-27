@@ -2,6 +2,7 @@
 
 #include "musdata.h"
 #include <array>
+#include <span>
 
 namespace FM
 {
@@ -17,7 +18,7 @@ namespace MusicCom
         FMWrap(FM::OPN& o);
         void SetSound(int ch, const FMSound& sound);
         void SetTone(int ch, int block, int fnumber, int pitch_offset = 0);
-        void SetOperatorTones(int ch, int block, const int fnumber[FMSound::OPERATOR_COUNT], int pitch_offset = 0);
+        void SetOperatorTones(int ch, int block, std::span<const int, FMSound::OPERATOR_COUNT> fnumber, int pitch_offset = 0);
         void SetVolume(int ch, int vol);
 
         void KeyOnOff(int ch, bool on);
@@ -55,7 +56,7 @@ namespace MusicCom
         void KeyOnOff(int ch, bool on);
 
         void BeginEffect();
-        void SetEffectFrame(int noise_period, const int tone_period[2], const int volume[2], const bool tone_enabled[2], const bool noise_enabled[2]);
+        void SetEffectFrame(int noise_period, std::span<const int, 2> tone_period, std::span<const int, 2> volume, std::span<const bool, 2> tone_enabled, std::span<const bool, 2> noise_enabled);
         void EffectKeyOnOff(bool on);
         void EndEffect();
 
