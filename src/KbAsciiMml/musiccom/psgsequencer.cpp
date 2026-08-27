@@ -1,18 +1,19 @@
 ﻿#include "psgsequencer.h"
 #include "fmwrap.h"
 #include <algorithm>
+#include <array>
 
 namespace MusicCom
 {
     // clang-format off
     // O1におけるトーン周期
-    const int SSG_TONE_PERIOD[12] = {
+    const std::array<int, 12> SSG_TONE_PERIOD = {
         // C,  C#,   D,  D#,   E,   F,  F#,   G,  G#,   A,  A#,   B
         3816,3602,3400,3209,3029,2859,2698,2547,2404,2269,2142,2022
     };
 
     // N/Iからトーン周期補正値を求める係数
-    const int SSG_TONE_ADJUST_COEFFICIENT[13] = {
+    const std::array<int, 13> SSG_TONE_ADJUST_COEFFICIENT = {
         // C-,  C, C#,  D, D#,  E,  F, F#,  G, G#,  A, A#,  B
           228,214,202,191,180,170,161,151,143,135,127,120,114
     };

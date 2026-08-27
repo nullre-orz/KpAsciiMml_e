@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <array>
 #include <cassert>
 #include <list>
 #include <string>
@@ -43,7 +44,7 @@ namespace MusicCom
         Command()
         {
             type = CommandType::TYPE_UNKNOWN;
-            std::memset(args, 0, sizeof(args));
+            args.fill(0);
         }
         Command(CommandType t, int arg0 = 0, int arg1 = 0, int arg2 = 0)
         {
@@ -55,15 +56,15 @@ namespace MusicCom
         Command(CommandType t, std::string arg)
         {
             SetType(t);
-            std::memset(args, 0, sizeof(args));
+            args.fill(0);
             SetStrArg(arg);
         }
         template<class InIt>
         Command(CommandType t, InIt first, InIt last)
         {
             SetType(t);
-            std::memset(args, 0, sizeof(args));
-            for (int i = 0; i < sizeof(args) / sizeof(args[0]) && first != last; i++, first++)
+            args.fill(0);
+            for (int i = 0; i < static_cast<int>(args.size()) && first != last; i++, first++)
             {
                 SetArg(i, *first);
             }
@@ -78,12 +79,12 @@ namespace MusicCom
         }
         void SetArg(int index, int val)
         {
-            assert(0 <= index && index < 3);
+            assert(0 <= index && index < static_cast<int>(args.size()));
             args[index] = val;
         }
         int GetArg(int index) const
         {
-            assert(0 <= index && index < 3);
+            assert(0 <= index && index < static_cast<int>(args.size()));
             return args[index];
         }
 
@@ -99,7 +100,7 @@ namespace MusicCom
 
     private:
         CommandType type;
-        int args[3];
+        std::array<int, 3> args;
         std::string strarg;
     };
 

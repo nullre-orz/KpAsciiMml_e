@@ -6,7 +6,7 @@ namespace MusicCom
 {
     MusicData::MusicData()
     {
-        fill_n(channel_present, channel_count, false);
+        channel_present.fill(false);
         tempo = 120;
     }
 

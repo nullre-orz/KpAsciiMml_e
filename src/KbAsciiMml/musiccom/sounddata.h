@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <array>
 #include <map>
 #include <tuple>
 #include <vector>
@@ -33,8 +34,8 @@ namespace MusicCom
         };
 
         int length;
-        TonePart tone[2];
-        VolumePart volume[2];
+        std::array<TonePart, 2> tone;
+        std::array<VolumePart, 2> volume;
         NoisePart noise;
     };
 
@@ -46,11 +47,11 @@ namespace MusicCom
         // Element
         struct Element
         {
-            int tone[2];
-            int volume[2];
+            std::array<int, 2> tone;
+            std::array<int, 2> volume;
             int noise_period;
-            bool tone_enabled[2];
-            bool noise_enabled[2];
+            std::array<bool, 2> tone_enabled;
+            std::array<bool, 2> noise_enabled;
         };
 
         // Iterator
@@ -69,8 +70,8 @@ namespace MusicCom
         private:
             struct diff_cache
             {
-                int tone[2];
-                int volume[2];
+                std::array<int, 2> tone;
+                std::array<int, 2> volume;
                 int noise;
             };
 

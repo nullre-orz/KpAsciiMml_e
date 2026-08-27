@@ -1,6 +1,7 @@
 ﻿#include "fmsequencer.h"
 #include "fmwrap.h"
 #include <algorithm>
+#include <array>
 
 namespace MusicCom
 {
@@ -21,7 +22,7 @@ namespace MusicCom
 
     // clang-format off
     // LFO深度からF-numberへの変換係数
-    const int SOUND_LFO_FNUMBER_COEFFICIENT[12] = {
+    const std::array<int, 12> SOUND_LFO_FNUMBER_COEFFICIENT = {
         //C,   C#,    D,   D#,    E,    F,   F#,   G,    G#,    A,   A#,    B
         123, -125, -118, -109, -101,  -91,  -82,  -71,  -60,  -48,  -36,  -23
     };
@@ -43,16 +44,16 @@ namespace MusicCom
 
     // clang-format off
     // DT2ごとのF-number
-    const int F_NUMBER_TABLE[4][12] = {
+    const std::array<std::array<int, 12>, 4> F_NUMBER_TABLE = {{
         // C,  C#,   D,  D#,   E,   F,  F#,   G,  G#,   A,  A#,   B
         {617, 655, 694, 735, 779, 825, 874, 926, 981,1040,1102,1167}, // DT2=0
         {431, 458, 485, 514, 545, 577, 611, 648, 686, 728, 771, 816}, // DT2=1
         {493, 524, 555, 588, 623, 660, 699, 740, 784, 832, 881, 933}, // DT2=2
         {530, 563, 596, 632, 669, 709, 751, 796, 843, 894, 947,1003}  // DT2=3
-    };
+    }};
 
     // N/IからF-number補正値を求める係数
-    const int F_NUMBER_ADJUST_COEFFICIENT[13] = {
+    const std::array<int, 13> F_NUMBER_ADJUST_COEFFICIENT = {
         // C-, C, C#, D, D#, E, F, F#, G, G#, A, A#, B
            34,38, 39,41, 44,46,49, 52,55, 59,62, 65,67
     };
@@ -91,7 +92,7 @@ namespace MusicCom
         last_note_ = 0;
         current_octave_ = 0;
         current_tone_ = 0;
-        std::fill_n(current_operator_fnumber_, 4, 0);
+        current_operator_fnumber_.fill(0);
         operator_portamento_active_ = false;
         note_active_ = false;
     }
@@ -173,7 +174,7 @@ namespace MusicCom
         }
 
         const FMSound& sound = GetMusicData().GetFMSound(sound_no_);
-        int operator_fnumber[FMSound::OPERATOR_COUNT];
+        std::array<int, FMSound::OPERATOR_COUNT> operator_fnumber;
         for (int op = 0; op < FMSound::OPERATOR_COUNT; op++)
         {
             int dt2 = sound.Op[op].Dt2;
@@ -188,7 +189,7 @@ namespace MusicCom
         current_octave_ = block;
         current_tone_ = portamento_tone;
         operator_portamento_active_ = true;
-        fmwrap_.SetOperatorTones(channel_, block, operator_fnumber, GetSoundLFOOffset());
+        fmwrap_.SetOperatorTones(channel_, block, operator_fnumber.data(), GetSoundLFOOffset());
     }
 
     void FmSequencer::SetTone(int octave, int tone)
@@ -300,16 +301,16 @@ namespace MusicCom
         {
             if (operator_portamento_active_)
             {
-                fmwrap_.SetOperatorTones(channel_, octave, current_operator_fnumber_, GetSoundLFOOffset());
+                fmwrap_.SetOperatorTones(channel_, octave, current_operator_fnumber_.data(), GetSoundLFOOffset());
                 return;
             }
 
-            int operator_fnumber[FMSound::OPERATOR_COUNT];
+            std::array<int, FMSound::OPERATOR_COUNT> operator_fnumber;
             for (int op = 0; op < FMSound::OPERATOR_COUNT; op++)
             {
                 operator_fnumber[op] = GetOperatorFNumber(op, lfo_note_, tone);
             }
-            fmwrap_.SetOperatorTones(channel_, octave, operator_fnumber, GetSoundLFOOffset());
+            fmwrap_.SetOperatorTones(channel_, octave, operator_fnumber.data(), GetSoundLFOOffset());
         }
         else
         {

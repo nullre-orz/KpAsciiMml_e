@@ -1,6 +1,7 @@
 ﻿#include "musiccom/musiccom.h"
 #include "resource.h"
 #include <Windows.h>
+#include <array>
 #include <boost/lexical_cast.hpp>
 #include <iterator>
 #include <kmp_pi.h>
@@ -20,9 +21,9 @@ T GetSetting(LPCWSTR fileName, LPCWSTR key, T defaultValue)
 {
     try
     {
-        wchar_t buf[256];
-        GetPrivateProfileStringW(L"KbAsciiMml", key, NULL, buf, std::size(buf), fileName);
-        return boost::lexical_cast<int>(buf);
+        std::array<wchar_t, 256> buf{};
+        GetPrivateProfileStringW(L"KbAsciiMml", key, NULL, buf.data(), static_cast<DWORD>(buf.size()), fileName);
+        return boost::lexical_cast<int>(buf.data());
     }
     catch (boost::bad_lexical_cast)
     {
@@ -47,14 +48,14 @@ private:
 
 KbAsciiMml::KbAsciiMml()
 {
-    wchar_t iniName[MAX_PATH];
-    GetModuleFileNameW(hDllModule, iniName, std::size(iniName));
-    PathRemoveExtensionW(iniName);
-    PathAddExtensionW(iniName, L".ini");
+    std::array<wchar_t, MAX_PATH> iniName{};
+    GetModuleFileNameW(hDllModule, iniName.data(), static_cast<DWORD>(iniName.size()));
+    PathRemoveExtensionW(iniName.data());
+    PathAddExtensionW(iniName.data(), L".ini");
 
-    int fmvol = GetSetting(iniName, L"FMVolume", 0);
-    int psgvol = GetSetting(iniName, L"PSGVolume", 0);
-    int soundtempo = GetSetting(iniName, L"SoundTempo", MusicCom::MusicCom::SOUND_EFFECT_DEFAULT_TEMPO);
+    int fmvol = GetSetting(iniName.data(), L"FMVolume", 0);
+    int psgvol = GetSetting(iniName.data(), L"PSGVolume", 0);
+    int soundtempo = GetSetting(iniName.data(), L"SoundTempo", MusicCom::MusicCom::SOUND_EFFECT_DEFAULT_TEMPO);
 
     musicCom.SetFMVolume(fmvol);
     musicCom.SetPSGVolume(psgvol);
@@ -165,7 +166,7 @@ static DWORD WINAPI kmp_SetPosition(HKMP hKMP, DWORD dwPos)
 
 KMPMODULE* WINAPI kmp_GetTestModule()
 {
-    static const char* ppszSupportExts[] = {".mml", NULL};
+    static std::array<const char*, 2> ppszSupportExts = {".mml", NULL};
 
     static KMPMODULE Mod =
         {
@@ -173,7 +174,7 @@ KMPMODULE* WINAPI kmp_GetTestModule()
             KMPPLUGIN_VERSION, // dwPluginVersion
             VER_LEGAL_COPYRIGHT, // pszCopyright
             VER_FILE_DESCRIPTION, // pszDescription
-            ppszSupportExts, // ppszSupportExts
+            ppszSupportExts.data(), // ppszSupportExts
             1, // dwReentrant
             NULL, // Init
             NULL, // Deinit

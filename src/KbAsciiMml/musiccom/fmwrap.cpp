@@ -84,17 +84,17 @@ namespace MusicCom
                    address == SSG_VOLUME_REGISTER_BASE + 1;
         }
 
-        constexpr FMRegister FM_CH3_OPERATOR_TONE_REGISTERS[FMSound::OPERATOR_COUNT][2] = {
+        constexpr std::array<std::array<FMRegister, 2>, FMSound::OPERATOR_COUNT> FM_CH3_OPERATOR_TONE_REGISTERS = {{
             {FM_CH3_OPERATOR1_TONE_HIGH_REGISTER, FM_CH3_OPERATOR1_TONE_LOW_REGISTER},
             {FM_CH3_OPERATOR2_TONE_HIGH_REGISTER, FM_CH3_OPERATOR2_TONE_LOW_REGISTER},
             {FM_CH3_OPERATOR3_TONE_HIGH_REGISTER, FM_CH3_OPERATOR3_TONE_LOW_REGISTER},
             {FM_CH3_OPERATOR4_TONE_HIGH_REGISTER, FM_CH3_OPERATOR4_TONE_LOW_REGISTER},
-        };
+        }};
     }
 
     // TLをvolume変化に使用するかどうか
     // [alg][op]
-    const bool FMWrap::vol_tl_flag[8][FMSound::OPERATOR_COUNT] = {
+    const std::array<std::array<bool, FMSound::OPERATOR_COUNT>, 8> FMWrap::vol_tl_flag = {{
         {0, 0, 0, 1},
         {0, 0, 0, 1},
         {0, 0, 0, 1},
@@ -102,13 +102,13 @@ namespace MusicCom
         {0, 0, 1, 1},
         {0, 1, 1, 1},
         {0, 1, 1, 1},
-        {1, 1, 1, 1}};
+        {1, 1, 1, 1}}};
 
-    const int FMWrap::op_table[FMSound::OPERATOR_COUNT] = {0, 2, 1, 3};
+    const std::array<int, FMSound::OPERATOR_COUNT> FMWrap::op_table = {0, 2, 1, 3};
 
     FMWrap::FMWrap(FM::OPN& o) : opn(o)
     {
-        fill_n(vol, MUSIC_CHANNEL_FM_COUNT, 15);
+        vol.fill(15);
     }
 
     void FMWrap::SetSound(int ch, const FMSound& s)
@@ -163,8 +163,8 @@ namespace MusicCom
 
         if (ch == MUSIC_CHANNEL_FM_3)
         {
-            int operator_fnumber[FMSound::OPERATOR_COUNT] = {fnumber, fnumber, fnumber, fnumber};
-            SetOperatorTones(ch, block, operator_fnumber, pitch_offset);
+            std::array<int, FMSound::OPERATOR_COUNT> operator_fnumber = {fnumber, fnumber, fnumber, fnumber};
+            SetOperatorTones(ch, block, operator_fnumber.data(), pitch_offset);
         }
         else
         {

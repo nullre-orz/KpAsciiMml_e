@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "command.h"
+#include <array>
 #include <algorithm>
 #include <cassert>
 #include <list>
@@ -30,11 +31,7 @@ namespace MusicCom
         int LFODepth;
 
         unsigned char AlgFb;
-        enum : int
-        {
-            OPERATOR_COUNT = 4,
-        };
-        struct
+        struct Operator
         {
             unsigned char DtMl;
             unsigned char Tl;
@@ -43,7 +40,12 @@ namespace MusicCom
             unsigned char Sr;
             unsigned char SlRr;
             unsigned char Dt2;
-        } Op[OPERATOR_COUNT];
+        };
+        enum : int
+        {
+            OPERATOR_COUNT = 4,
+        };
+        std::array<Operator, OPERATOR_COUNT> Op;
 
         struct FMSound()
         {
@@ -177,8 +179,8 @@ namespace MusicCom
         mutable std::map<int, FMSound> fmsounds;
         mutable std::map<int, SSGEnv> ssgenvs;
         std::map<std::string, CommandList> macros;
-        CommandList channels[MUSIC_CHANNEL_COUNT];
-        bool channel_present[MUSIC_CHANNEL_COUNT];
+        std::array<CommandList, MUSIC_CHANNEL_COUNT> channels;
+        std::array<bool, MUSIC_CHANNEL_COUNT> channel_present;
         CommandList rhythm_part;
         bool rhythm_part_present;
         int tempo;

@@ -1,12 +1,13 @@
 ﻿#include "soundsequencer.h"
 #include "fmwrap.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 namespace MusicCom
 {
     // clang-format off
-    const int NOTE_SOUND_MAP[] = {
+    const std::array<int, 12> NOTE_SOUND_MAP = {
          2, // C
         -1, // C#
          3, // D
@@ -93,7 +94,7 @@ namespace MusicCom
 
         // 効果音の設定
         const auto& data = *current_sound.ptr;
-        ssgwrap_.SetEffectFrame(data.noise_period, data.tone, data.volume, data.tone_enabled, data.noise_enabled);
+        ssgwrap_.SetEffectFrame(data.noise_period, data.tone.data(), data.volume.data(), data.tone_enabled.data(), data.noise_enabled.data());
 
         ++current_sound.ptr;
     }

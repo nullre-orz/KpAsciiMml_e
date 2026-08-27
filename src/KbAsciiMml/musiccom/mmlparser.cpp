@@ -461,7 +461,7 @@ namespace MusicCom
             template<typename IteratorT>
             void operator()(IteratorT first, IteratorT last) const
             {
-                static const int note_numbers[] = {
+                static const std::array<int, 7> note_numbers = {
                     // A,  B, C, D, E, F, G
                     9,
                     11,

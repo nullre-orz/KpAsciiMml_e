@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "musdata.h"
 #include "partsequencerbase.h"
+#include <array>
 
 namespace MusicCom
 {
@@ -47,7 +47,7 @@ namespace MusicCom
         int last_note_;
         int current_octave_;
         int current_tone_;
-        int current_operator_fnumber_[FMSound::OPERATOR_COUNT];
+        std::array<int, FMSound::OPERATOR_COUNT> current_operator_fnumber_;
         bool operator_portamento_active_;
         bool note_active_;
     };

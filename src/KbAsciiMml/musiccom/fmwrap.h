@@ -34,10 +34,10 @@ namespace MusicCom
         void SetToneReg(int highaddr, int lowaddr, int block, int fnumber);
 
         FM::OPN& opn;
-        FMSound sound[MUSIC_CHANNEL_FM_COUNT];
-        int vol[MUSIC_CHANNEL_FM_COUNT];
-        static const bool vol_tl_flag[8][FMSound::OPERATOR_COUNT];
-        static const int op_table[FMSound::OPERATOR_COUNT];
+        std::array<FMSound, MUSIC_CHANNEL_FM_COUNT> sound;
+        std::array<int, MUSIC_CHANNEL_FM_COUNT> vol;
+        static const std::array<std::array<bool, FMSound::OPERATOR_COUNT>, 8> vol_tl_flag;
+        static const std::array<int, FMSound::OPERATOR_COUNT> op_table;
     };
 
     class SSGWrap
