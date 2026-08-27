@@ -76,8 +76,6 @@ namespace MusicCom
         constexpr int FM_BLOCK_COUNT = 8;
         constexpr int FM_BLOCK_MAX = 7;
         constexpr int SSG_NOISE_DISABLE_SHIFT = 3;
-        constexpr int SSG_EFFECT_CHANNEL_COUNT = 2;
-
         bool IsEffectReservedRegister(int address)
         {
             return address <= SSG_TONE_PERIOD_HIGH_REGISTER_BASE + 2 ||
@@ -208,27 +206,18 @@ namespace MusicCom
           effect_active_(false),
           mixer_control_(SSG_MIXER_IO_INITIAL_VALUE)
     {
-        fill_n(tone, 3, true);
-        fill_n(noise, 3, false);
-        fill_n(keyon, 3, false);
-        fill_n(effect_tone_, SSG_EFFECT_CHANNEL_COUNT, true);
-        fill_n(effect_noise_, SSG_EFFECT_CHANNEL_COUNT, false);
-        fill_n(effect_keyon_, SSG_EFFECT_CHANNEL_COUNT, false);
-        fill_n(env, 3, false);
-        fill_n(env_form, 3, 0);
-        fill_n(vol, 3, 15);
     }
 
     void SSGWrap::SetEnv(int ch, bool on)
     {
-        assert(0 <= ch && ch < 3);
-        env[ch] = on;
+        assert(0 <= ch && ch < SSG_CHANNEL_COUNT);
+        channel[ch].env = on;
     }
 
     void SSGWrap::SetEnvForm(int ch, int form)
     {
-        assert(0 <= ch && ch < 3);
-        env_form[ch] = form;
+        assert(0 <= ch && ch < SSG_CHANNEL_COUNT);
+        channel[ch].env_form = form;
     }
 
     void SSGWrap::SetEnvPeriod(int period)
@@ -239,22 +228,22 @@ namespace MusicCom
 
     void SSGWrap::PrepareKeyOn(int ch)
     {
-        assert(0 <= ch && ch < 3);
+        assert(0 <= ch && ch < SSG_CHANNEL_COUNT);
 
-        if (env[ch])
+        if (channel[ch].env)
         {
             WriteRegister(SSG_VOLUME_REGISTER_BASE + ch, SSG_ENV_ENABLE, WriteSource::MUSIC);
-            WriteRegister(SSG_ENV_FORM_REGISTER, env_form[ch], WriteSource::MUSIC);
+            WriteRegister(SSG_ENV_FORM_REGISTER, channel[ch].env_form, WriteSource::MUSIC);
         }
         else
         {
-            WriteRegister(SSG_VOLUME_REGISTER_BASE + ch, vol[ch] & SSG_VOLUME_MASK, WriteSource::MUSIC);
+            WriteRegister(SSG_VOLUME_REGISTER_BASE + ch, channel[ch].vol & SSG_VOLUME_MASK, WriteSource::MUSIC);
         }
     }
 
     void SSGWrap::SetTonePeriod(int ch, int tone)
     {
-        assert(0 <= ch && ch < 3);
+        assert(0 <= ch && ch < SSG_CHANNEL_COUNT);
 
         int d = ch * 2;
         WriteRegister(SSG_TONE_PERIOD_LOW_REGISTER_BASE + d, tone & BYTE_MASK, WriteSource::MUSIC);
@@ -268,25 +257,23 @@ namespace MusicCom
 
     void SSGWrap::SetVolume(int ch, int v)
     {
-        assert(0 <= ch && ch < 3);
-        env[ch] = false;
-        vol[ch] = v;
+        assert(0 <= ch && ch < SSG_CHANNEL_COUNT);
+        channel[ch].env = false;
+        channel[ch].vol = v;
         WriteRegister(SSG_VOLUME_REGISTER_BASE + ch, v & SSG_VOLUME_MASK, WriteSource::MUSIC);
     }
 
     void SSGWrap::KeyOnOff(int ch, bool on)
     {
-        assert(0 <= ch && ch < 3);
-        keyon[ch] = on;
+        assert(0 <= ch && ch < SSG_CHANNEL_COUNT);
+        channel[ch].keyon = on;
         SetNoiseToneEnable();
     }
 
     void SSGWrap::BeginEffect()
     {
         effect_active_ = true;
-        fill_n(effect_tone_, SSG_EFFECT_CHANNEL_COUNT, true);
-        fill_n(effect_noise_, SSG_EFFECT_CHANNEL_COUNT, false);
-        fill_n(effect_keyon_, SSG_EFFECT_CHANNEL_COUNT, false);
+        effect_channel.fill({});
     }
 
     void SSGWrap::SetEffectFrame(int noise_period, const int tone_period[2], const int volume[2], const bool tone_enabled[2], const bool noise_enabled[2])
@@ -298,15 +285,18 @@ namespace MusicCom
             WriteRegister(SSG_TONE_PERIOD_LOW_REGISTER_BASE + d, tone_period[ch] & BYTE_MASK, WriteSource::EFFECT);
             WriteRegister(SSG_TONE_PERIOD_HIGH_REGISTER_BASE + d, (tone_period[ch] >> BYTE_SHIFT) & SSG_TONE_PERIOD_HIGH_MASK, WriteSource::EFFECT);
             WriteRegister(SSG_VOLUME_REGISTER_BASE + ch, volume[ch] & SSG_VOLUME_MASK, WriteSource::EFFECT);
-            effect_tone_[ch] = tone_enabled[ch];
-            effect_noise_[ch] = noise_enabled[ch];
+            effect_channel[ch].tone = tone_enabled[ch];
+            effect_channel[ch].noise = noise_enabled[ch];
         }
         SetEffectNoiseToneEnable();
     }
 
     void SSGWrap::EffectKeyOnOff(bool on)
     {
-        fill_n(effect_keyon_, 2, on);
+        for (auto& channel : effect_channel)
+        {
+            channel.keyon = on;
+        }
         SetEffectNoiseToneEnable();
     }
 
@@ -338,14 +328,14 @@ namespace MusicCom
 
     void SSGWrap::SetToneEnabled(int ch, bool on)
     {
-        assert(0 <= ch && ch < 3);
-        tone[ch] = on;
+        assert(0 <= ch && ch < SSG_CHANNEL_COUNT);
+        channel[ch].tone = on;
     }
 
     void SSGWrap::SetNoiseEnabled(int ch, bool on)
     {
-        assert(0 <= ch && ch < 3);
-        noise[ch] = on;
+        assert(0 <= ch && ch < SSG_CHANNEL_COUNT);
+        channel[ch].noise = on;
     }
 
     void SSGWrap::SetMixer(int value)
@@ -364,10 +354,10 @@ namespace MusicCom
     void SSGWrap::SetNoiseToneEnable()
     {
         int val = 0;
-        for (int ch = 0; ch < 3; ch++)
+        for (int ch = 0; ch < SSG_CHANNEL_COUNT; ch++)
         {
-            int n = static_cast<int>(!(noise[ch] && keyon[ch]) << SSG_NOISE_DISABLE_SHIFT);
-            int t = static_cast<int>(!(tone[ch] && keyon[ch]));
+            int n = static_cast<int>(!(channel[ch].noise && channel[ch].keyon) << SSG_NOISE_DISABLE_SHIFT);
+            int t = static_cast<int>(!(channel[ch].tone && channel[ch].keyon));
             val |= (n | t) << ch;
         }
         val |= mixer_control_;
@@ -387,14 +377,14 @@ namespace MusicCom
         int val = mixer_control_;
         for (int ch = 0; ch < SSG_EFFECT_CHANNEL_COUNT; ch++)
         {
-            int n = static_cast<int>(!(effect_noise_[ch] && effect_keyon_[ch]) << SSG_NOISE_DISABLE_SHIFT);
-            int t = static_cast<int>(!(effect_tone_[ch] && effect_keyon_[ch]));
+            int n = static_cast<int>(!(effect_channel[ch].noise && effect_channel[ch].keyon) << SSG_NOISE_DISABLE_SHIFT);
+            int t = static_cast<int>(!(effect_channel[ch].tone && effect_channel[ch].keyon));
             val |= (n | t) << ch;
         }
 
-        int n = static_cast<int>(!(noise[SSG_EFFECT_CHANNEL_COUNT] && keyon[SSG_EFFECT_CHANNEL_COUNT]) << SSG_NOISE_DISABLE_SHIFT);
-        int t = static_cast<int>(!(tone[SSG_EFFECT_CHANNEL_COUNT] && keyon[SSG_EFFECT_CHANNEL_COUNT]));
-        val |= (n | t) << SSG_EFFECT_CHANNEL_COUNT;
+        int n = static_cast<int>(!(channel[SSG_CHANNEL_C].noise && channel[SSG_CHANNEL_C].keyon) << SSG_NOISE_DISABLE_SHIFT);
+        int t = static_cast<int>(!(channel[SSG_CHANNEL_C].tone && channel[SSG_CHANNEL_C].keyon));
+        val |= (n | t) << SSG_CHANNEL_C;
 
         WriteRegister(SSG_MIXER_REGISTER, val, WriteSource::EFFECT);
     }

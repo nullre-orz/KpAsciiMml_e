@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "musdata.h"
+#include <array>
 
 namespace FM
 {
@@ -69,16 +70,35 @@ namespace MusicCom
 
         void SetEffectNoiseToneEnable();
 
+        enum SSGChannel : int
+        {
+            SSG_CHANNEL_A = 0,
+            SSG_CHANNEL_B = 1,
+            SSG_CHANNEL_C = 2,
+            SSG_CHANNEL_COUNT = 3,
+            SSG_EFFECT_CHANNEL_COUNT = 2,
+        };
+
+        struct ChannelState
+        {
+            bool tone = true;
+            bool noise = false;
+            bool keyon = false;
+            bool env = false;
+            int env_form = 0;
+            int vol = 15;
+        };
+
+        struct EffectChannelState
+        {
+            bool tone = true;
+            bool noise = false;
+            bool keyon = false;
+        };
+
         FM::OPN& opn;
-        bool tone[3];
-        bool noise[3];
-        bool keyon[3];
-        bool effect_tone_[2];
-        bool effect_noise_[2];
-        bool effect_keyon_[2];
-        bool env[3];
-        int env_form[3];
-        int vol[3];
+        std::array<ChannelState, SSG_CHANNEL_COUNT> channel;
+        std::array<EffectChannelState, SSG_EFFECT_CHANNEL_COUNT> effect_channel;
         bool effect_active_;
         int mixer_control_; // レジスタ07hのI/Oポート制御bit(D7-D6)
     };
