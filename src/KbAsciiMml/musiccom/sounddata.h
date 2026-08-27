@@ -63,8 +63,8 @@ namespace MusicCom
 
             const_iterator& operator++();
             const_iterator operator++(int);
-            bool operator==(const_iterator& other) const;
-            bool operator!=(const_iterator& other) const;
+            bool operator==(const const_iterator& other) const;
+            bool operator!=(const const_iterator& other) const;
             Element operator*() const;
 
         private:

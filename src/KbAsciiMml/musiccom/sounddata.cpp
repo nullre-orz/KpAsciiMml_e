@@ -88,12 +88,12 @@ namespace MusicCom
         return return_value;
     }
 
-    bool RhythmData::const_iterator::operator==(const_iterator& other) const
+    bool RhythmData::const_iterator::operator==(const const_iterator& other) const
     {
         return (block_ptr_ == other.block_ptr_ && part_index_ == other.part_index_);
     }
 
-    bool RhythmData::const_iterator::operator!=(const_iterator& other) const
+    bool RhythmData::const_iterator::operator!=(const const_iterator& other) const
     {
         return !(*this == other);
     }
