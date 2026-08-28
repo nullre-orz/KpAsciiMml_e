@@ -104,6 +104,6 @@ namespace MusicCom
         const RhythmData& GetRhythm(int no) const;
 
     private:
-        mutable std::map<int, RhythmData> rhythms;
+        std::map<int, RhythmData> rhythms;
     };
 } // namespace MusicCom

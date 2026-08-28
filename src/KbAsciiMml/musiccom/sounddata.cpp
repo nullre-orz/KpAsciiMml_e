@@ -4,6 +4,11 @@
 
 namespace MusicCom
 {
+    namespace
+    {
+        const RhythmData DEFAULT_RHYTHM{};
+    }
+
     RhythmData::RhythmData()
     {
     }
@@ -173,6 +178,7 @@ namespace MusicCom
 
     const RhythmData& SoundData::GetRhythm(int no) const
     {
-        return rhythms[no];
+        auto it = rhythms.find(no);
+        return it != rhythms.end() ? it->second : DEFAULT_RHYTHM;
     }
 } // namespace MusicCom

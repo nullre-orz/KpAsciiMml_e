@@ -4,10 +4,28 @@ using namespace std;
 
 namespace MusicCom
 {
+    namespace
+    {
+        const FMSound DEFAULT_FM_SOUND{};
+        const SSGEnv DEFAULT_SSG_ENV{0};
+    }
+
     MusicData::MusicData()
     {
         channel_present.fill(false);
         tempo = 120;
+    }
+
+    const FMSound& MusicData::GetFMSound(int no) const
+    {
+        auto it = fmsounds.find(no);
+        return it != fmsounds.end() ? it->second : DEFAULT_FM_SOUND;
+    }
+
+    const SSGEnv& MusicData::GetSSGEnv(int no) const
+    {
+        auto it = ssgenvs.find(no);
+        return it != ssgenvs.end() ? it->second : DEFAULT_SSG_ENV;
     }
 
     CommandIterator MusicData::GetChannelHead(int channel) const
