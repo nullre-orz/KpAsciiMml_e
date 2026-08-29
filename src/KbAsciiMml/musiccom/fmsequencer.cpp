@@ -82,8 +82,8 @@ namespace MusicCom
     void FmSequencer::InitializeImpl(PartData& part_data)
     {
         // 初手ポルタメント対応
-        part_data.LastOctave = 0;
-        part_data.LastTone = CalculateTone(0, 0);
+        part_data.Note.LastOctave = 0;
+        part_data.Note.LastTone = CalculateTone(0, 0);
         sound_no_ = 0;
         lfo_accumulator_ = 0;
         lfo_phase_ = 0;
@@ -104,9 +104,9 @@ namespace MusicCom
         switch (command.GetType())
         {
         case CommandType::TYPE_TONE:
-            part_data.SoundNo = command.GetArg(0);
-            sound_no_ = part_data.SoundNo;
-            fmwrap_.SetSound(channel_, GetMusicData().GetFMSound(part_data.SoundNo));
+            part_data.Note.SoundNo = command.GetArg(0);
+            sound_no_ = part_data.Note.SoundNo;
+            fmwrap_.SetSound(channel_, GetMusicData().GetFMSound(part_data.Note.SoundNo));
             lfo_value_ = 0;
             break;
         case CommandType::TYPE_REST:
@@ -132,10 +132,10 @@ namespace MusicCom
 
     void FmSequencer::UpdateTone(int base_tone, PartData& part_data)
     {
-        last_note_ = part_data.LastTone < 0 ? base_tone : lfo_note_;
+        last_note_ = part_data.Note.LastTone < 0 ? base_tone : lfo_note_;
         InitializeSoundLFO(base_tone);
-        part_data.Tone = CalculateTone(base_tone, part_data.Detune);
-        SetTone(part_data.Octave, part_data.Tone);
+        part_data.Note.Tone = CalculateTone(base_tone, part_data.Note.Detune);
+        SetTone(part_data.Note.Octave, part_data.Note.Tone);
     }
 
     void FmSequencer::ApplyVibratoEffect(int octave, int tone, int depth)

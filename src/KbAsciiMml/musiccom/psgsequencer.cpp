@@ -35,8 +35,8 @@ namespace MusicCom
     void PsgSequencer::InitializeImpl(PartData& part_data)
     {
         // 初手ポルタメント対応
-        part_data.LastOctave = 0;
-        part_data.LastTone = CalculateTone(0, 0, 0);
+        part_data.Note.LastOctave = 0;
+        part_data.Note.LastTone = CalculateTone(0, 0, 0);
         current_note_ = 0;
         last_period_ = SSG_TONE_PERIOD[0];
         current_period_ = SSG_TONE_PERIOD[0];
@@ -49,20 +49,20 @@ namespace MusicCom
         switch (command.GetType())
         {
         case CommandType::TYPE_TONE:
-            part_data.SoundNo = command.GetArg(0);
-            part_data.SSGEnvOn = part_data.SoundNo != 0;
-            if (part_data.SSGEnvOn)
+            part_data.Note.SoundNo = command.GetArg(0);
+            part_data.Note.SSGEnvOn = part_data.Note.SoundNo != 0;
+            if (part_data.Note.SSGEnvOn)
             {
                 ssgwrap_.SetEnv(channel_, false);
             }
             break;
         case CommandType::TYPE_ENV_FORM:
-            part_data.SSGEnvOn = false;
+            part_data.Note.SSGEnvOn = false;
             ssgwrap_.SetEnv(channel_, true);
             ssgwrap_.SetEnvForm(channel_, command.GetArg(0));
             break;
         case CommandType::TYPE_ENV_PERIOD:
-            part_data.SSGEnvOn = false;
+            part_data.Note.SSGEnvOn = false;
             ssgwrap_.SetEnv(channel_, true);
             ssgwrap_.SetEnvPeriod(command.GetArg(0));
             break;
@@ -88,9 +88,9 @@ namespace MusicCom
     {
         last_period_ = current_period_;
         current_note_ = base_tone;
-        current_period_ = CalculateTonePeriod(base_tone, part_data.Detune);
-        part_data.Tone = ApplyOctave(current_period_, part_data.Octave);
-        SetTone(part_data.Octave, part_data.Tone);
+        current_period_ = CalculateTonePeriod(base_tone, part_data.Note.Detune);
+        part_data.Note.Tone = ApplyOctave(current_period_, part_data.Note.Octave);
+        SetTone(part_data.Note.Octave, part_data.Note.Tone);
     }
 
     void PsgSequencer::ApplyVibratoEffect(int octave, int tone, int depth)
@@ -102,9 +102,9 @@ namespace MusicCom
     int PsgSequencer::AdjustVolume(int volume, int length, const PartData& part_data)
     {
         int adjust_volume = volume;
-        if (part_data.SSGEnvOn)
+        if (part_data.Note.SSGEnvOn)
         {
-            auto env = GetMusicData().GetSSGEnv(part_data.SoundNo);
+            auto env = GetMusicData().GetSSGEnv(part_data.Note.SoundNo);
             if (env.Env.empty())
             {
                 return adjust_volume;

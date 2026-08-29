@@ -25,8 +25,8 @@ namespace MusicCom
 
     void PartSequencerBase::Initialize()
     {
-        part_data_.Playing = true;
-        part_data_.HasPreviousNote = false;
+        part_data_.Playback.Playing = true;
+        part_data_.Playback.HasPreviousNote = false;
         ReturnToHead();
 
         // フレーム初期化
@@ -40,7 +40,7 @@ namespace MusicCom
 
     bool PartSequencerBase::IsPlaying() const
     {
-        return part_data_.Playing;
+        return part_data_.Playback.Playing;
     }
 
     void PartSequencerBase::Resume()
@@ -51,11 +51,11 @@ namespace MusicCom
             return;
         }
 
-        part_data_.CommandPtr++;
-        part_data_.Playing = true;
+        part_data_.Commands.CommandPtr++;
+        part_data_.Playback.Playing = true;
 
         // パート終端の場合は先頭に戻して再開
-        if (part_data_.CommandPtr == command_tail_)
+        if (part_data_.Commands.CommandPtr == command_tail_)
         {
             ReturnToHead();
         }
@@ -73,7 +73,7 @@ namespace MusicCom
 
     void PartSequencerBase::IncreaseFrame(int frame_size)
     {
-        if (!part_data_.Playing)
+        if (!part_data_.Playback.Playing)
         {
             return;
         }
@@ -114,17 +114,17 @@ namespace MusicCom
 
     void PartSequencerBase::ReturnToHead()
     {
-        part_data_.CommandPtr = GetHead();
-        part_data_.CallStack = {};
-        part_data_.LoopStack = {};
+        part_data_.Commands.CommandPtr = GetHead();
+        part_data_.Commands.CallStack = {};
+        part_data_.Commands.LoopStack = {};
     }
 
     void PartSequencerBase::PreProcess(int current_frame)
     {
-        if (part_data_.HasPreviousNote && part_data_.NoteEndFrame <= current_frame)
+        if (part_data_.Playback.HasPreviousNote && part_data_.Note.EndFrame <= current_frame)
         {
-            part_data_.LastOctave = part_data_.Octave;
-            part_data_.LastTone = part_data_.Tone;
+            part_data_.Note.LastOctave = part_data_.Note.Octave;
+            part_data_.Note.LastTone = part_data_.Note.Tone;
         }
     }
 
@@ -137,8 +137,8 @@ namespace MusicCom
             switch (command.GetType())
             {
             case CommandType::TYPE_PAUSE:
-                part_data_.Playing = false;
-                part_data_.CommandPtr = ptr;
+                part_data_.Playback.Playing = false;
+                part_data_.Commands.CommandPtr = ptr;
                 return std::nullopt;
             case CommandType::TYPE_MACRO:
                 if (!music_data_.IsMacroPresent(command.GetStrArg()))
@@ -146,43 +146,43 @@ namespace MusicCom
                     ptr++;
                     continue;
                 }
-                part_data_.CallStack.push(++CommandIterator(ptr));
+                part_data_.Commands.CallStack.push(++CommandIterator(ptr));
                 // 自己参照等で入れ子の数がMAX_MACRO_COUNTを超えたら強制終了
-                if (part_data_.CallStack.size() > MAX_MACRO_COUNT)
+                if (part_data_.Commands.CallStack.size() > MAX_MACRO_COUNT)
                 {
-                    part_data_.Playing = false;
+                    part_data_.Playback.Playing = false;
                     return std::nullopt;
                 }
                 ptr = music_data_.GetMacroHead(command.GetStrArg());
                 continue;
             case CommandType::TYPE_RETURN:
-                if (part_data_.CallStack.empty())
+                if (part_data_.Commands.CallStack.empty())
                 {
-                    part_data_.Playing = false;
+                    part_data_.Playback.Playing = false;
                     return std::nullopt;
                 }
-                ptr = part_data_.CallStack.top();
-                part_data_.CallStack.pop();
+                ptr = part_data_.Commands.CallStack.top();
+                part_data_.Commands.CallStack.pop();
                 continue;
             case CommandType::TYPE_LOOP:
-                part_data_.LoopStack.push(std::pair<CommandIterator, int>(++CommandIterator(ptr), command.GetArg(0)));
+                part_data_.Commands.LoopStack.push(std::pair<CommandIterator, int>(++CommandIterator(ptr), command.GetArg(0)));
                 ptr++;
                 continue;
             case CommandType::TYPE_EXIT:
             {
-                if (part_data_.LoopStack.empty())
+                if (part_data_.Commands.LoopStack.empty())
                 {
-                    part_data_.Playing = false;
+                    part_data_.Playback.Playing = false;
                     return std::nullopt;
                 }
-                std::pair<CommandIterator, int>& p = part_data_.LoopStack.top();
+                std::pair<CommandIterator, int>& p = part_data_.Commands.LoopStack.top();
                 if (p.second != 0)
                 {
                     p.second--;
                     // ループ脱出
                     if (p.second == 0)
                     {
-                        part_data_.LoopStack.pop();
+                        part_data_.Commands.LoopStack.pop();
                         ptr++;
                     }
                     else
@@ -194,12 +194,12 @@ namespace MusicCom
                 else
                 {
                     // 音符の入っていない無限ループ検出
-                    if (part_data_.InfiniteLooping)
+                    if (part_data_.Playback.InfiniteLooping)
                     {
-                        part_data_.Playing = false;
+                        part_data_.Playback.Playing = false;
                         return std::nullopt;
                     }
-                    part_data_.InfiniteLooping = true;
+                    part_data_.Playback.InfiniteLooping = true;
                     ptr = p.first;
                 }
             }
@@ -215,8 +215,8 @@ namespace MusicCom
         // 後方にタイ(&)やキーオフなし休符(W)が存在するかどうかを先読みして確認
         // ProcessLoop同様にマクロ/ループは展開するが、本体に影響しないようコピーで処理する
         bool infinite_looping = false;
-        auto macro_call_stack(part_data_.CallStack);
-        auto loop_stack(part_data_.LoopStack);
+        auto macro_call_stack(part_data_.Commands.CallStack);
+        auto loop_stack(part_data_.Commands.LoopStack);
 
         while (1)
         {
@@ -298,17 +298,17 @@ namespace MusicCom
 
     void PartSequencerBase::ProcessCommand(int current_frame)
     {
-        part_data_.InfiniteLooping = false;
-        auto ptr = part_data_.CommandPtr;
+        part_data_.Playback.InfiniteLooping = false;
+        auto ptr = part_data_.Commands.CommandPtr;
 
-        while (part_data_.NoteEndFrame <= current_frame)
+        while (part_data_.Note.EndFrame <= current_frame)
         {
             // マクロ・ループ・終端は別処理
             {
                 auto result = ProcessLoop(ptr);
                 if (!result)
                 {
-                    if (part_data_.HasPreviousNote && !part_data_.LinkedItem)
+                    if (part_data_.Playback.HasPreviousNote && !part_data_.Commands.LinkedItem)
                     {
                         KeyOff();
                     }
@@ -319,40 +319,40 @@ namespace MusicCom
 
             ptr = ProcessCommandImpl(ptr, current_frame, part_data_);
         }
-        part_data_.CommandPtr = ptr;
+        part_data_.Commands.CommandPtr = ptr;
     }
 
     CommandIterator PartSequencerBase::ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data)
     {
         static auto get_length = [](const PartData& part_data, int base_length)
         {
-            return (base_length == 0) ? part_data.DefaultNoteLength : base_length;
+            return (base_length == 0) ? part_data.Note.DefaultLength : base_length;
         };
 
         static auto update_note_frames = [](PartData& part_data, int current_frame, int length)
         {
-            part_data.NoteBeginFrame = current_frame;
-            part_data.NoteEndFrame = current_frame + length;
+            part_data.Note.BeginFrame = current_frame;
+            part_data.Note.EndFrame = current_frame + length;
         };
 
         static auto update_keyoff_frames = [](const PartSequencerBase& sequencer, PartData& part_data, CommandIterator ptr, int current_frame, int length)
         {
-            part_data.LinkedItem = sequencer.FindLinkedItem(CommandIterator(ptr));
+            part_data.Commands.LinkedItem = sequencer.FindLinkedItem(CommandIterator(ptr));
             if (ptr->GetType() == CommandType::TYPE_TIE)
             {
-                part_data.KeyOffFrame = part_data.NoteEndFrame;
+                part_data.Note.KeyOffFrame = part_data.Note.EndFrame;
             }
             else
             {
-                if (part_data.GateTime >= 8)
+                if (part_data.Note.GateTime >= 8)
                 {
                     // Q8以上では途中キーオフを無効化する
-                    part_data.KeyOffFrame = std::numeric_limits<int>::max();
+                    part_data.Note.KeyOffFrame = std::numeric_limits<int>::max();
                 }
                 else
                 {
                     // 64分音符単位でゲート時間を計算する
-                    part_data.KeyOffFrame = current_frame + (length - 1) * part_data.GateTime / 8 + 1;
+                    part_data.Note.KeyOffFrame = current_frame + (length - 1) * part_data.Note.GateTime / 8 + 1;
                 }
             }
         };
@@ -362,29 +362,29 @@ namespace MusicCom
         {
         case CommandType::TYPE_NOTE:
         {
-            if (!part_data.LinkedItem)
+            if (!part_data.Commands.LinkedItem)
             {
-                if (part_data.HasPreviousNote)
+                if (part_data.Playback.HasPreviousNote)
                 {
                     KeyOff();
                 }
-                part_data.KeyOnFrame = current_frame;
+                part_data.Note.KeyOnFrame = current_frame;
             }
 
             // オクターブの変更を反映
-            part_data.Octave = part_data.ReservedOctave;
+            part_data.Note.Octave = part_data.Note.ReservedOctave;
 
             UpdateTone(command.GetArg(0), part_data);
-            if (part_data.LinkedItem != CommandType::TYPE_TIE)
+            if (part_data.Commands.LinkedItem != CommandType::TYPE_TIE)
             {
                 KeyOn();
             }
-            part_data.HasPreviousNote = true;
+            part_data.Playback.HasPreviousNote = true;
 
-            if (part_data.LastTone == TONE_KEY_OFF)
+            if (part_data.Note.LastTone == TONE_KEY_OFF)
             {
-                part_data.LastOctave = part_data.Octave;
-                part_data.LastTone = part_data.Tone;
+                part_data.Note.LastOctave = part_data.Note.Octave;
+                part_data.Note.LastTone = part_data.Note.Tone;
             }
 
             int length = get_length(part_data, command.GetArg(1));
@@ -395,17 +395,17 @@ namespace MusicCom
         }
         case CommandType::TYPE_REST:
         {
-            part_data.HasPreviousNote = true;
+            part_data.Playback.HasPreviousNote = true;
             int length = get_length(part_data, command.GetArg(0));
             update_note_frames(part_data, current_frame, length);
 
-            if (part_data.LinkedItem != CommandType::TYPE_TIE)
+            if (part_data.Commands.LinkedItem != CommandType::TYPE_TIE)
             {
                 // &R でなければキーオフ
                 KeyOff();
 
                 // 休符後のトーンエフェクトを無効にするためキーオフ状態を設定
-                part_data.Tone = TONE_KEY_OFF;
+                part_data.Note.Tone = TONE_KEY_OFF;
             }
             else
             {
@@ -416,7 +416,7 @@ namespace MusicCom
         }
         case CommandType::TYPE_WAIT:
         {
-            auto linked_item = part_data.LinkedItem;
+            auto linked_item = part_data.Commands.LinkedItem;
             int length = get_length(part_data, command.GetArg(0));
             update_note_frames(part_data, current_frame, length);
             update_keyoff_frames(*this, part_data, ptr, current_frame, length);
@@ -424,50 +424,50 @@ namespace MusicCom
             // W開始前のタイはWを越えて維持する
             if (linked_item == CommandType::TYPE_TIE)
             {
-                part_data.LinkedItem = linked_item;
+                part_data.Commands.LinkedItem = linked_item;
             }
 
             break;
         }
         case CommandType::TYPE_LENGTH:
-            part_data.DefaultNoteLength = command.GetArg(0);
+            part_data.Note.DefaultLength = command.GetArg(0);
             break;
         case CommandType::TYPE_OCTAVE:
-            part_data.ReservedOctave = std::clamp(command.GetArg(0), 0, 8);
+            part_data.Note.ReservedOctave = std::clamp(command.GetArg(0), 0, 8);
             break;
         case CommandType::TYPE_OCTAVE_DOWN:
-            part_data.ReservedOctave = std::max(part_data.ReservedOctave - 1, 0);
+            part_data.Note.ReservedOctave = std::max(part_data.Note.ReservedOctave - 1, 0);
             break;
         case CommandType::TYPE_OCTAVE_UP:
-            part_data.ReservedOctave = std::min(part_data.ReservedOctave + 1, 8);
+            part_data.Note.ReservedOctave = std::min(part_data.Note.ReservedOctave + 1, 8);
             break;
         case CommandType::TYPE_VOLUME:
-            part_data.Volume = command.GetArg(0);
-            SetVolume(std::clamp(part_data.Volume, 0, 15));
+            part_data.Note.Volume = command.GetArg(0);
+            SetVolume(std::clamp(part_data.Note.Volume, 0, 15));
             break;
         //case CommandType::TYPE_TONE:
         case CommandType::TYPE_GATE_TIME:
-            part_data.GateTime = command.GetArg(0);
+            part_data.Note.GateTime = command.GetArg(0);
             break;
         case CommandType::TYPE_DETUNE:
-            part_data.Detune = command.GetArg(0);
+            part_data.Note.Detune = command.GetArg(0);
             break;
         case CommandType::TYPE_PORTAMENTO:
-            part_data.PLength = std::max(command.GetArg(0), 0);
+            part_data.Effect.PortamentoLength = std::max(command.GetArg(0), 0);
             // Iのみ排他
-            part_data.IDepth = 0;
+            part_data.Effect.VibratoDepth = 0;
             break;
         case CommandType::TYPE_TREMOLO:
-            part_data.UDepth = command.GetArg(0);
-            part_data.ULength = std::max(command.GetArg(1), 1);
-            part_data.UDelay = std::max(command.GetArg(2), 0);
+            part_data.Effect.TremoloDepth = command.GetArg(0);
+            part_data.Effect.TremoloLength = std::max(command.GetArg(1), 1);
+            part_data.Effect.TremoloDelay = std::max(command.GetArg(2), 0);
             break;
         case CommandType::TYPE_VIBRATO:
-            part_data.IDepth = command.GetArg(0);
-            part_data.ILength = std::max(command.GetArg(1), 1);
-            part_data.IDelay = std::max(command.GetArg(2), 0);
+            part_data.Effect.VibratoDepth = command.GetArg(0);
+            part_data.Effect.VibratoLength = std::max(command.GetArg(1), 1);
+            part_data.Effect.VibratoDelay = std::max(command.GetArg(2), 0);
             // Pのみ排他
-            part_data.PLength = 0;
+            part_data.Effect.PortamentoLength = 0;
             break;
         //case CommandType::TYPE_ENV_FORM:
         //case CommandType::TYPE_ENV_PERIOD:
@@ -488,32 +488,32 @@ namespace MusicCom
         static auto set_vibrato = [](PartSequencerBase& sequencer, int keyon_length, int base_tone)
         {
             auto part_data = sequencer.part_data_;
-            int depth = (((keyon_length - part_data.IDelay) / part_data.ILength) & 1) ? -part_data.IDepth : part_data.IDepth;
-            sequencer.ApplyVibratoEffect(part_data.Octave, base_tone, depth);
+            int depth = (((keyon_length - part_data.Effect.VibratoDelay) / part_data.Effect.VibratoLength) & 1) ? -part_data.Effect.VibratoDepth : part_data.Effect.VibratoDepth;
+            sequencer.ApplyVibratoEffect(part_data.Note.Octave, base_tone, depth);
         };
 
         // 一時停止中の場合は何もしない
-        if (!part_data_.Playing)
+        if (!part_data_.Playback.Playing)
         {
             return;
         }
 
         // ゲートタイム(Q)でのキーオフ
-        if (part_data_.KeyOffFrame <= current_frame)
+        if (part_data_.Note.KeyOffFrame <= current_frame)
         {
             KeyOff();
         }
 
         // Volume
-        int keyon_length = current_frame - part_data_.KeyOnFrame;
-        if (part_data_.UDepth != 0 || part_data_.SSGEnvOn)
+        int keyon_length = current_frame - part_data_.Note.KeyOnFrame;
+        if (part_data_.Effect.TremoloDepth != 0 || part_data_.Note.SSGEnvOn)
         {
-            int final_volume = part_data_.Volume;
+            int final_volume = part_data_.Note.Volume;
 
-            if (part_data_.UDepth != 0 && keyon_length >= part_data_.UDelay)
+            if (part_data_.Effect.TremoloDepth != 0 && keyon_length >= part_data_.Effect.TremoloDelay)
             {
-                if (((keyon_length - part_data_.UDelay) / part_data_.ULength) & 1)
-                    final_volume -= part_data_.UDepth;
+                if (((keyon_length - part_data_.Effect.TremoloDelay) / part_data_.Effect.TremoloLength) & 1)
+                    final_volume -= part_data_.Effect.TremoloDepth;
             }
 
             final_volume = AdjustVolume(final_volume, keyon_length, part_data_);
@@ -523,26 +523,26 @@ namespace MusicCom
         }
 
         // Tone
-        if (part_data_.PLength != 0 && part_data_.Tone != TONE_KEY_OFF)
+        if (part_data_.Effect.PortamentoLength != 0 && part_data_.Note.Tone != TONE_KEY_OFF)
         {
             // ポルタメントは音程が変わった時点で適用する。
             // P+1を分母として整数差分を求め、P+1 tick目に目標音程へ切り替える。
-            int tick = current_frame - part_data_.NoteBeginFrame;
-            if (tick <= part_data_.PLength + 1)
+            int tick = current_frame - part_data_.Note.BeginFrame;
+            if (tick <= part_data_.Effect.PortamentoLength + 1)
             {
-                ApplyPortamentoEffect(part_data_.Octave, part_data_.Tone, part_data_.LastOctave, part_data_.LastTone, tick, part_data_.PLength);
+                ApplyPortamentoEffect(part_data_.Note.Octave, part_data_.Note.Tone, part_data_.Note.LastOctave, part_data_.Note.LastTone, tick, part_data_.Effect.PortamentoLength);
             }
         }
-        else if (part_data_.IDepth != 0 && keyon_length >= part_data_.IDelay)
+        else if (part_data_.Effect.VibratoDepth != 0 && keyon_length >= part_data_.Effect.VibratoDelay)
         {
-            if (part_data_.Tone != TONE_KEY_OFF)
+            if (part_data_.Note.Tone != TONE_KEY_OFF)
             {
-                set_vibrato(*this, keyon_length, part_data_.Tone);
+                set_vibrato(*this, keyon_length, part_data_.Note.Tone);
             }
-            else if (part_data_.LastTone != TONE_KEY_OFF)
+            else if (part_data_.Note.LastTone != TONE_KEY_OFF)
             {
-                set_vibrato(*this, keyon_length, part_data_.LastTone);
-                part_data_.LastTone = TONE_KEY_OFF;
+                set_vibrato(*this, keyon_length, part_data_.Note.LastTone);
+                part_data_.Note.LastTone = TONE_KEY_OFF;
             }
         }
     }
