@@ -1,5 +1,6 @@
 ﻿#include "psgsequencer.h"
-#include "fmwrap.h"
+#include "musdata.h"
+#include "ssgwrap.h"
 #include <algorithm>
 #include <array>
 

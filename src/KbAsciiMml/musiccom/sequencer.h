@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "fmwrap.h"
+#include "ssgwrap.h"
 #include "partdata.h"
 #include "partsequencerbase.h"
 #include <memory>
