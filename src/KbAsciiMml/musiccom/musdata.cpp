@@ -11,9 +11,10 @@ namespace MusicCom
     }
 
     MusicData::MusicData()
+        : channel_present(),
+          rhythm_part_present(false),
+          tempo(120)
     {
-        channel_present.fill(false);
-        tempo = 120;
     }
 
     const FMSound& MusicData::GetFMSound(int no) const

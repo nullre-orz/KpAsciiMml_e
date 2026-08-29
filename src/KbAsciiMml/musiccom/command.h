@@ -42,36 +42,32 @@ namespace MusicCom
     {
     public:
         Command()
+            : type(CommandType::TYPE_UNKNOWN),
+              args()
         {
-            type = CommandType::TYPE_UNKNOWN;
-            args.fill(0);
         }
         Command(CommandType t, int arg0 = 0, int arg1 = 0, int arg2 = 0)
+            : type(t)
         {
-            SetType(t);
             SetArg(0, arg0);
             SetArg(1, arg1);
             SetArg(2, arg2);
         }
         Command(CommandType t, std::string arg)
+            : type(t),
+              args()
         {
-            SetType(t);
-            args.fill(0);
             SetStrArg(arg);
         }
         template<class InIt>
         Command(CommandType t, InIt first, InIt last)
+            : type(t),
+              args()
         {
-            SetType(t);
-            args.fill(0);
             for (int i = 0; i < static_cast<int>(args.size()) && first != last; i++, first++)
             {
                 SetArg(i, *first);
             }
-        }
-        void SetType(CommandType t)
-        {
-            type = t;
         }
         CommandType GetType() const
         {
