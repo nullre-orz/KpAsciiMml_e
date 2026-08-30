@@ -10,22 +10,22 @@ namespace MusicCom
     {
     public:
         PsgSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, int channel, int rate);
-        ~PsgSequencer();
+        ~PsgSequencer() override;
 
     protected: // for PartSequencerBase
-        virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
+        CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data) override;
 
     private: // for PartSequencerBase
-        virtual void InitializeImpl(PartData& part_data);
-        virtual void KeyOn();
-        virtual void KeyOff();
-        virtual void UpdateTone(int base_tone, PartData& part_data);
-        virtual int AdjustVolume(int volume, int length, const PartData& part_data);
-        virtual void ApplyVibratoEffect(int octave, int tone, int depth);
-        virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length);
-        virtual void SetTone(int octave, int tone);
-        virtual void SetVolume(int volume);
-        virtual const CommandIterator GetHead() const;
+        void InitializeImpl(PartData& part_data) override;
+        void KeyOn() override;
+        void KeyOff() override;
+        void UpdateTone(int base_tone, PartData& part_data) override;
+        int AdjustVolume(int volume, int length, const PartData& part_data) override;
+        void ApplyVibratoEffect(int octave, int tone, int depth) override;
+        void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length) override;
+        void SetTone(int octave, int tone) override;
+        void SetVolume(int volume) override;
+        const CommandIterator GetHead() const override;
 
     private:
         int CalculateTone(int base_octave, int base_tone, int detune) const;

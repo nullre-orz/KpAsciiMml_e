@@ -13,27 +13,27 @@ namespace MusicCom
     {
     public:
         SoundSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate);
-        ~SoundSequencer();
+        ~SoundSequencer() override;
 
     protected: // for PartSequencerBase
-        virtual int GetRemainFrameSizeImpl();
-        virtual void IncreaseFrameImpl(int frame_size);
-        virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
+        int GetRemainFrameSizeImpl() override;
+        void IncreaseFrameImpl(int frame_size) override;
+        CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data) override;
 
     private:
         void NextSoundFrame();
 
     private: // for PartSequencerBase
-        virtual void InitializeImpl(PartData& part_data);
-        virtual void PreProcess(int current_frame);
-        virtual void ProcessEffect(int current_frame);
-        virtual void KeyOn();
-        virtual void KeyOff();
-        virtual void UpdateTone(int base_tone, PartData& part_data);
-        virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length);
-        virtual void SetTone(int octave, int tone);
-        virtual void SetVolume(int volume);
-        virtual const CommandIterator GetHead() const;
+        void InitializeImpl(PartData& part_data) override;
+        void PreProcess(int current_frame) override;
+        void ProcessEffect(int current_frame) override;
+        void KeyOn() override;
+        void KeyOff() override;
+        void UpdateTone(int base_tone, PartData& part_data) override;
+        void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length) override;
+        void SetTone(int octave, int tone) override;
+        void SetVolume(int volume) override;
+        const CommandIterator GetHead() const override;
 
         void KeyOnOffImpl(bool on);
 
