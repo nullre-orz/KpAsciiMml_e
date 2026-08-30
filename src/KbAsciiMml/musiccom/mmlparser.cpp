@@ -818,7 +818,7 @@ namespace MusicCom
         }
 
         // エラーリストが空でない場合は例外をthrow
-        if (error_list.size() > 0)
+        if (!error_list.empty())
         {
             // 改行区切りで連結
             auto msg = accumulate(
@@ -831,7 +831,6 @@ namespace MusicCom
                 });
 
             throw std::runtime_error(msg);
-            return nullptr;
         }
 
         return pMusicData.release();
