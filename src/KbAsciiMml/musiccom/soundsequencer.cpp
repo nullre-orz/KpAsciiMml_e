@@ -210,7 +210,7 @@ namespace MusicCom
         // nothing todo.
     }
 
-    const CommandIterator SoundSequencer::GetHead() const
+    CommandIterator SoundSequencer::GetHead() const
     {
         return GetMusicData().GetRhythmPartHead();
     }

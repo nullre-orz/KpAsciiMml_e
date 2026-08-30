@@ -47,7 +47,7 @@ namespace MusicCom
         virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length) = 0;
         virtual void SetTone(int octave, int tone) = 0;
         virtual void SetVolume(int volume) = 0;
-        virtual const CommandIterator GetHead() const = 0;
+        virtual CommandIterator GetHead() const = 0;
 
         RegisterWriter register_writer_;
         PartData part_data_;

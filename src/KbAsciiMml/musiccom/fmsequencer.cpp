@@ -323,7 +323,7 @@ namespace MusicCom
         fmwrap_.SetVolume(channel_, volume);
     }
 
-    const CommandIterator FmSequencer::GetHead() const
+    CommandIterator FmSequencer::GetHead() const
     {
         return GetMusicData().GetChannelHead(channel_);
     }

@@ -147,7 +147,7 @@ namespace MusicCom
         ssgwrap_.SetVolume(channel_, volume);
     }
 
-    const CommandIterator PsgSequencer::GetHead() const
+    CommandIterator PsgSequencer::GetHead() const
     {
         return GetMusicData().GetChannelHead(channel_ + MUSIC_CHANNEL_SSG_A);
     }

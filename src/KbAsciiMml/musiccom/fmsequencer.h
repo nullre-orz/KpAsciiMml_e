@@ -25,7 +25,7 @@ namespace MusicCom
         void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length) override;
         void SetTone(int octave, int tone) override;
         void SetVolume(int volume) override;
-        const CommandIterator GetHead() const override;
+        CommandIterator GetHead() const override;
 
     private:
         int CalculateTone(int base_tone, int detune) const;
