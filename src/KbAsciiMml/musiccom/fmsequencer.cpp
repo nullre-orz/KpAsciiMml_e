@@ -60,7 +60,7 @@ namespace MusicCom
     // clang-format on
 
     FmSequencer::FmSequencer(const RegisterWriter& register_writer, FMWrap& fmwrap, const MusicData& music, int channel, int rate)
-        : PartSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),
+        : ToneSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),
           channel_(channel),
           fmwrap_(fmwrap),
           sound_no_(0),
@@ -111,10 +111,10 @@ namespace MusicCom
             break;
         case CommandType::TYPE_REST:
             note_active_ = false;
-            return_ptr = PartSequencerBase::ProcessCommandImpl(ptr, current_frame, part_data);
+            return_ptr = ToneSequencerBase::ProcessCommandImpl(ptr, current_frame, part_data);
             break;
         default:
-            return_ptr = PartSequencerBase::ProcessCommandImpl(ptr, current_frame, part_data);
+            return_ptr = ToneSequencerBase::ProcessCommandImpl(ptr, current_frame, part_data);
             break;
         }
         return return_ptr;
@@ -145,12 +145,17 @@ namespace MusicCom
 
     void FmSequencer::ProcessEffect(int current_frame)
     {
-        PartSequencerBase::ProcessEffect(current_frame);
+        ToneSequencerBase::ProcessEffect(current_frame);
 
         if (UpdateSoundLFO())
         {
             WriteTone(current_octave_, current_tone_);
         }
+    }
+
+    bool FmSequencer::NeedsVolumeEffect(const PartData& part_data) const
+    {
+        return part_data.Effect.TremoloDepth != 0;
     }
 
     void FmSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length)

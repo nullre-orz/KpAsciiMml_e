@@ -21,7 +21,7 @@ namespace MusicCom
     // clang-format on
 
     PsgSequencer::PsgSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, int channel, int rate)
-        : PartSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),
+        : ToneSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),
           channel_(channel - MUSIC_CHANNEL_SSG_A),
           ssgwrap_(ssgwrap),
           current_note_(0),
@@ -67,7 +67,7 @@ namespace MusicCom
             ssgwrap_.SetEnvPeriod(command.GetArg(0));
             break;
         default:
-            return_ptr = PartSequencerBase::ProcessCommandImpl(ptr, current_frame, part_data);
+            return_ptr = ToneSequencerBase::ProcessCommandImpl(ptr, current_frame, part_data);
             break;
         }
         return return_ptr;
@@ -99,24 +99,30 @@ namespace MusicCom
         SetTone(octave, ApplyOctave(period, octave));
     }
 
-    int PsgSequencer::AdjustVolume(int volume, int length, const PartData& part_data)
+    bool PsgSequencer::NeedsVolumeEffect(const PartData& part_data) const
     {
-        int adjust_volume = volume;
+        return part_data.Effect.TremoloDepth != 0 || part_data.Note.SSGEnvOn;
+    }
+
+    int PsgSequencer::AdjustVolumeEffect(int volume, int keyon_length, const PartData& part_data)
+    {
+        int adjusted_volume = volume;
         if (part_data.Note.SSGEnvOn)
         {
             auto env = GetMusicData().GetSSGEnv(part_data.Note.SoundNo);
             if (env.Env.empty())
             {
-                return adjust_volume;
+                return adjusted_volume;
             }
-            size_t pos = length / env.Unit;
+
+            size_t pos = keyon_length / env.Unit;
             if (pos >= env.Env.size())
             {
                 pos = env.Env.size() - 1;
             }
-            adjust_volume = std::max(((volume + env.Env[pos]) & 0xff) - 15, 0);
+            adjusted_volume = std::max(((volume + env.Env[pos]) & 0xff) - 15, 0);
         }
-        return adjust_volume;
+        return adjusted_volume;
     }
 
     void PsgSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length)

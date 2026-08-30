@@ -1,12 +1,13 @@
 ﻿#pragma once
 
-#include "partsequencerbase.h"
+#include "musdata.h"
+#include "tonesequencerbase.h"
 #include <array>
 
 namespace MusicCom
 {
     class FMWrap;
-    class FmSequencer : public PartSequencerBase
+    class FmSequencer : public ToneSequencerBase
     {
     public:
         FmSequencer(const RegisterWriter& register_writer, FMWrap& fmwrap, const MusicData& music, int channel, int rate);
@@ -20,6 +21,7 @@ namespace MusicCom
         void InitializeImpl(PartData& part_data) override;
         void KeyOn() override;
         void KeyOff() override;
+        bool NeedsVolumeEffect(const PartData& part_data) const override;
         void UpdateTone(int base_tone, PartData& part_data) override;
         void ApplyVibratoEffect(int octave, int tone, int depth) override;
         void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length) override;

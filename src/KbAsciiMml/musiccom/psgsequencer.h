@@ -1,12 +1,12 @@
 ﻿#pragma once
 
-#include "partsequencerbase.h"
+#include "tonesequencerbase.h"
 
 namespace MusicCom
 {
     class SSGWrap;
     class MusicData;
-    class PsgSequencer : public PartSequencerBase
+    class PsgSequencer : public ToneSequencerBase
     {
     public:
         PsgSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, int channel, int rate);
@@ -20,7 +20,8 @@ namespace MusicCom
         void KeyOn() override;
         void KeyOff() override;
         void UpdateTone(int base_tone, PartData& part_data) override;
-        int AdjustVolume(int volume, int length, const PartData& part_data) override;
+        bool NeedsVolumeEffect(const PartData& part_data) const override;
+        int AdjustVolumeEffect(int volume, int keyon_length, const PartData& part_data) override;
         void ApplyVibratoEffect(int octave, int tone, int depth) override;
         void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length) override;
         void SetTone(int octave, int tone) override;

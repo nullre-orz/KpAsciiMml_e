@@ -108,17 +108,6 @@ namespace MusicCom
     CommandIterator SoundSequencer::ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data)
     {
         // 原則基底クラスではなく本クラスで処理する
-        static auto get_length = [](const PartData& part_data, int base_length)
-        {
-            return (base_length == 0) ? part_data.Note.DefaultLength : base_length;
-        };
-
-        static auto update_note_frames = [](PartData& part_data, int current_frame, int length)
-        {
-            part_data.Note.BeginFrame = current_frame;
-            part_data.Note.EndFrame = current_frame + length;
-        };
-
         auto return_ptr = CommandIterator(ptr);
         const Command& command = *return_ptr++;
         switch (command.GetType())
@@ -138,8 +127,8 @@ namespace MusicCom
                 KeyOn();
             }
 
-            int length = get_length(part_data, command.GetArg(1));
-            update_note_frames(part_data, current_frame, length);
+            int length = ResolveNoteLength(part_data, command.GetArg(1));
+            UpdateNoteFrames(part_data, current_frame, length);
 
             part_data.Note.KeyOffFrame = sound_data.length();
             break;
@@ -149,8 +138,8 @@ namespace MusicCom
         {
             part_data.Note.KeyOnFrame = current_frame;
 
-            int length = get_length(part_data, command.GetArg(0));
-            update_note_frames(part_data, current_frame, length);
+            int length = ResolveNoteLength(part_data, command.GetArg(0));
+            UpdateNoteFrames(part_data, current_frame, length);
 
             part_data.Note.KeyOffFrame = part_data.Note.EndFrame;
             break;
@@ -160,11 +149,6 @@ namespace MusicCom
             break;
         }
         return return_ptr;
-    }
-
-    void SoundSequencer::ProcessEffect(int current_frame)
-    {
-        // nothing todo.
     }
 
     void SoundSequencer::KeyOn()
@@ -188,26 +172,6 @@ namespace MusicCom
         ssgwrap_.EffectKeyOnOff(on);
 
         sound_interrupt_enabled_ = on;
-    }
-
-    void SoundSequencer::UpdateTone(int base_tone, PartData& part_data)
-    {
-        // nothing todo.
-    }
-
-    void SoundSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length)
-    {
-        // nothing todo.
-    }
-
-    void SoundSequencer::SetTone(int octave, int tone)
-    {
-        // nothing todo.
-    }
-
-    void SoundSequencer::SetVolume(int volume)
-    {
-        // nothing todo.
     }
 
     CommandIterator SoundSequencer::GetHead() const

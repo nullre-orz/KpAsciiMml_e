@@ -26,13 +26,8 @@ namespace MusicCom
     private: // for PartSequencerBase
         void InitializeImpl(PartData& part_data) override;
         void PreProcess(int current_frame) override;
-        void ProcessEffect(int current_frame) override;
         void KeyOn() override;
         void KeyOff() override;
-        void UpdateTone(int base_tone, PartData& part_data) override;
-        void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length) override;
-        void SetTone(int octave, int tone) override;
-        void SetVolume(int volume) override;
         CommandIterator GetHead() const override;
 
         void KeyOnOffImpl(bool on);

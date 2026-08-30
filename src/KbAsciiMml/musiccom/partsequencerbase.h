@@ -24,36 +24,34 @@ namespace MusicCom
     protected:
         const MusicData& GetMusicData() const;
         int CalculatePerFrame(int tempo);
+        static int ResolveNoteLength(const PartData& part_data, int base_length);
+        static void UpdateNoteFrames(PartData& part_data, int current_frame, int length);
 
         virtual int GetRemainFrameSizeImpl();
         virtual void IncreaseFrameImpl(int frame_size);
-        virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
-        virtual void ProcessEffect(int current_frame);
+        virtual void ProcessCommandFrame(int current_frame);
+        std::optional<CommandType> FindLinkedItem(CommandIterator ptr) const;
+        virtual void KeyOn() = 0;
+        virtual void KeyOff() = 0;
 
     private:
         void ReturnToHead();
         void NextCommandFrame();
         std::optional<CommandIterator> ProcessLoop(CommandIterator ptr);
-        std::optional<CommandType> FindLinkedItem(CommandIterator ptr) const;
         void ProcessCommand(int current_frame);
 
         virtual void InitializeImpl(PartData& part_data) = 0;
         virtual void PreProcess(int current_frame);
-        virtual void KeyOn() = 0;
-        virtual void KeyOff() = 0;
-        virtual void UpdateTone(int base_tone, PartData& part_data) = 0;
-        virtual int AdjustVolume(int volume, int length, const PartData& part_data);
-        virtual void ApplyVibratoEffect(int octave, int tone, int depth);
-        virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length) = 0;
-        virtual void SetTone(int octave, int tone) = 0;
-        virtual void SetVolume(int volume) = 0;
+        virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data) = 0;
         virtual CommandIterator GetHead() const = 0;
 
+    protected:
         RegisterWriter register_writer_;
         PartData part_data_;
         const MusicData& music_data_;
         const CommandIterator command_tail_;
 
+    private:
         const int rate_;
         // コマンドフレーム
         int samples_per_frame_;

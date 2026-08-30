@@ -180,6 +180,7 @@
     <ClInclude Include="musiccom\musiccom.h" />
     <ClInclude Include="musiccom\partdata.h" />
     <ClInclude Include="musiccom\partsequencerbase.h" />
+    <ClInclude Include="musiccom\tonesequencerbase.h" />
     <ClInclude Include="musiccom\psgsequencer.h" />
     <ClInclude Include="musiccom\sequencer.h" />
     <ClInclude Include="musiccom\sounddata.h" />
@@ -256,6 +257,7 @@
     <ClCompile Include="musiccom\musdata.cpp" />
     <ClCompile Include="musiccom\musiccom.cpp" />
     <ClCompile Include="musiccom\partsequencerbase.cpp" />
+    <ClCompile Include="musiccom\tonesequencerbase.cpp" />
     <ClCompile Include="musiccom\psgsequencer.cpp" />
     <ClCompile Include="musiccom\sequencer.cpp" />
     <ClCompile Include="musiccom\sounddata.cpp" />
