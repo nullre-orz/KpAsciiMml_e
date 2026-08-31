@@ -12,7 +12,7 @@
 using namespace std;
 using namespace boost;
 
-HMODULE hDllModule;
+HMODULE hDllModule = nullptr;
 
 #define KMPPLUGIN_VERSION 1
 
@@ -22,10 +22,10 @@ T GetSetting(LPCWSTR fileName, LPCWSTR key, T defaultValue)
     try
     {
         std::array<wchar_t, 256> buf{};
-        GetPrivateProfileStringW(L"KbAsciiMml", key, NULL, buf.data(), static_cast<DWORD>(buf.size()), fileName);
+        GetPrivateProfileStringW(L"KbAsciiMml", key, nullptr, buf.data(), static_cast<DWORD>(buf.size()), fileName);
         return boost::lexical_cast<int>(buf.data());
     }
-    catch (boost::bad_lexical_cast)
+    catch (const boost::bad_lexical_cast&)
     {
         return defaultValue;
     }
@@ -47,6 +47,8 @@ private:
 };
 
 KbAsciiMml::KbAsciiMml()
+    : bytespersample(0),
+      info{}
 {
     std::array<wchar_t, MAX_PATH> iniName{};
     GetModuleFileNameW(hDllModule, iniName.data(), static_cast<DWORD>(iniName.size()));
@@ -66,7 +68,7 @@ KbAsciiMml::~KbAsciiMml() = default;
 
 BOOL KbAsciiMml::Open(const char* cszFileName, SOUNDINFO* pInfo)
 {
-    if (pInfo == NULL)
+    if (pInfo == nullptr)
     {
         return FALSE;
     }
@@ -90,9 +92,9 @@ BOOL KbAsciiMml::Open(const char* cszFileName, SOUNDINFO* pInfo)
             return FALSE;
         }
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
-        MessageBoxA(NULL, e.what(), "エラー", MB_OK);
+        MessageBoxA(nullptr, e.what(), "エラー", MB_OK);
         return FALSE;
     }
 
@@ -106,7 +108,7 @@ BOOL KbAsciiMml::Open(const char* cszFileName, SOUNDINFO* pInfo)
 
 DWORD KbAsciiMml::Render(BYTE* Buffer, DWORD dwSize)
 {
-    musicCom.Mix((int16*)Buffer, dwSize / bytespersample);
+    musicCom.Mix(reinterpret_cast<int16*>(Buffer), dwSize / bytespersample);
     return dwSize;
 }
 
@@ -123,24 +125,24 @@ static HKMP WINAPI kmp_Open(const char* cszFileName, SOUNDINFO* pInfo)
     KbAsciiMml* pKbAsciiMml = new KbAsciiMml;
     if (pKbAsciiMml->Open(cszFileName, pInfo))
     {
-        return (HKMP)pKbAsciiMml;
+        return static_cast<HKMP>(pKbAsciiMml);
     }
     else
     {
         delete pKbAsciiMml;
-        return NULL;
+        return nullptr;
     }
 }
 
 static void WINAPI kmp_Close(HKMP hKMP)
 {
-    KbAsciiMml* pKbAsciiMml = (KbAsciiMml*)hKMP;
+    KbAsciiMml* pKbAsciiMml = static_cast<KbAsciiMml*>(hKMP);
     delete pKbAsciiMml;
 }
 
 static DWORD WINAPI kmp_Render(HKMP hKMP, BYTE* Buffer, DWORD dwSize)
 {
-    KbAsciiMml* pKbAsciiMml = (KbAsciiMml*)hKMP;
+    KbAsciiMml* pKbAsciiMml = static_cast<KbAsciiMml*>(hKMP);
     if (pKbAsciiMml)
     {
         return pKbAsciiMml->Render(Buffer, dwSize);
@@ -153,7 +155,7 @@ static DWORD WINAPI kmp_Render(HKMP hKMP, BYTE* Buffer, DWORD dwSize)
 
 static DWORD WINAPI kmp_SetPosition(HKMP hKMP, DWORD dwPos)
 {
-    KbAsciiMml* pKbAsciiMml = (KbAsciiMml*)hKMP;
+    KbAsciiMml* pKbAsciiMml = static_cast<KbAsciiMml*>(hKMP);
     if (pKbAsciiMml)
     {
         return pKbAsciiMml->SetPosition(dwPos);
@@ -166,7 +168,7 @@ static DWORD WINAPI kmp_SetPosition(HKMP hKMP, DWORD dwPos)
 
 KMPMODULE* WINAPI kmp_GetTestModule()
 {
-    static std::array<const char*, 2> ppszSupportExts = {".mml", NULL};
+    static std::array<const char*, 2> ppszSupportExts = {".mml", nullptr};
 
     static KMPMODULE Mod =
         {
@@ -176,10 +178,10 @@ KMPMODULE* WINAPI kmp_GetTestModule()
             VER_FILE_DESCRIPTION, // pszDescription
             ppszSupportExts.data(), // ppszSupportExts
             1, // dwReentrant
-            NULL, // Init
-            NULL, // Deinit
+            nullptr, // Init
+            nullptr, // Deinit
             kmp_Open, // Open
-            NULL, // OpenFromBuffer
+            nullptr, // OpenFromBuffer
             kmp_Close, // Close
             kmp_Render, // Render
             kmp_SetPosition // SetPosition
