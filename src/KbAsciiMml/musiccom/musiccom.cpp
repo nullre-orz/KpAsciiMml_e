@@ -25,12 +25,12 @@ namespace MusicCom
 
     bool MusicCom::Load(const char* filename)
     {
-        std::unique_ptr<MusicData> new_musicdata(ParseMML(filename));
+        auto new_musicdata = ParseMML(filename);
         if (!new_musicdata)
             return false;
 
         // SOUND.datを解析
-        std::unique_ptr<SoundData> new_sounddata(ParseSound(filename));
+        auto new_sounddata = ParseSound(filename);
         if (!new_sounddata)
             return false;
 

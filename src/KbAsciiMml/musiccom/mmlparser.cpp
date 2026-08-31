@@ -752,7 +752,7 @@ namespace MusicCom
         };
     };
 
-    MusicData* ParseMML(const char* filename)
+    std::unique_ptr<MusicData> ParseMML(const char* filename)
     {
         auto pMusicData = std::make_unique<MusicData>();
         MMLParser::MMLParserState state;
@@ -833,7 +833,7 @@ namespace MusicCom
             throw std::runtime_error(msg);
         }
 
-        return pMusicData.release();
+        return pMusicData;
     }
 
 } // namespace MusicCom

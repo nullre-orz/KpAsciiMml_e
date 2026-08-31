@@ -374,7 +374,7 @@ Noise:	3, 20 ,-5 ,4,0
     } // namespace grammer
 
     template<typename Iterator>
-    SoundData* ParseSoundImpl(const Iterator begin, const Iterator end, const std::string& source_name)
+    std::unique_ptr<SoundData> ParseSoundImpl(const Iterator begin, const Iterator end, const std::string& source_name)
     {
         auto data = std::make_unique<SoundData>();
         SoundParserState state(*data);
@@ -407,10 +407,10 @@ Noise:	3, 20 ,-5 ,4,0
             throw std::runtime_error(message);
         }
 
-        return data.release();
+        return data;
     }
 
-    static SoundData* ParseDefaultSound()
+    static std::unique_ptr<SoundData> ParseDefaultSound()
     {
         auto begin(std::cbegin(DEFAULT_SOUND_DAT));
         const auto end(std::cend(DEFAULT_SOUND_DAT));
@@ -418,7 +418,7 @@ Noise:	3, 20 ,-5 ,4,0
         return ParseSoundImpl(begin, end, "embedded SOUND.DAT");
     }
 
-    SoundData* ParseSound(const std::string& mml_filename)
+    std::unique_ptr<SoundData> ParseSound(const std::string& mml_filename)
     {
         using path = std::filesystem::path;
         using file_iterator = boost::spirit::classic::file_iterator<char>;
