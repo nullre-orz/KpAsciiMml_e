@@ -119,7 +119,7 @@ Noise:	3, 20 ,-5 ,4,0
         {
         }
 
-        std::vector<Block>& GetEditingBlocks() const
+        std::vector<Block>& GetEditingBlocks()
         {
             return editing_data->blocks_;
         }
