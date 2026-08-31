@@ -24,7 +24,6 @@ namespace MusicCom
         : ToneSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),
           channel_(channel - MUSIC_CHANNEL_SSG_A),
           ssgwrap_(ssgwrap),
-          current_note_(0),
           last_period_(SSG_TONE_PERIOD[0]),
           current_period_(SSG_TONE_PERIOD[0])
     {

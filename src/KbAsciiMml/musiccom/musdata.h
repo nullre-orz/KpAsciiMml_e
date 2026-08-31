@@ -26,35 +26,28 @@ namespace MusicCom
 
     struct FMSound
     {
-        int LFOForm;
-        int LFOSpeed;
-        int LFODepth;
+        int LFOForm = 0;
+        int LFOSpeed = 0;
+        int LFODepth = 0;
 
-        unsigned char AlgFb;
+        unsigned char AlgFb = 0;
         struct Operator
         {
-            unsigned char DtMl;
-            unsigned char Tl;
-            unsigned char KsAr;
-            unsigned char Dr;
-            unsigned char Sr;
-            unsigned char SlRr;
-            unsigned char Dt2;
+            unsigned char DtMl = 0;
+            unsigned char Tl = 0;
+            unsigned char KsAr = 0;
+            unsigned char Dr = 0;
+            unsigned char Sr = 0;
+            unsigned char SlRr = 0;
+            unsigned char Dt2 = 0;
         };
         enum : int
         {
             OPERATOR_COUNT = 4,
         };
-        std::array<Operator, OPERATOR_COUNT> Op;
+        std::array<Operator, OPERATOR_COUNT> Op{};
 
-        FMSound()
-            : LFOForm(0),
-              LFOSpeed(0),
-              LFODepth(0),
-              AlgFb(0),
-              Op{}
-        {
-        }
+        FMSound() = default;
         void Clear()
         {
             LFOForm = 0;
@@ -118,16 +111,12 @@ namespace MusicCom
 
     struct SSGEnv
     {
-        SSGEnv()
-        {
-            Unit = 64;
-            Env.push_back(15);
-        }
-        SSGEnv(unsigned char initial_value) : Unit(64), Env(1, initial_value)
+        SSGEnv() = default;
+        SSGEnv(unsigned char initial_value) : Env(1, initial_value)
         {
         }
-        int Unit;
-        std::vector<unsigned char> Env;
+        int Unit = 64;
+        std::vector<unsigned char> Env{15};
     };
 
     class MusicData
@@ -177,10 +166,10 @@ namespace MusicCom
         std::map<int, SSGEnv> ssgenvs;
         std::map<std::string, CommandList> macros;
         std::array<CommandList, MUSIC_CHANNEL_COUNT> channels;
-        std::array<bool, MUSIC_CHANNEL_COUNT> channel_present;
+        std::array<bool, MUSIC_CHANNEL_COUNT> channel_present{};
         CommandList rhythm_part;
-        bool rhythm_part_present;
-        int tempo;
+        bool rhythm_part_present = false;
+        int tempo = 120;
     };
 
 } // namespace MusicCom

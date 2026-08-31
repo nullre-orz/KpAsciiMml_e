@@ -10,12 +10,7 @@ namespace MusicCom
         const SSGEnv DEFAULT_SSG_ENV{0};
     }
 
-    MusicData::MusicData()
-        : channel_present(),
-          rhythm_part_present(false),
-          tempo(120)
-    {
-    }
+    MusicData::MusicData() = default;
 
     const FMSound& MusicData::GetFMSound(int no) const
     {

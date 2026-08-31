@@ -106,16 +106,7 @@ Noise:	3, 20 ,-5 ,4,0
     struct SoundParserState
     {
         SoundParserState(SoundData& container)
-            : sound_data(container),
-              editing_data(),
-              line(FIRST_LINE_NUMBER),
-              current_sound(NO_SOUND_NUMBER),
-              channel(FIRST_CHANNEL_INDEX),
-              tone_multiplier(DEFAULT_MULTIPLIER),
-              volume_multiplier(DEFAULT_MULTIPLIER),
-              args(),
-              errors(),
-              finished(false)
+            : sound_data(container)
         {
         }
 
@@ -125,18 +116,18 @@ Noise:	3, 20 ,-5 ,4,0
         }
 
         SoundData& sound_data;
-        std::unique_ptr<RhythmData> editing_data;
+        std::unique_ptr<RhythmData> editing_data{};
 
-        int line;
+        int line = FIRST_LINE_NUMBER;
 
-        int current_sound;
-        int channel;
-        int tone_multiplier;
-        int volume_multiplier;
-        std::vector<int> args;
-        std::vector<std::string> errors;
+        int current_sound = NO_SOUND_NUMBER;
+        int channel = FIRST_CHANNEL_INDEX;
+        int tone_multiplier = DEFAULT_MULTIPLIER;
+        int volume_multiplier = DEFAULT_MULTIPLIER;
+        std::vector<int> args{};
+        std::vector<std::string> errors{};
 
-        bool finished;
+        bool finished = false;
     };
 
     static void update_rhythm_data(SoundParserState& state)

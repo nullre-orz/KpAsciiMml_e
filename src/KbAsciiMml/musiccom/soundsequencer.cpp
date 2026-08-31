@@ -28,10 +28,7 @@ namespace MusicCom
         : PartSequencerBase(register_writer, music, music.GetRhythmPartTail(), rate),
           ssgwrap_(ssgwrap),
           sound_(sound),
-          current_sound_data_(std::nullopt),
-          sound_interrupt_enabled_(false),
-          sound_interrupt_per_frame_(CalculatePerFrame(soundtempo)),
-          sound_interrupt_left_(0)
+          sound_interrupt_per_frame_(CalculatePerFrame(soundtempo))
     {
     }
 

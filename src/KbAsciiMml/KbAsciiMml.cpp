@@ -42,13 +42,11 @@ public:
 
 private:
     MusicCom::MusicCom musicCom;
-    uint bytespersample;
-    SOUNDINFO info;
+    uint bytespersample = 0;
+    SOUNDINFO info{};
 };
 
 KbAsciiMml::KbAsciiMml()
-    : bytespersample(0),
-      info{}
 {
     std::array<wchar_t, MAX_PATH> iniName{};
     GetModuleFileNameW(hDllModule, iniName.data(), static_cast<DWORD>(iniName.size()));

@@ -11,32 +11,32 @@ namespace MusicCom
     {
         struct TonePart
         {
-            bool enabled;
-            int initial_value;
-            int final_value;
-            int period;
-            bool loop;
+            bool enabled = false;
+            int initial_value = 0;
+            int final_value = 0;
+            int period = 0;
+            bool loop = false;
         };
         struct VolumePart
         {
-            int initial_value;
-            int final_value;
-            int period;
-            bool loop;
+            int initial_value = 0;
+            int final_value = 0;
+            int period = 0;
+            bool loop = false;
         };
         struct NoisePart
         {
-            int channel_type;
-            int initial_value;
-            int final_value;
-            int period;
-            bool loop;
+            int channel_type = 0;
+            int initial_value = 0;
+            int final_value = 0;
+            int period = 0;
+            bool loop = false;
         };
 
-        int length;
-        std::array<TonePart, 2> tone;
-        std::array<VolumePart, 2> volume;
-        NoisePart noise;
+        int length = 0;
+        std::array<TonePart, 2> tone{};
+        std::array<VolumePart, 2> volume{};
+        NoisePart noise{};
     };
 
     class RhythmData
@@ -47,11 +47,11 @@ namespace MusicCom
         // Element
         struct Element
         {
-            std::array<int, 2> tone;
-            std::array<int, 2> volume;
-            int noise_period;
-            std::array<bool, 2> tone_enabled;
-            std::array<bool, 2> noise_enabled;
+            std::array<int, 2> tone{};
+            std::array<int, 2> volume{};
+            int noise_period = 0;
+            std::array<bool, 2> tone_enabled{};
+            std::array<bool, 2> noise_enabled{};
         };
 
         // Iterator
@@ -70,9 +70,9 @@ namespace MusicCom
         private:
             struct diff_cache
             {
-                std::array<int, 2> tone;
-                std::array<int, 2> volume;
-                int noise;
+                std::array<int, 2> tone{};
+                std::array<int, 2> volume{};
+                int noise = 0;
             };
 
             friend class RhythmData;
@@ -82,8 +82,8 @@ namespace MusicCom
             BlockIterator sentinel_;
             int part_index_;
 
-            diff_cache diff_cache_;
-            Element data_cache_;
+            diff_cache diff_cache_{};
+            Element data_cache_{};
         };
 
         int length() const;

@@ -65,18 +65,7 @@ namespace MusicCom
     FmSequencer::FmSequencer(const RegisterWriter& register_writer, FMWrap& fmwrap, const MusicData& music, int channel, int rate)
         : ToneSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),
           channel_(channel),
-          fmwrap_(fmwrap),
-          sound_no_(0),
-          lfo_accumulator_(0),
-          lfo_phase_(0),
-          lfo_value_(0),
-          lfo_note_(0),
-          last_note_(0),
-          current_octave_(0),
-          current_tone_(0),
-          current_operator_fnumber_{0, 0, 0, 0},
-          operator_portamento_active_(false),
-          note_active_(false)
+          fmwrap_(fmwrap)
     {
     }
 

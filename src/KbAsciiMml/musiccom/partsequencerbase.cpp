@@ -8,13 +8,9 @@ namespace MusicCom
 
     PartSequencerBase::PartSequencerBase(const RegisterWriter& register_writer, const MusicData& music, CommandIterator command_tail, int rate)
         : register_writer_(register_writer),
-          part_data_(),
           music_data_(music),
           command_tail_(command_tail),
-          rate_(rate),
-          samples_per_frame_(0),
-          samples_left_(0),
-          current_frame_(0)
+          rate_(rate)
     {
     }
 

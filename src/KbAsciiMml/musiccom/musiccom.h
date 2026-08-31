@@ -29,11 +29,11 @@ namespace MusicCom
         MusicCom& operator=(const MusicCom&) = delete;
 
         FM::OPN opn;
-        std::unique_ptr<Sequencer> pseq;
-        std::unique_ptr<MusicData> pmusicdata;
-        std::unique_ptr<SoundData> psounddata;
-        int fmVolume;
-        int psgVolume;
+        std::unique_ptr<Sequencer> pseq{};
+        std::unique_ptr<MusicData> pmusicdata{};
+        std::unique_ptr<SoundData> psounddata{};
+        int fmVolume = 0;
+        int psgVolume = 0;
         int soundTempo;
     };
 

@@ -103,35 +103,21 @@ namespace MusicCom
 
         struct MMLParserState
         {
-            MMLParserState()
-                : pMusicData(nullptr),
-                  LineNumber(1),
-                  LineType(UNDEFINED),
-                  ChNumber(),
-                  CommandType(),
-                  SoundNumber(),
-                  ChannelLoopDepth(),
-                  RhythmLoopDepth(0),
-                  MacroLoopDepth(),
-                  SSGEnvLineNumber(0),
-                  StoreMacroCommands(false),
-                  Finished(false)
-            {
-            }
+            MMLParserState() = default;
 
-            vector<string> args;
-            vector<string> errors;
+            vector<string> args{};
+            vector<string> errors{};
 
-            MusicData* pMusicData;
+            MusicData* pMusicData = nullptr;
 
             // Line
-            int LineNumber;
-            MMLLineType LineType;
+            int LineNumber = 1;
+            MMLLineType LineType = UNDEFINED;
 
-            int ChNumber; // ch番号 (0-origin)
+            int ChNumber = 0; // ch番号 (0-origin)
 
-            CommandType CommandType;
-            string MacroName;
+            CommandType CommandType{};
+            string MacroName{};
 
             int& GetLoopDepthRef()
             {
@@ -169,18 +155,18 @@ namespace MusicCom
             }
 
             // Sound
-            FMSound Sound;
-            int SoundNumber;
+            FMSound Sound{};
+            int SoundNumber = 0;
 
-            array<int, 6> ChannelLoopDepth;
-            int RhythmLoopDepth;
-            map<string, int> MacroLoopDepth;
-            array<vector<MacroReference>, 6> ChannelMacroReferences;
-            vector<MacroReference> RhythmMacroReferences;
-            int SSGEnvLineNumber;
-            bool StoreMacroCommands;
+            array<int, 6> ChannelLoopDepth{};
+            int RhythmLoopDepth = 0;
+            map<string, int> MacroLoopDepth{};
+            array<vector<MacroReference>, 6> ChannelMacroReferences{};
+            vector<MacroReference> RhythmMacroReferences{};
+            int SSGEnvLineNumber = 0;
+            bool StoreMacroCommands = false;
 
-            bool Finished;
+            bool Finished = false;
         };
 
         MMLParser(MMLParserState& s) : state(s)

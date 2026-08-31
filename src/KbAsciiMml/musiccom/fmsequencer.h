@@ -41,16 +41,16 @@ namespace MusicCom
 
         int channel_;
         FMWrap& fmwrap_;
-        int sound_no_;
-        int lfo_accumulator_;
-        int lfo_phase_;
-        int lfo_value_;
-        int lfo_note_;
-        int last_note_;
-        int current_octave_;
-        int current_tone_;
-        std::array<int, FMSound::OPERATOR_COUNT> current_operator_fnumber_;
-        bool operator_portamento_active_;
-        bool note_active_;
+        int sound_no_ = 0;
+        int lfo_accumulator_ = 0;
+        int lfo_phase_ = 0;
+        int lfo_value_ = 0;
+        int lfo_note_ = 0;
+        int last_note_ = 0;
+        int current_octave_ = 0;
+        int current_tone_ = 0;
+        std::array<int, FMSound::OPERATOR_COUNT> current_operator_fnumber_{};
+        bool operator_portamento_active_ = false;
+        bool note_active_ = false;
     };
 } // namespace MusicCom

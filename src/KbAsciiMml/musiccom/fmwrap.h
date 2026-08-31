@@ -27,8 +27,8 @@ namespace MusicCom
         void SetToneReg(int highaddr, int lowaddr, int block, int fnumber);
 
         FM::OPN& opn;
-        std::array<FMSound, MUSIC_CHANNEL_FM_COUNT> sound;
-        std::array<int, MUSIC_CHANNEL_FM_COUNT> vol;
+        std::array<FMSound, MUSIC_CHANNEL_FM_COUNT> sound{};
+        std::array<int, MUSIC_CHANNEL_FM_COUNT> vol{15, 15, 15};
         static const std::array<std::array<bool, FMSound::OPERATOR_COUNT>, 8> vol_tl_flag;
         static const std::array<int, FMSound::OPERATOR_COUNT> op_table;
     };

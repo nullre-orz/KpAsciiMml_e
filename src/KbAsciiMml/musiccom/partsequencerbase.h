@@ -47,15 +47,15 @@ namespace MusicCom
 
     protected:
         RegisterWriter register_writer_;
-        PartData part_data_;
+        PartData part_data_{};
         const MusicData& music_data_;
         const CommandIterator command_tail_;
 
     private:
         const int rate_;
         // コマンドフレーム
-        int samples_per_frame_;
-        int samples_left_; // このフレーム(64分音符)でmixすべき残りのサンプル数
-        int current_frame_;
+        int samples_per_frame_ = 0;
+        int samples_left_ = 0; // このフレーム(64分音符)でmixすべき残りのサンプル数
+        int current_frame_ = 0;
     };
 } // namespace MusicCom

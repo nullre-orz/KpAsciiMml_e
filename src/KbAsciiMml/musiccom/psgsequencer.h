@@ -36,7 +36,7 @@ namespace MusicCom
 
         int channel_;
         SSGWrap& ssgwrap_;
-        int current_note_;
+        int current_note_ = 0;
         int last_period_;
         int current_period_;
     };

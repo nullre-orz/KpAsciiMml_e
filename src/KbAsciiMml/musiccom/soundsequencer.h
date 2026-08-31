@@ -41,11 +41,11 @@ namespace MusicCom
             RhythmData::const_iterator ptr;
             RhythmData::const_iterator end_ptr;
         };
-        std::optional<CurrentSoundData> current_sound_data_;
+        std::optional<CurrentSoundData> current_sound_data_{};
 
         // 効果音フレーム
-        bool sound_interrupt_enabled_;
+        bool sound_interrupt_enabled_ = false;
         int sound_interrupt_per_frame_;
-        int sound_interrupt_left_;
+        int sound_interrupt_left_ = 0;
     };
 } // namespace MusicCom

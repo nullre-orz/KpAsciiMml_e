@@ -11,102 +11,59 @@ namespace MusicCom
     {
         struct CommandState
         {
-            CommandState()
-                : CallStack(),
-                  LoopStack(),
-                  CommandPtr(),
-                  LinkedItem(std::nullopt)
-            {
-            }
+            CommandState() = default;
 
-            std::stack<CommandIterator> CallStack;
-            std::stack<std::pair<CommandIterator, int>> LoopStack;
-            CommandIterator CommandPtr;
-            std::optional<CommandType> LinkedItem;
+            std::stack<CommandIterator> CallStack{};
+            std::stack<std::pair<CommandIterator, int>> LoopStack{};
+            CommandIterator CommandPtr{};
+            std::optional<CommandType> LinkedItem{};
         };
 
         struct NoteState
         {
-            NoteState()
-                : BeginFrame(0),
-                  EndFrame(0),
-                  KeyOnFrame(0),
-                  KeyOffFrame(0),
-                  Octave(4),
-                  LastOctave(4),
-                  ReservedOctave(4),
-                  Volume(15),
-                  Tone(0),
-                  LastTone(0),
-                  SSGEnvOn(false),
-                  SoundNo(0),
-                  DefaultLength(64),
-                  Detune(0),
-                  GateTime(8)
-            {
-            }
+            NoteState() = default;
 
-            int BeginFrame;
-            int EndFrame;
-            int KeyOnFrame;
-            int KeyOffFrame;
-            int Octave;
-            int LastOctave;
-            int ReservedOctave;
-            int Volume;
-            int Tone;
-            int LastTone;
-            bool SSGEnvOn;
-            int SoundNo;
-            int DefaultLength;
-            int Detune;
-            int GateTime;
+            int BeginFrame = 0;
+            int EndFrame = 0;
+            int KeyOnFrame = 0;
+            int KeyOffFrame = 0;
+            int Octave = 4;
+            int LastOctave = 4;
+            int ReservedOctave = 4;
+            int Volume = 15;
+            int Tone = 0;
+            int LastTone = 0;
+            bool SSGEnvOn = false;
+            int SoundNo = 0;
+            int DefaultLength = 64;
+            int Detune = 0;
+            int GateTime = 8;
         };
 
         struct EffectState
         {
-            EffectState()
-                : PortamentoLength(0),
-                  VibratoLength(0),
-                  VibratoDepth(0),
-                  VibratoDelay(0),
-                  TremoloLength(0),
-                  TremoloDepth(0),
-                  TremoloDelay(0)
-            {
-            }
+            EffectState() = default;
 
-            int PortamentoLength;
-            int VibratoLength;
-            int VibratoDepth;
-            int VibratoDelay;
-            int TremoloLength;
-            int TremoloDepth;
-            int TremoloDelay;
+            int PortamentoLength = 0;
+            int VibratoLength = 0;
+            int VibratoDepth = 0;
+            int VibratoDelay = 0;
+            int TremoloLength = 0;
+            int TremoloDepth = 0;
+            int TremoloDelay = 0;
         };
 
         struct PlaybackState
         {
-            PlaybackState()
-                : HasPreviousNote(false),
-                  Playing(false),
-                  InfiniteLooping(false)
-            {
-            }
+            PlaybackState() = default;
 
-            bool HasPreviousNote;
-            bool Playing;
+            bool HasPreviousNote = false;
+            bool Playing = false;
             // 無限ループ検出
-            bool InfiniteLooping;
+            bool InfiniteLooping = false;
         };
 
-        PartData()
-            : Commands(),
-              Note(),
-              Effect(),
-              Playback()
-        {
-        }
+        PartData() = default;
 
         CommandState Commands;
         NoteState Note;

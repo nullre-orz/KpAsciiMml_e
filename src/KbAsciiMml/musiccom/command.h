@@ -41,11 +41,7 @@ namespace MusicCom
     class Command
     {
     public:
-        Command()
-            : type(CommandType::TYPE_UNKNOWN),
-              args()
-        {
-        }
+        Command() = default;
         Command(CommandType t, int arg0 = 0, int arg1 = 0, int arg2 = 0)
             : type(t)
         {
@@ -54,15 +50,13 @@ namespace MusicCom
             SetArg(2, arg2);
         }
         Command(CommandType t, std::string arg)
-            : type(t),
-              args()
+            : type(t)
         {
             SetStrArg(arg);
         }
         template<class InIt>
         Command(CommandType t, InIt first, InIt last)
-            : type(t),
-              args()
+            : type(t)
         {
             for (int i = 0; i < static_cast<int>(args.size()) && first != last; i++, first++)
             {
@@ -95,9 +89,9 @@ namespace MusicCom
         }
 
     private:
-        CommandType type;
-        std::array<int, 3> args;
-        std::string strarg;
+        CommandType type = CommandType::TYPE_UNKNOWN;
+        std::array<int, 3> args{};
+        std::string strarg{};
     };
 
     using CommandList = std::list<Command>;

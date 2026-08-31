@@ -70,7 +70,6 @@ namespace MusicCom
 
     FMWrap::FMWrap(FM::OPN& o) : opn(o)
     {
-        vol.fill(15);
     }
 
     void FMWrap::SetSound(int ch, const FMSound& s)

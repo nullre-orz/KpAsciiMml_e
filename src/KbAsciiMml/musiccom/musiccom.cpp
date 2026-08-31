@@ -12,12 +12,7 @@ namespace MusicCom
     const int MusicCom::SOUND_EFFECT_DEFAULT_TEMPO = 195;
 
     MusicCom::MusicCom()
-        : pseq(nullptr),
-          pmusicdata(nullptr),
-          psounddata(nullptr),
-          fmVolume(0),
-          psgVolume(0),
-          soundTempo(SOUND_EFFECT_DEFAULT_TEMPO)
+        : soundTempo(SOUND_EFFECT_DEFAULT_TEMPO)
     {
     }
 
