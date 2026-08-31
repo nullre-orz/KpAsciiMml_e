@@ -47,13 +47,21 @@ namespace MusicCom
         };
         std::array<Operator, OPERATOR_COUNT> Op;
 
-        struct FMSound()
+        FMSound()
+            : LFOForm(0),
+              LFOSpeed(0),
+              LFODepth(0),
+              AlgFb(0),
+              Op{}
         {
-            Clear();
         }
         void Clear()
         {
-            std::memset(this, 0, sizeof(*this));
+            LFOForm = 0;
+            LFOSpeed = 0;
+            LFODepth = 0;
+            AlgFb = 0;
+            Op.fill({});
         }
         void SetLFO(int form, int speed, int depth)
         {
