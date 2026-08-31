@@ -5,59 +5,62 @@
 
 namespace MusicCom
 {
-    enum SoundLFOForm
+    namespace
     {
-        SOUND_LFO_SQUARE = 0,
-        SOUND_LFO_SAWTOOTH = 1,
-        SOUND_LFO_TRIANGLE = 2,
-        SOUND_LFO_ONE_SHOT = 3
-    };
+        enum SoundLFOForm
+        {
+            SOUND_LFO_SQUARE = 0,
+            SOUND_LFO_SAWTOOTH = 1,
+            SOUND_LFO_TRIANGLE = 2,
+            SOUND_LFO_ONE_SHOT = 3
+        };
 
-    const int SOUND_LFO_SAWTOOTH_RESET_PHASE = 5;
-    const int SOUND_LFO_TRIANGLE_FALL_PHASE = 5;
-    const int SOUND_LFO_TRIANGLE_RESET_PHASE = 8;
-    const int SOUND_LFO_ONE_SHOT_END_PHASE = 3;
-    const int SOUND_LFO_ONE_SHOT_STOP_PHASE = 6;
-    const int SOUND_LFO_ACCUMULATOR_SIZE = 0x100;
+        const int SOUND_LFO_SAWTOOTH_RESET_PHASE = 5;
+        const int SOUND_LFO_TRIANGLE_FALL_PHASE = 5;
+        const int SOUND_LFO_TRIANGLE_RESET_PHASE = 8;
+        const int SOUND_LFO_ONE_SHOT_END_PHASE = 3;
+        const int SOUND_LFO_ONE_SHOT_STOP_PHASE = 6;
+        const int SOUND_LFO_ACCUMULATOR_SIZE = 0x100;
 
-    // clang-format off
-    // LFO深度からF-numberへの変換係数
-    const std::array<int, 12> SOUND_LFO_FNUMBER_COEFFICIENT = {
-        //C,   C#,    D,   D#,    E,    F,   F#,   G,    G#,    A,   A#,    B
-        123, -125, -118, -109, -101,  -91,  -82,  -71,  -60,  -48,  -36,  -23
-    };
-    // clang-format on
+        // clang-format off
+        // LFO深度からF-numberへの変換係数
+        const std::array<int, 12> SOUND_LFO_FNUMBER_COEFFICIENT = {
+            //C,   C#,    D,   D#,    E,    F,   F#,   G,    G#,    A,   A#,    B
+            123, -125, -118, -109, -101,  -91,  -82,  -71,  -60,  -48,  -36,  -23
+        };
+        // clang-format on
 
-    int ToSignedByte(int value)
-    {
-        // byte値として扱うため上位bitを捨て、符号付き8bitへ変換する
-        value &= 0xff;
-        return value < 0x80 ? value : value - 0x100;
+        int ToSignedByte(int value)
+        {
+            // byte値として扱うため上位bitを捨て、符号付き8bitへ変換する
+            value &= 0xff;
+            return value < 0x80 ? value : value - 0x100;
+        }
+
+        int WrapSignedWord(int value)
+        {
+            // 16bit演算を再現するため、上位bitを捨てて符号付き16bitへ変換する
+            value &= 0xffff;
+            return value < 0x8000 ? value : value - 0x10000;
+        }
+
+        // clang-format off
+        // DT2ごとのF-number
+        const std::array<std::array<int, 12>, 4> F_NUMBER_TABLE = {{
+            // C,  C#,   D,  D#,   E,   F,  F#,   G,  G#,   A,  A#,   B
+            {617, 655, 694, 735, 779, 825, 874, 926, 981,1040,1102,1167}, // DT2=0
+            {431, 458, 485, 514, 545, 577, 611, 648, 686, 728, 771, 816}, // DT2=1
+            {493, 524, 555, 588, 623, 660, 699, 740, 784, 832, 881, 933}, // DT2=2
+            {530, 563, 596, 632, 669, 709, 751, 796, 843, 894, 947,1003}  // DT2=3
+        }};
+
+        // N/IからF-number補正値を求める係数
+        const std::array<int, 13> F_NUMBER_ADJUST_COEFFICIENT = {
+            // C-, C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+               34,38, 39,41, 44,46,49, 52,55, 59,62, 65,67
+        };
+        // clang-format on
     }
-
-    int WrapSignedWord(int value)
-    {
-        // 16bit演算を再現するため、上位bitを捨てて符号付き16bitへ変換する
-        value &= 0xffff;
-        return value < 0x8000 ? value : value - 0x10000;
-    }
-
-    // clang-format off
-    // DT2ごとのF-number
-    const std::array<std::array<int, 12>, 4> F_NUMBER_TABLE = {{
-        // C,  C#,   D,  D#,   E,   F,  F#,   G,  G#,   A,  A#,   B
-        {617, 655, 694, 735, 779, 825, 874, 926, 981,1040,1102,1167}, // DT2=0
-        {431, 458, 485, 514, 545, 577, 611, 648, 686, 728, 771, 816}, // DT2=1
-        {493, 524, 555, 588, 623, 660, 699, 740, 784, 832, 881, 933}, // DT2=2
-        {530, 563, 596, 632, 669, 709, 751, 796, 843, 894, 947,1003}  // DT2=3
-    }};
-
-    // N/IからF-number補正値を求める係数
-    const std::array<int, 13> F_NUMBER_ADJUST_COEFFICIENT = {
-        // C-, C, C#, D, D#, E, F, F#, G, G#, A, A#, B
-           34,38, 39,41, 44,46,49, 52,55, 59,62, 65,67
-    };
-    // clang-format on
 
     FmSequencer::FmSequencer(const RegisterWriter& register_writer, FMWrap& fmwrap, const MusicData& music, int channel, int rate)
         : ToneSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),

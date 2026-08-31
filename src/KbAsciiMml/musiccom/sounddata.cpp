@@ -13,49 +13,52 @@ namespace MusicCom
     {
     }
 
-    int get_tone_increment(const Block::TonePart& part)
+    namespace
     {
-        const int diff = part.final_value - part.initial_value;
-        return diff / std::max(part.period, 1);
-    }
-
-    template<typename Part>
-    int get_fixed_increment(const Part& part)
-    {
-        int diff = (part.final_value - part.initial_value) & 0xff;
-        if ((diff & 0x80) != 0)
+        int get_tone_increment(const Block::TonePart& part)
         {
-            diff -= 0x100;
+            const int diff = part.final_value - part.initial_value;
+            return diff / std::max(part.period, 1);
         }
-        return (diff * 0x100) / std::max(part.period, 1);
-    }
 
-    template<typename Part>
-    int get_period_index(const Part& part, int index)
-    {
-        const int period = std::max(part.period, 1);
-        const int cycle = period + 1;
-        if (index >= cycle)
+        template<typename Part>
+        int get_fixed_increment(const Part& part)
         {
-            // ループしない場合は周期回数分を加算した値のまま
-            index = part.loop ? index % cycle : period;
+            int diff = (part.final_value - part.initial_value) & 0xff;
+            if ((diff & 0x80) != 0)
+            {
+                diff -= 0x100;
+            }
+            return (diff * 0x100) / std::max(part.period, 1);
         }
-        return index;
-    }
 
-    int get_tone_value(const Block::TonePart& part, int increment, int index)
-    {
-        index = get_period_index(part, index);
-        return std::clamp(part.initial_value + increment * index, 0, 0x0fff);
-    }
+        template<typename Part>
+        int get_period_index(const Part& part, int index)
+        {
+            const int period = std::max(part.period, 1);
+            const int cycle = period + 1;
+            if (index >= cycle)
+            {
+                // ループしない場合は周期回数分を加算した値のまま
+                index = part.loop ? index % cycle : period;
+            }
+            return index;
+        }
 
-    template<typename Part>
-    int get_fixed_value(const Part& part, int increment, int index, int maximum)
-    {
-        index = get_period_index(part, index);
-        const int initial_value = (part.initial_value & 0xff) << 8;
-        const int value = std::clamp(initial_value + increment * index, 0, maximum << 8);
-        return value >> 8;
+        int get_tone_value(const Block::TonePart& part, int increment, int index)
+        {
+            index = get_period_index(part, index);
+            return std::clamp(part.initial_value + increment * index, 0, 0x0fff);
+        }
+
+        template<typename Part>
+        int get_fixed_value(const Part& part, int increment, int index, int maximum)
+        {
+            index = get_period_index(part, index);
+            const int initial_value = (part.initial_value & 0xff) << 8;
+            const int value = std::clamp(initial_value + increment * index, 0, maximum << 8);
+            return value >> 8;
+        }
     }
 
     RhythmData::const_iterator::const_iterator(BlockIterator block_ptr, BlockIterator sentinel, int part_index)
