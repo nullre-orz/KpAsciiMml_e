@@ -72,7 +72,7 @@ namespace MusicCom
         bool block_moved = false;
         ++part_index_;
 
-        auto block = *block_ptr_;
+        const auto& block = *block_ptr_;
         while (part_index_ >= block.length)
         {
             // 現在のブロックが終了した場合は次のブロックに移動
@@ -117,7 +117,7 @@ namespace MusicCom
         }
 
         // 現在のブロック
-        auto block = *block_ptr_;
+        const auto& block = *block_ptr_;
 
         if (diff_update)
         {

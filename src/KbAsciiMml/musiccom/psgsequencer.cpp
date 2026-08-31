@@ -109,7 +109,7 @@ namespace MusicCom
         int adjusted_volume = volume;
         if (part_data.Note.SSGEnvOn)
         {
-            auto env = GetMusicData().GetSSGEnv(part_data.Note.SoundNo);
+            const auto& env = GetMusicData().GetSSGEnv(part_data.Note.SoundNo);
             if (env.Env.empty())
             {
                 return adjusted_volume;
