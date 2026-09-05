@@ -100,7 +100,12 @@ namespace MusicCom
     {
         // music.comの挙動に合わせ、テンポを補正する(10%強の高速化)
         // テンポが30未満の場合は30として扱う
-        return static_cast<int>(rate_ * 3.0 * (5880 / std::max(tempo, 30)) / 5200.0);
+        const int timer_period = 5880 / std::max(tempo, 30);
+
+        // Timer Bのレジスタ値は(-timer_period) & 0xffで設定される
+        // 商が0の場合はレジスタ値0、すなわち周期256として動作する
+        const int effective_period = timer_period == 0 ? 256 : timer_period;
+        return static_cast<int>(rate_ * 3.0 * effective_period / 5200.0);
     }
 
     int PartSequencerBase::ResolveNoteLength(const PartData& part_data, int base_length)
