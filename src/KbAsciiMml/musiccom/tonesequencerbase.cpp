@@ -119,7 +119,11 @@ namespace MusicCom
             part_data.Note.ReservedOctave = std::max(part_data.Note.ReservedOctave - 1, 0);
             break;
         case CommandType::TYPE_OCTAVE_UP:
-            part_data.Note.ReservedOctave = std::min(part_data.Note.ReservedOctave + 1, 8);
+            // MUSIC.COMでは現在値7以上の場合、>で増加しない
+            if (part_data.Note.ReservedOctave < 7)
+            {
+                ++part_data.Note.ReservedOctave;
+            }
             break;
         case CommandType::TYPE_VOLUME:
             part_data.Note.Volume = command.GetArg(0);
