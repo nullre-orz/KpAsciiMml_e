@@ -21,6 +21,7 @@ namespace MusicCom
         enum YM2203Register : int
         {
             YM2203_MODE_REGISTER = 0x27,
+            YM2203_KEY_ON_OFF_REGISTER = 0x28,
         };
 
         enum YM2203Control : int
@@ -44,6 +45,12 @@ namespace MusicCom
 
     bool Sequencer::Init(int rate)
     {
+        // fmgenのResetはキーオン状態を解除しないため、リセット前に全FM音をキーオフする
+        for (int ch = 0; ch < MUSIC_CHANNEL_FM_COUNT; ++ch)
+        {
+            opn.SetReg(YM2203_KEY_ON_OFF_REGISTER, ch);
+        }
+
         if (!opn.Init(OPN_CLOCKFREQ, rate))
         {
             return false;
