@@ -66,16 +66,16 @@ namespace MusicCom
 
     void PartSequencerBase::IncreaseFrame(int frame_size)
     {
-        if (!part_data_.Playback.Playing)
-        {
-            return;
-        }
-
         // NVI pattern
         IncreaseFrameImpl(frame_size);
     }
     void PartSequencerBase::IncreaseFrameImpl(int frame_size)
     {
+        if (!part_data_.Playback.Playing)
+        {
+            return;
+        }
+
         samples_left_ -= frame_size;
         if (samples_left_ <= 0)
         {
