@@ -144,6 +144,10 @@ namespace MusicCom
         case CommandType::TYPE_LENGTH:
             part_data.Note.DefaultLength = command.GetArg(0);
             break;
+        case CommandType::TYPE_DIRECT:
+            // MUSIC.COMではDパートからのYも共通のレジスタ書込みとして実行する
+            register_writer_(command.GetArg(0), command.GetArg(1));
+            break;
         }
         return return_ptr;
     }
