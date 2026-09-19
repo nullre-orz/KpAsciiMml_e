@@ -199,6 +199,26 @@ Noise:	3, 20 ,-5 ,4,0
                 };
             };
 
+            static decltype(auto) append_length()
+            {
+                return [](auto& ctx)
+                {
+                    const auto& text = x3::_attr(ctx);
+                    unsigned int value = 0;
+                    bool negative = false;
+                    for (char c : text)
+                    {
+                        if (c == '-')
+                            negative = true;
+                        else if ('0' <= c && c <= '9')
+                            value = (value * 10 + static_cast<unsigned int>(c - '0')) & 0xffff;
+                    }
+                    if (negative)
+                        value = (0u - value) & 0xffff;
+                    x3::get<SoundParserState>(ctx).args.push_back(static_cast<int>(value));
+                };
+            }
+
             static decltype(auto) set_sound()
             {
                 return [](auto& ctx)
@@ -325,6 +345,7 @@ Noise:	3, 20 ,-5 ,4,0
 
         // カンマは単なる区切りとして扱い、省略された末尾引数は処理側で0補完する
         const auto arguments = *x3::lit(',') >> *((x3::int_)[detail::append_arg()] >> *x3::lit(','));
+        const auto sound_arguments = *x3::lit(',') >> -(x3::raw[x3::lexeme[-x3::char_("+-") >> +x3::digit]][detail::append_length()] >> *x3::lit(',') >> *((x3::int_)[detail::append_arg()] >> *x3::lit(',')));
         const auto trailing_text = x3::lexeme[*(x3::char_ - x3::eol)];
 
         const auto line_def =
@@ -334,7 +355,7 @@ Noise:	3, 20 ,-5 ,4,0
         const auto sound_line_def =
             (x3::no_case["sound:"])[detail::begin_operator()]
             >> -(x3::lit('@') >> (x3::uint_)[detail::set_current_sound()])
-            >> arguments >> trailing_text;
+            >> sound_arguments >> trailing_text;
 
         const auto tone_line_def =
             (x3::no_case["tone"] >> x3::char_(FIRST_CHANNEL_CHARACTER, LAST_CHANNEL_CHARACTER)[detail::set_current_channel()] >> x3::lit(':'))[detail::begin_operator()]

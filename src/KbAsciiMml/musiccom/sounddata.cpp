@@ -1,5 +1,6 @@
 ﻿#include "sounddata.h"
 #include <algorithm>
+#include <limits>
 #include <numeric>
 
 namespace MusicCom
@@ -66,17 +67,21 @@ namespace MusicCom
           sentinel_(sentinel),
           part_index_(part_index)
     {
+        while (block_ptr_ != sentinel_ && block_ptr_->length <= 0)
+            ++block_ptr_;
         // キャッシュ計算
         make_cache(true);
     }
 
     RhythmData::const_iterator& RhythmData::const_iterator::operator++()
     {
+        if (block_ptr_ == sentinel_)
+            return *this;
+
         bool block_moved = false;
         ++part_index_;
 
-        const auto& block = *block_ptr_;
-        while (part_index_ >= block.length)
+        while (block_ptr_ != sentinel_ && part_index_ >= block_ptr_->length)
         {
             // 現在のブロックが終了した場合は次のブロックに移動
             ++block_ptr_;
@@ -144,15 +149,17 @@ namespace MusicCom
         data_cache_.noise_enabled[1] = (block.noise.channel_type & 0x2);
     }
 
-    int RhythmData::length() const
+    std::uint64_t RhythmData::length() const
     {
         return std::accumulate(
             blocks_.begin(),
             blocks_.end(),
-            0,
-            [](int acc, const Block& item)
+            std::uint64_t{0},
+            [](std::uint64_t acc, const Block& item)
             {
-                return acc + item.length;
+                const auto length = static_cast<std::uint64_t>(std::max(item.length, 0));
+                const auto maximum = std::numeric_limits<std::uint64_t>::max();
+                return length > maximum - acc ? maximum : acc + length;
             });
     }
 

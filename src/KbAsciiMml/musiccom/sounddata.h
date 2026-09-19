@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <array>
+#include <cstdint>
 #include <map>
 #include <tuple>
 #include <vector>
@@ -86,7 +87,7 @@ namespace MusicCom
             Element data_cache_{};
         };
 
-        int length() const;
+        std::uint64_t length() const;
         const_iterator begin() const;
         const_iterator end() const;
 

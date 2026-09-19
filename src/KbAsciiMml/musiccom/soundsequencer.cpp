@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 
 namespace MusicCom
 {
@@ -116,7 +117,8 @@ namespace MusicCom
             // 効果音の設定
             auto sound_no = NOTE_SOUND_MAP[command.GetArg(0)];
             auto& sound_data = sound_.GetRhythm(sound_no);
-            if (sound_data.length() > 0)
+            const auto sound_length = sound_data.length();
+            if (sound_length > 0)
             {
                 ssgwrap_.BeginEffect();
                 current_sound_data_ = {sound_data.begin(), sound_data.end()};
@@ -127,7 +129,7 @@ namespace MusicCom
             int length = ResolveNoteLength(part_data, command.GetArg(1));
             UpdateNoteFrames(part_data, current_frame, length);
 
-            part_data.Note.KeyOffFrame = sound_data.length();
+            part_data.Note.KeyOffFrame = static_cast<int>(std::min(sound_length, static_cast<std::uint64_t>(std::numeric_limits<int>::max())));
             break;
         }
         case CommandType::TYPE_REST:
