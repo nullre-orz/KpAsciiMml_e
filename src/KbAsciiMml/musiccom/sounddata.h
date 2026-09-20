@@ -84,6 +84,7 @@ namespace MusicCom
             int part_index_;
 
             diff_cache diff_cache_{};
+            diff_cache value_cache_{};
             Element data_cache_{};
         };
 

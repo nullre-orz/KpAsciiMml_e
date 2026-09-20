@@ -193,16 +193,6 @@ Noise:	3, 20 ,-5 ,4,0
             {
                 return [](auto& ctx)
                 {
-                    auto arg = x3::_attr(ctx);
-                    SoundParserState& state = x3::get<SoundParserState>(ctx);
-                    state.args.push_back(arg);
-                };
-            };
-
-            static decltype(auto) append_length()
-            {
-                return [](auto& ctx)
-                {
                     const auto& text = x3::_attr(ctx);
                     unsigned int value = 0;
                     bool negative = false;
@@ -262,8 +252,15 @@ Noise:	3, 20 ,-5 ,4,0
                         auto& tone = target.tone[state.channel];
                         tone.enabled = true;
                         tone.initial_value = state.args[TONE_INITIAL_VALUE_ARGUMENT];
-                        tone.final_value = state.args[TONE_INITIAL_VALUE_ARGUMENT] + state.args[TONE_INCREMENT_ARGUMENT];
-                        tone.period = (state.args[TONE_PERIOD_ARGUMENT] == USE_DEFAULT_VALUE ? DEFAULT_PERIOD : state.args[TONE_PERIOD_ARGUMENT]) * state.tone_multiplier;
+                        const int change = state.args[TONE_INCREMENT_ARGUMENT] < 0x8000 ? state.args[TONE_INCREMENT_ARGUMENT] : state.args[TONE_INCREMENT_ARGUMENT] - 0x10000;
+                        tone.final_value = tone.initial_value + change;
+                        tone.period = ((state.args[TONE_PERIOD_ARGUMENT] == USE_DEFAULT_VALUE ? DEFAULT_PERIOD : state.args[TONE_PERIOD_ARGUMENT]) * static_cast<unsigned int>(state.tone_multiplier)) & 0xffff;
+                        const int divisor = tone.period < 0x8000 ? tone.period : tone.period - 0x10000;
+                        if (divisor == 0 || (change == -32768 && divisor == -1))
+                        {
+                            state.errors.push_back(std::format("({:d}): invalid tone period or increment", state.line));
+                            tone.period = 1;
+                        }
                         tone.loop = (state.args[TONE_LOOP_ARGUMENT] == LOOP_ENABLED_VALUE);
                     }
                 };
@@ -286,8 +283,15 @@ Noise:	3, 20 ,-5 ,4,0
                         auto& target = editing_blocks.back();
                         auto& volume = target.volume[state.channel];
                         volume.initial_value = state.args[VOLUME_INITIAL_VALUE_ARGUMENT];
-                        volume.final_value = state.args[VOLUME_INITIAL_VALUE_ARGUMENT] + state.args[VOLUME_INCREMENT_ARGUMENT];
-                        volume.period = (state.args[VOLUME_PERIOD_ARGUMENT] == USE_DEFAULT_VALUE ? DEFAULT_PERIOD : state.args[VOLUME_PERIOD_ARGUMENT]) * state.volume_multiplier;
+                        const int change = state.args[VOLUME_INCREMENT_ARGUMENT] & 0xff;
+                        volume.final_value = volume.initial_value + (change < 0x80 ? change : change - 0x100);
+                        volume.period = ((state.args[VOLUME_PERIOD_ARGUMENT] == USE_DEFAULT_VALUE ? DEFAULT_PERIOD : state.args[VOLUME_PERIOD_ARGUMENT]) * static_cast<unsigned int>(state.volume_multiplier)) & 0xffff;
+                        const int divisor = volume.period < 0x8000 ? volume.period : volume.period - 0x10000;
+                        if (divisor == 0 || (change == 0x80 && divisor == -1))
+                        {
+                            state.errors.push_back(std::format("({:d}): invalid volume period or increment", state.line));
+                            volume.period = 1;
+                        }
                         volume.loop = (state.args[VOLUME_LOOP_ARGUMENT] == LOOP_ENABLED_VALUE);
                     }
                 };
@@ -311,8 +315,15 @@ Noise:	3, 20 ,-5 ,4,0
                         auto& noise = target.noise;
                         noise.channel_type = state.args[NOISE_CHANNEL_TYPE_ARGUMENT];
                         noise.initial_value = state.args[NOISE_INITIAL_VALUE_ARGUMENT];
-                        noise.final_value = state.args[NOISE_INITIAL_VALUE_ARGUMENT] + state.args[NOISE_INCREMENT_ARGUMENT];
-                        noise.period = (state.args[NOISE_PERIOD_ARGUMENT] == USE_DEFAULT_VALUE ? DEFAULT_PERIOD : state.args[NOISE_PERIOD_ARGUMENT]) * state.tone_multiplier;
+                        const int change = state.args[NOISE_INCREMENT_ARGUMENT] & 0xff;
+                        noise.final_value = noise.initial_value + (change < 0x80 ? change : change - 0x100);
+                        noise.period = ((state.args[NOISE_PERIOD_ARGUMENT] == USE_DEFAULT_VALUE ? DEFAULT_PERIOD : state.args[NOISE_PERIOD_ARGUMENT]) * static_cast<unsigned int>(state.tone_multiplier)) & 0xffff;
+                        const int divisor = noise.period < 0x8000 ? noise.period : noise.period - 0x10000;
+                        if (divisor == 0 || (change == 0x80 && divisor == -1))
+                        {
+                            state.errors.push_back(std::format("({:d}): invalid noise period or increment", state.line));
+                            noise.period = 1;
+                        }
                         noise.loop = (state.args[NOISE_LOOP_ARGUMENT] == LOOP_ENABLED_VALUE);
                     }
                 };
@@ -344,8 +355,8 @@ Noise:	3, 20 ,-5 ,4,0
         const x3::rule<class blank_line, std::string> blank_line = "blank";
 
         // カンマは単なる区切りとして扱い、省略された末尾引数は処理側で0補完する
-        const auto arguments = *x3::lit(',') >> *((x3::int_)[detail::append_arg()] >> *x3::lit(','));
-        const auto sound_arguments = *x3::lit(',') >> -(x3::raw[x3::lexeme[-x3::char_("+-") >> +x3::digit]][detail::append_length()] >> *x3::lit(',') >> *((x3::int_)[detail::append_arg()] >> *x3::lit(',')));
+        const auto word_argument = x3::raw[x3::lexeme[-x3::char_("+-") >> +x3::digit]][detail::append_arg()];
+        const auto arguments = *x3::lit(',') >> *(word_argument >> *x3::lit(','));
         const auto trailing_text = x3::lexeme[*(x3::char_ - x3::eol)];
 
         const auto line_def =
@@ -355,7 +366,7 @@ Noise:	3, 20 ,-5 ,4,0
         const auto sound_line_def =
             (x3::no_case["sound:"])[detail::begin_operator()]
             >> -(x3::lit('@') >> (x3::uint_)[detail::set_current_sound()])
-            >> sound_arguments >> trailing_text;
+            >> arguments >> trailing_text;
 
         const auto tone_line_def =
             (x3::no_case["tone"] >> x3::char_(FIRST_CHANNEL_CHARACTER, LAST_CHANNEL_CHARACTER)[detail::set_current_channel()] >> x3::lit(':'))[detail::begin_operator()]
