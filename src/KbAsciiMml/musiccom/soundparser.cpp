@@ -5,6 +5,7 @@
 #include <boost/spirit/include/classic_file_iterator.hpp>
 #include <filesystem>
 #include <format>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <stdexcept>
@@ -15,6 +16,21 @@ namespace MusicCom
 {
     namespace
     {
+        constexpr std::size_t MAX_ERROR_DETAILS = 100;
+        constexpr std::size_t MAX_ERROR_EXCERPT = 256;
+
+        // 入力抜粋は256バイトに制限し、長い場合は末尾に...を付ける
+        template<typename Iterator>
+        std::string ErrorExcerpt(Iterator first, Iterator last)
+        {
+            std::string result;
+            while (first != last && result.size() < MAX_ERROR_EXCERPT)
+                result.push_back(*first++);
+            if (first != last)
+                result += "...";
+            return result;
+        }
+
         enum SoundArgument : int
         {
             SOUND_LENGTH_ARGUMENT,
@@ -126,6 +142,17 @@ Noise:	3, 20 ,-5 ,4,0
         int volume_multiplier = DEFAULT_MULTIPLIER;
         std::vector<int> args{};
         std::vector<std::string> errors{};
+        std::size_t omitted_errors = 0;
+
+        // エラー詳細は先頭100件まで保持し、それ以降は省略件数を数える
+        void AddError(std::string message)
+        {
+            if (errors.size() < MAX_ERROR_DETAILS)
+                errors.push_back(std::move(message));
+            else if (omitted_errors != (std::numeric_limits<std::size_t>::max)())
+                ++omitted_errors;
+        }
+
 
         bool finished = false;
     };
@@ -258,7 +285,7 @@ Noise:	3, 20 ,-5 ,4,0
                         const int divisor = tone.period < 0x8000 ? tone.period : tone.period - 0x10000;
                         if (divisor == 0 || (change == -32768 && divisor == -1))
                         {
-                            state.errors.push_back(std::format("({:d}): invalid tone period or increment", state.line));
+                            state.AddError(std::format("({:d}): invalid tone period or increment", state.line));
                             tone.period = 1;
                         }
                         tone.loop = (state.args[TONE_LOOP_ARGUMENT] == LOOP_ENABLED_VALUE);
@@ -289,7 +316,7 @@ Noise:	3, 20 ,-5 ,4,0
                         const int divisor = volume.period < 0x8000 ? volume.period : volume.period - 0x10000;
                         if (divisor == 0 || (change == 0x80 && divisor == -1))
                         {
-                            state.errors.push_back(std::format("({:d}): invalid volume period or increment", state.line));
+                            state.AddError(std::format("({:d}): invalid volume period or increment", state.line));
                             volume.period = 1;
                         }
                         volume.loop = (state.args[VOLUME_LOOP_ARGUMENT] == LOOP_ENABLED_VALUE);
@@ -321,7 +348,7 @@ Noise:	3, 20 ,-5 ,4,0
                         const int divisor = noise.period < 0x8000 ? noise.period : noise.period - 0x10000;
                         if (divisor == 0 || (change == 0x80 && divisor == -1))
                         {
-                            state.errors.push_back(std::format("({:d}): invalid noise period or increment", state.line));
+                            state.AddError(std::format("({:d}): invalid noise period or increment", state.line));
                             noise.period = 1;
                         }
                         noise.loop = (state.args[NOISE_LOOP_ARGUMENT] == LOOP_ENABLED_VALUE);
@@ -412,21 +439,21 @@ Noise:	3, 20 ,-5 ,4,0
             {
                 const auto line_end = std::find_if(line_begin, end, [](char c)
                                                    { return c == '\r' || c == '\n'; });
-                state.errors.push_back(std::format("({:d}): parse error at \"{}\"", state.line, std::string(line_begin, line_end)));
+                state.AddError(std::format("({:d}): parse error at \"{}\"", state.line, ErrorExcerpt(line_begin, line_end)));
                 current = line_end;
             }
         }
 
         if (!state.errors.empty())
         {
-            const auto message = std::accumulate(
-                state.errors.begin(),
-                state.errors.end(),
-                source_name,
-                [](const std::string& accumulated, const std::string& error)
-                {
-                    return std::format("{}\n{}", accumulated, error);
-                });
+            std::string message(source_name);
+            for (const auto& error : state.errors)
+            {
+                message += '\n';
+                message += error;
+            }
+            if (state.omitted_errors != 0)
+                message += std::format("\n{} additional errors omitted", state.omitted_errors);
             throw std::runtime_error(message);
         }
 
