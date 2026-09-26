@@ -17,7 +17,10 @@ namespace MusicCom
     {
         auto update_keyoff_frames = [this](PartData& part_data, CommandIterator ptr, int current_frame, int length)
         {
-            part_data.Commands.LinkedItem = FindLinkedItem(CommandIterator(ptr));
+            const auto linked_item = FindLinkedItem(CommandIterator(ptr));
+            if (IsCommandLimitExceeded())
+                return;
+            part_data.Commands.LinkedItem = linked_item;
             if (ptr->GetType() == CommandType::TYPE_TIE)
             {
                 part_data.Note.KeyOffFrame = part_data.Note.EndFrame;

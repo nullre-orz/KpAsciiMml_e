@@ -30,7 +30,8 @@ namespace MusicCom
         virtual int GetRemainFrameSizeImpl();
         virtual void IncreaseFrameImpl(int frame_size);
         virtual void ProcessCommandFrame(int current_frame);
-        std::optional<CommandType> FindLinkedItem(CommandIterator ptr) const;
+        std::optional<CommandType> FindLinkedItem(CommandIterator ptr);
+        bool IsCommandLimitExceeded() const;
         virtual void KeyOn() = 0;
         virtual void KeyOff() = 0;
 
@@ -39,6 +40,8 @@ namespace MusicCom
         void NextCommandFrame();
         std::optional<CommandIterator> ProcessLoop(CommandIterator ptr);
         void ProcessCommand(int current_frame);
+        bool ConsumeCommand();
+        void StopForCommandLimit();
 
         virtual void InitializeImpl(PartData& part_data) = 0;
         virtual void PreProcess(int current_frame);
@@ -57,5 +60,8 @@ namespace MusicCom
         int samples_per_frame_ = 0;
         int samples_left_ = 0; // このフレーム(64分音符)でmixすべき残りのサンプル数
         int current_frame_ = 0;
+        int remaining_commands_ = 0;
+        bool command_limit_exceeded_ = false;
+        bool permanently_stopped_ = false;
     };
 } // namespace MusicCom

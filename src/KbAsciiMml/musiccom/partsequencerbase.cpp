@@ -5,6 +5,7 @@
 namespace MusicCom
 {
     const int MAX_MACRO_COUNT = 24;
+    const int MAX_COMMANDS_PER_FRAME = 10000;
 
     PartSequencerBase::PartSequencerBase(const RegisterWriter& register_writer, const MusicData& music, CommandIterator command_tail, int rate)
         : register_writer_(register_writer),
@@ -18,6 +19,8 @@ namespace MusicCom
 
     void PartSequencerBase::Initialize()
     {
+        permanently_stopped_ = false;
+        command_limit_exceeded_ = false;
         part_data_.Playback.Playing = true;
         part_data_.Playback.HasPreviousNote = false;
         ReturnToHead();
@@ -39,7 +42,7 @@ namespace MusicCom
     void PartSequencerBase::Resume()
     {
         // 再生中は何もしない
-        if (IsPlaying())
+        if (IsPlaying() || permanently_stopped_)
         {
             return;
         }
@@ -145,6 +148,8 @@ namespace MusicCom
     {
         while (1)
         {
+            if (!ConsumeCommand())
+                return std::nullopt;
             const Command& command = *ptr;
 
             switch (command.GetType())
@@ -223,7 +228,7 @@ namespace MusicCom
         }
     }
 
-    std::optional<CommandType> PartSequencerBase::FindLinkedItem(CommandIterator ptr) const
+    std::optional<CommandType> PartSequencerBase::FindLinkedItem(CommandIterator ptr)
     {
         // 後方にタイ(&)やキーオフなし休符(W)が存在するかどうかを先読みして確認
         // ProcessLoop同様にマクロ/ループは展開するが、本体に影響しないようコピーで処理する
@@ -233,6 +238,8 @@ namespace MusicCom
 
         while (1)
         {
+            if (!ConsumeCommand())
+                return std::nullopt;
             const Command& command = *ptr++;
             auto type = command.GetType();
             switch (type)
@@ -309,8 +316,33 @@ namespace MusicCom
         return std::nullopt;
     }
 
+    bool PartSequencerBase::ConsumeCommand()
+    {
+        if (remaining_commands_ == 0)
+        {
+            command_limit_exceeded_ = true;
+            return false;
+        }
+        --remaining_commands_;
+        return true;
+    }
+
+    bool PartSequencerBase::IsCommandLimitExceeded() const
+    {
+        return command_limit_exceeded_;
+    }
+
+    void PartSequencerBase::StopForCommandLimit()
+    {
+        permanently_stopped_ = true;
+        part_data_.Playback.Playing = false;
+        KeyOff();
+    }
+
     void PartSequencerBase::ProcessCommand(int current_frame)
     {
+        remaining_commands_ = MAX_COMMANDS_PER_FRAME;
+        command_limit_exceeded_ = false;
         part_data_.Playback.InfiniteLooping = false;
         auto ptr = part_data_.Commands.CommandPtr;
 
@@ -319,6 +351,11 @@ namespace MusicCom
             // マクロ・ループ・終端は別処理
             {
                 auto result = ProcessLoop(ptr);
+                if (command_limit_exceeded_)
+                {
+                    StopForCommandLimit();
+                    return;
+                }
                 if (!result)
                 {
                     if (part_data_.Playback.HasPreviousNote && !part_data_.Commands.LinkedItem)
@@ -331,6 +368,11 @@ namespace MusicCom
             }
 
             ptr = ProcessCommandImpl(ptr, current_frame, part_data_);
+            if (command_limit_exceeded_)
+            {
+                StopForCommandLimit();
+                return;
+            }
         }
         part_data_.Commands.CommandPtr = ptr;
     }
