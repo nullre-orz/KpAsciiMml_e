@@ -6,9 +6,16 @@
 #include "soundparser.h"
 #include "soundsequencer.h"
 #include <algorithm>
+#include <limits>
 
 namespace MusicCom
 {
+    namespace
+    {
+        // プリスケーラー変更時もfmgenのサンプルレート計算がintの範囲に収まる下限
+        constexpr uint MIN_SAMPLE_RATE = 8000;
+    }
+
     const int MusicCom::SOUND_EFFECT_DEFAULT_TEMPO = 195;
 
     MusicCom::MusicCom()
@@ -38,6 +45,9 @@ namespace MusicCom
 
     bool MusicCom::PrepareMix(uint rate)
     {
+        if (rate < MIN_SAMPLE_RATE || rate > static_cast<uint>((std::numeric_limits<int>::max)()))
+            return false;
+
         pseq = std::make_unique<Sequencer>(opn, *pmusicdata, *psounddata, soundTempo);
         if (!pseq->Init(rate))
         {
