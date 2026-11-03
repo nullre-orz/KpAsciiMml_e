@@ -171,6 +171,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\tests\MusicComTests.vcxproj">
+      <Project>{edca828b-a941-4ea1-b5cd-71f447ca0745}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ClInclude Include="musiccom\command.h" />
     <ClInclude Include="musiccom\fmsequencer.h" />
     <ClInclude Include="musiccom\fmwrap.h" />
@@ -267,6 +271,15 @@
   <ItemGroup>
     <ResourceCompile Include="KbAsciiMml.rc" />
   </ItemGroup>
+  <ItemDefinitionGroup>
+    <PostBuildEvent>
+      <Command>if not exist &quot;$(WorkTreeRoot)tests\result&quot; mkdir &quot;$(WorkTreeRoot)tests\result&quot;
+set &quot;MUSICCOM_TEST_REPORT=$(WorkTreeRoot)tests\result\MusicComTests-$(Platform)-$(Configuration).md&quot;
+&quot;$(WorkTreeRoot)bin\MusicComTests\$(Platform)\$(Configuration)\MusicComTests.exe&quot;
+</Command>
+      <Message>MusicComTests を実行しています</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
