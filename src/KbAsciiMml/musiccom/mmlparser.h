@@ -1,8 +1,10 @@
 ﻿#pragma once
 
+#include <memory>
+
 namespace MusicCom
 {
     class MusicData;
-    MusicData* ParseMML(const char* filename);
+    std::unique_ptr<MusicData> ParseMML(const char* filename);
 
 } // namespace MusicCom

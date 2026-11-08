@@ -6,16 +6,20 @@
 #include "soundparser.h"
 #include "soundsequencer.h"
 #include <algorithm>
+#include <limits>
 
 namespace MusicCom
 {
+    namespace
+    {
+        // プリスケーラー変更時もfmgenのサンプルレート計算がintの範囲に収まる下限
+        constexpr uint MIN_SAMPLE_RATE = 8000;
+    }
+
     const int MusicCom::SOUND_EFFECT_DEFAULT_TEMPO = 195;
 
     MusicCom::MusicCom()
-        : pseq(nullptr),
-          pmusicdata(nullptr),
-          psounddata(nullptr),
-          soundTempo(SOUND_EFFECT_DEFAULT_TEMPO)
+        : soundTempo(SOUND_EFFECT_DEFAULT_TEMPO)
     {
     }
 
@@ -23,20 +27,27 @@ namespace MusicCom
 
     bool MusicCom::Load(const char* filename)
     {
-        pmusicdata.reset(ParseMML(filename));
-        if (!pmusicdata)
+        auto new_musicdata = ParseMML(filename);
+        if (!new_musicdata)
             return false;
 
         // SOUND.datを解析
-        psounddata.reset(ParseSound(filename));
-        if (!psounddata)
+        auto new_sounddata = ParseSound(filename);
+        if (!new_sounddata)
             return false;
+
+        pseq.reset();
+        pmusicdata = std::move(new_musicdata);
+        psounddata = std::move(new_sounddata);
 
         return true;
     }
 
     bool MusicCom::PrepareMix(uint rate)
     {
+        if (rate < MIN_SAMPLE_RATE || rate > static_cast<uint>((std::numeric_limits<int>::max)()))
+            return false;
+
         pseq = std::make_unique<Sequencer>(opn, *pmusicdata, *psounddata, soundTempo);
         if (!pseq->Init(rate))
         {

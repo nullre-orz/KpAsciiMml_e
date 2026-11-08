@@ -1,6 +1,7 @@
 ﻿#include "musiccom/musiccom.h"
 #include "resource.h"
 #include <Windows.h>
+#include <array>
 #include <boost/lexical_cast.hpp>
 #include <iterator>
 #include <kmp_pi.h>
@@ -11,7 +12,7 @@
 using namespace std;
 using namespace boost;
 
-HMODULE hDllModule;
+HMODULE hDllModule = nullptr;
 
 #define KMPPLUGIN_VERSION 1
 
@@ -20,11 +21,11 @@ T GetSetting(LPCWSTR fileName, LPCWSTR key, T defaultValue)
 {
     try
     {
-        wchar_t buf[256];
-        GetPrivateProfileStringW(L"KbAsciiMml", key, NULL, buf, std::size(buf), fileName);
-        return boost::lexical_cast<int>(buf);
+        std::array<wchar_t, 256> buf{};
+        GetPrivateProfileStringW(L"KbAsciiMml", key, nullptr, buf.data(), static_cast<DWORD>(buf.size()), fileName);
+        return boost::lexical_cast<int>(buf.data());
     }
-    catch (boost::bad_lexical_cast)
+    catch (const boost::bad_lexical_cast&)
     {
         return defaultValue;
     }
@@ -41,20 +42,20 @@ public:
 
 private:
     MusicCom::MusicCom musicCom;
-    uint bytespersample;
-    SOUNDINFO info;
+    uint bytespersample = 0;
+    SOUNDINFO info{};
 };
 
 KbAsciiMml::KbAsciiMml()
 {
-    wchar_t iniName[MAX_PATH];
-    GetModuleFileNameW(hDllModule, iniName, std::size(iniName));
-    PathRemoveExtensionW(iniName);
-    PathAddExtensionW(iniName, L".ini");
+    std::array<wchar_t, MAX_PATH> iniName{};
+    GetModuleFileNameW(hDllModule, iniName.data(), static_cast<DWORD>(iniName.size()));
+    PathRemoveExtensionW(iniName.data());
+    PathAddExtensionW(iniName.data(), L".ini");
 
-    int fmvol = GetSetting(iniName, L"FMVolume", 0);
-    int psgvol = GetSetting(iniName, L"PSGVolume", 0);
-    int soundtempo = GetSetting(iniName, L"SoundTempo", MusicCom::MusicCom::SOUND_EFFECT_DEFAULT_TEMPO);
+    int fmvol = GetSetting(iniName.data(), L"FMVolume", 0);
+    int psgvol = GetSetting(iniName.data(), L"PSGVolume", 0);
+    int soundtempo = GetSetting(iniName.data(), L"SoundTempo", MusicCom::MusicCom::SOUND_EFFECT_DEFAULT_TEMPO);
 
     musicCom.SetFMVolume(fmvol);
     musicCom.SetPSGVolume(psgvol);
@@ -65,7 +66,7 @@ KbAsciiMml::~KbAsciiMml() = default;
 
 BOOL KbAsciiMml::Open(const char* cszFileName, SOUNDINFO* pInfo)
 {
-    if (pInfo == NULL)
+    if (pInfo == nullptr)
     {
         return FALSE;
     }
@@ -89,9 +90,9 @@ BOOL KbAsciiMml::Open(const char* cszFileName, SOUNDINFO* pInfo)
             return FALSE;
         }
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
-        MessageBoxA(NULL, e.what(), "エラー", MB_OK);
+        MessageBoxA(nullptr, e.what(), "エラー", MB_OK);
         return FALSE;
     }
 
@@ -105,7 +106,7 @@ BOOL KbAsciiMml::Open(const char* cszFileName, SOUNDINFO* pInfo)
 
 DWORD KbAsciiMml::Render(BYTE* Buffer, DWORD dwSize)
 {
-    musicCom.Mix((int16*)Buffer, dwSize / bytespersample);
+    musicCom.Mix(reinterpret_cast<int16*>(Buffer), dwSize / bytespersample);
     return dwSize;
 }
 
@@ -122,24 +123,24 @@ static HKMP WINAPI kmp_Open(const char* cszFileName, SOUNDINFO* pInfo)
     KbAsciiMml* pKbAsciiMml = new KbAsciiMml;
     if (pKbAsciiMml->Open(cszFileName, pInfo))
     {
-        return (HKMP)pKbAsciiMml;
+        return static_cast<HKMP>(pKbAsciiMml);
     }
     else
     {
         delete pKbAsciiMml;
-        return NULL;
+        return nullptr;
     }
 }
 
 static void WINAPI kmp_Close(HKMP hKMP)
 {
-    KbAsciiMml* pKbAsciiMml = (KbAsciiMml*)hKMP;
+    KbAsciiMml* pKbAsciiMml = static_cast<KbAsciiMml*>(hKMP);
     delete pKbAsciiMml;
 }
 
 static DWORD WINAPI kmp_Render(HKMP hKMP, BYTE* Buffer, DWORD dwSize)
 {
-    KbAsciiMml* pKbAsciiMml = (KbAsciiMml*)hKMP;
+    KbAsciiMml* pKbAsciiMml = static_cast<KbAsciiMml*>(hKMP);
     if (pKbAsciiMml)
     {
         return pKbAsciiMml->Render(Buffer, dwSize);
@@ -152,7 +153,7 @@ static DWORD WINAPI kmp_Render(HKMP hKMP, BYTE* Buffer, DWORD dwSize)
 
 static DWORD WINAPI kmp_SetPosition(HKMP hKMP, DWORD dwPos)
 {
-    KbAsciiMml* pKbAsciiMml = (KbAsciiMml*)hKMP;
+    KbAsciiMml* pKbAsciiMml = static_cast<KbAsciiMml*>(hKMP);
     if (pKbAsciiMml)
     {
         return pKbAsciiMml->SetPosition(dwPos);
@@ -165,7 +166,7 @@ static DWORD WINAPI kmp_SetPosition(HKMP hKMP, DWORD dwPos)
 
 KMPMODULE* WINAPI kmp_GetTestModule()
 {
-    static const char* ppszSupportExts[] = {".mml", NULL};
+    static std::array<const char*, 2> ppszSupportExts = {".mml", nullptr};
 
     static KMPMODULE Mod =
         {
@@ -173,12 +174,12 @@ KMPMODULE* WINAPI kmp_GetTestModule()
             KMPPLUGIN_VERSION, // dwPluginVersion
             VER_LEGAL_COPYRIGHT, // pszCopyright
             VER_FILE_DESCRIPTION, // pszDescription
-            ppszSupportExts, // ppszSupportExts
+            ppszSupportExts.data(), // ppszSupportExts
             1, // dwReentrant
-            NULL, // Init
-            NULL, // Deinit
+            nullptr, // Init
+            nullptr, // Deinit
             kmp_Open, // Open
-            NULL, // OpenFromBuffer
+            nullptr, // OpenFromBuffer
             kmp_Close, // Close
             kmp_Render, // Render
             kmp_SetPosition // SetPosition

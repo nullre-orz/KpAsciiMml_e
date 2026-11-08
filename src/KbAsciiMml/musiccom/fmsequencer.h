@@ -1,31 +1,33 @@
 ﻿#pragma once
 
-#include "partsequencerbase.h"
+#include "musdata.h"
+#include "tonesequencerbase.h"
+#include <array>
 
 namespace MusicCom
 {
     class FMWrap;
-    class MusicData;
-    class FmSequencer : public PartSequencerBase
+    class FmSequencer : public ToneSequencerBase
     {
     public:
         FmSequencer(const RegisterWriter& register_writer, FMWrap& fmwrap, const MusicData& music, int channel, int rate);
-        ~FmSequencer();
+        ~FmSequencer() override;
 
     protected: // for PartSequencerBase
-        virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
-        virtual void ProcessEffect(int current_frame);
+        CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data) override;
+        void ProcessEffect(int current_frame) override;
 
     private: // for PartSequencerBase
-        virtual void InitializeImpl(PartData& part_data);
-        virtual void KeyOn();
-        virtual void KeyOff();
-        virtual void UpdateTone(int base_tone, PartData& part_data);
-        virtual void ApplyVibratoEffect(int octave, int tone, int depth);
-        virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length);
-        virtual void SetTone(int octave, int tone);
-        virtual void SetVolume(int volume);
-        virtual const CommandIterator GetHead() const;
+        void InitializeImpl(PartData& part_data) override;
+        void KeyOn() override;
+        void KeyOff() override;
+        bool NeedsVolumeEffect(const PartData& part_data) const override;
+        void UpdateTone(int base_tone, PartData& part_data) override;
+        void ApplyVibratoEffect(int octave, int tone, int depth) override;
+        void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length) override;
+        void SetTone(int octave, int tone) override;
+        void SetVolume(int volume) override;
+        CommandIterator GetHead() const override;
 
     private:
         int CalculateTone(int base_tone, int detune) const;
@@ -39,16 +41,16 @@ namespace MusicCom
 
         int channel_;
         FMWrap& fmwrap_;
-        int sound_no_;
-        int lfo_accumulator_;
-        int lfo_phase_;
-        int lfo_value_;
-        int lfo_note_;
-        int last_note_;
-        int current_octave_;
-        int current_tone_;
-        int current_operator_fnumber_[4];
-        bool operator_portamento_active_;
-        bool note_active_;
+        int sound_no_ = 0;
+        int lfo_accumulator_ = 0;
+        int lfo_phase_ = 0;
+        int lfo_value_ = 0;
+        int lfo_note_ = 0;
+        int last_note_ = 0;
+        int current_octave_ = 0;
+        int current_tone_ = 0;
+        std::array<int, FMSound::OPERATOR_COUNT> current_operator_fnumber_{};
+        bool operator_portamento_active_ = false;
+        bool note_active_ = false;
     };
 } // namespace MusicCom

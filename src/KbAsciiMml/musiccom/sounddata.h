@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <array>
+#include <cstdint>
 #include <map>
 #include <tuple>
 #include <vector>
@@ -10,32 +12,32 @@ namespace MusicCom
     {
         struct TonePart
         {
-            bool enabled;
-            int initial_value;
-            int final_value;
-            int period;
-            bool loop;
+            bool enabled = false;
+            int initial_value = 0;
+            int final_value = 0;
+            int period = 0;
+            bool loop = false;
         };
         struct VolumePart
         {
-            int initial_value;
-            int final_value;
-            int period;
-            bool loop;
+            int initial_value = 0;
+            int final_value = 0;
+            int period = 0;
+            bool loop = false;
         };
         struct NoisePart
         {
-            int channel_type;
-            int initial_value;
-            int final_value;
-            int period;
-            bool loop;
+            int channel_type = 0;
+            int initial_value = 0;
+            int final_value = 0;
+            int period = 0;
+            bool loop = false;
         };
 
-        int length;
-        TonePart tone[2];
-        VolumePart volume[2];
-        NoisePart noise;
+        int length = 0;
+        std::array<TonePart, 2> tone{};
+        std::array<VolumePart, 2> volume{};
+        NoisePart noise{};
     };
 
     class RhythmData
@@ -46,11 +48,11 @@ namespace MusicCom
         // Element
         struct Element
         {
-            int tone[2];
-            int volume[2];
-            int noise_period;
-            bool tone_enabled[2];
-            bool noise_enabled[2];
+            std::array<int, 2> tone{};
+            std::array<int, 2> volume{};
+            int noise_period = 0;
+            std::array<bool, 2> tone_enabled{};
+            std::array<bool, 2> noise_enabled{};
         };
 
         // Iterator
@@ -62,16 +64,16 @@ namespace MusicCom
 
             const_iterator& operator++();
             const_iterator operator++(int);
-            bool operator==(const_iterator& other) const;
-            bool operator!=(const_iterator& other) const;
+            bool operator==(const const_iterator& other) const;
+            bool operator!=(const const_iterator& other) const;
             Element operator*() const;
 
         private:
             struct diff_cache
             {
-                int tone[2];
-                int volume[2];
-                int noise;
+                std::array<int, 2> tone{};
+                std::array<int, 2> volume{};
+                int noise = 0;
             };
 
             friend class RhythmData;
@@ -81,11 +83,12 @@ namespace MusicCom
             BlockIterator sentinel_;
             int part_index_;
 
-            diff_cache diff_cache_;
-            Element data_cache_;
+            diff_cache diff_cache_{};
+            diff_cache value_cache_{};
+            Element data_cache_{};
         };
 
-        int length() const;
+        std::uint64_t length() const;
         const_iterator begin() const;
         const_iterator end() const;
 
@@ -103,6 +106,6 @@ namespace MusicCom
         const RhythmData& GetRhythm(int no) const;
 
     private:
-        mutable std::map<int, RhythmData> rhythms;
+        std::map<int, RhythmData> rhythms;
     };
 } // namespace MusicCom

@@ -8,6 +8,7 @@
 #include <boost/spirit/include/classic_file_iterator.hpp>
 #include <boost/spirit/include/classic_utility.hpp>
 #include <format>
+#include <limits>
 #include <map>
 #include <memory>
 #include <numeric>
@@ -20,6 +21,24 @@ using boost::lexical_cast;
 
 namespace MusicCom
 {
+    namespace
+    {
+        constexpr size_t MAX_ERROR_DETAILS = 100;
+        constexpr size_t MAX_ERROR_EXCERPT = 256;
+
+        // 入力抜粋は256バイトに制限し、長い場合は末尾に...を付ける
+        template<typename Iterator>
+        string ErrorExcerpt(Iterator first, Iterator last)
+        {
+            string result;
+            while (first != last && result.size() < MAX_ERROR_EXCERPT)
+                result.push_back(*first++);
+            if (first != last)
+                result += "...";
+            return result;
+        }
+    }
+
     int ParseLength(string s)
     {
         if (s.empty())
@@ -103,35 +122,32 @@ namespace MusicCom
 
         struct MMLParserState
         {
-            MMLParserState()
-                : pMusicData(nullptr),
-                  LineNumber(1),
-                  LineType(UNDEFINED),
-                  ChNumber(),
-                  CommandType(),
-                  SoundNumber(),
-                  ChannelLoopDepth(),
-                  RhythmLoopDepth(0),
-                  MacroLoopDepth(),
-                  SSGEnvLineNumber(0),
-                  StoreMacroCommands(false),
-                  Finished(false)
+            MMLParserState() = default;
+
+            vector<string> args{};
+            vector<string> errors{};
+            size_t omitted_errors = 0;
+
+            // エラー詳細は先頭100件まで保持し、それ以降は省略件数を数える
+            void AddError(string message)
             {
+                if (errors.size() < MAX_ERROR_DETAILS)
+                    errors.push_back(std::move(message));
+                else if (omitted_errors != (numeric_limits<size_t>::max)())
+                    ++omitted_errors;
             }
 
-            vector<string> args;
-            vector<string> errors;
 
-            MusicData* pMusicData;
+            MusicData* pMusicData = nullptr;
 
             // Line
-            int LineNumber;
-            MMLLineType LineType;
+            int LineNumber = 1;
+            MMLLineType LineType = UNDEFINED;
 
-            int ChNumber; // ch番号 (0-origin)
+            int ChNumber = 0; // ch番号 (0-origin)
 
-            CommandType CommandType;
-            string MacroName;
+            CommandType CommandType{};
+            string MacroName{};
 
             int& GetLoopDepthRef()
             {
@@ -169,18 +185,18 @@ namespace MusicCom
             }
 
             // Sound
-            FMSound Sound;
-            int SoundNumber;
+            FMSound Sound{};
+            int SoundNumber = 0;
 
-            array<int, 6> ChannelLoopDepth;
-            int RhythmLoopDepth;
-            map<string, int> MacroLoopDepth;
-            array<vector<MacroReference>, 6> ChannelMacroReferences;
-            vector<MacroReference> RhythmMacroReferences;
-            int SSGEnvLineNumber;
-            bool StoreMacroCommands;
+            array<int, 6> ChannelLoopDepth{};
+            int RhythmLoopDepth = 0;
+            map<string, int> MacroLoopDepth{};
+            array<vector<MacroReference>, 6> ChannelMacroReferences{};
+            vector<MacroReference> RhythmMacroReferences{};
+            int SSGEnvLineNumber = 0;
+            bool StoreMacroCommands = false;
 
-            bool Finished;
+            bool Finished = false;
         };
 
         MMLParser(MMLParserState& s) : state(s)
@@ -213,7 +229,7 @@ namespace MusicCom
 
         static void AddParseErrorMessage(MMLParserState& state, int line_number, const string& message)
         {
-            state.errors.push_back(format("({:d}): {}", line_number, message));
+            state.AddError(format("({:d}): {}", line_number, message));
         }
 
         static void AddParseErrorMessage(MMLParserState& state, const string& message)
@@ -224,13 +240,13 @@ namespace MusicCom
         template<typename IteratorT>
         static void AddParseError(MMLParserState& state, IteratorT first, IteratorT last)
         {
-            AddParseErrorMessage(state, format("parse error at \"{}\"", string(first, last)));
+            AddParseErrorMessage(state, format("parse error at \"{}\"", ErrorExcerpt(first, last)));
         }
 
         template<typename IteratorT>
         static void AddParseError(MMLParserState& state, IteratorT first, IteratorT last, int line_number)
         {
-            AddParseErrorMessage(state, line_number, format("parse error at \"{}\"", string(first, last)));
+            AddParseErrorMessage(state, line_number, format("parse error at \"{}\"", ErrorExcerpt(first, last)));
         }
 
         struct ChangeLine
@@ -461,7 +477,7 @@ namespace MusicCom
             template<typename IteratorT>
             void operator()(IteratorT first, IteratorT last) const
             {
-                static const int note_numbers[] = {
+                static const std::array<int, 7> note_numbers = {
                     // A,  B, C, D, E, F, G
                     9,
                     11,
@@ -605,7 +621,7 @@ namespace MusicCom
             {
                 if (state.LineType == STR && !state.pMusicData->IsMacroPresent(state.args[0]))
                 {
-                    AddParseErrorMessage(state, format("undefined STR: ${}$", state.args[0]));
+                    AddParseErrorMessage(state, format("undefined STR: ${}$", ErrorExcerpt(state.args[0].begin(), state.args[0].end())));
                     return;
                 }
                 MacroReference reference{state.args[0], state.LineNumber};
@@ -752,7 +768,7 @@ namespace MusicCom
         };
     };
 
-    MusicData* ParseMML(const char* filename)
+    std::unique_ptr<MusicData> ParseMML(const char* filename)
     {
         auto pMusicData = std::make_unique<MusicData>();
         MMLParser::MMLParserState state;
@@ -771,19 +787,12 @@ namespace MusicCom
         iterator_t first = begin;
         iterator_t last = first.make_end();
 
-        vector<string> error_list = {};
-        auto collect_parse_errors = [&]() {
-            error_list.insert(error_list.end(), state.errors.begin(), state.errors.end());
-            state.errors.clear();
-        };
-
         while (!state.Finished)
         {
             parse_info<iterator_t> info;
             try
             {
                 info = parse(first, last, mmlparser, blank_p);
-                collect_parse_errors();
                 if (!info.hit)
                 {
                     iterator_t i = find_if(
@@ -793,7 +802,7 @@ namespace MusicCom
                         {
                             return c == '\r' || c == '\n';
                         });
-                    error_list.push_back(format("({:d}): parse error at \"{}\"", state.LineNumber, string(info.stop, i)));
+                    state.AddError(format("({:d}): parse error at \"{}\"", state.LineNumber, ErrorExcerpt(info.stop, i)));
                     first = i;
                 }
                 else
@@ -803,38 +812,36 @@ namespace MusicCom
             }
             catch (exception& e)
             {
-                collect_parse_errors();
-                error_list.push_back(format("({:d}): {}", state.LineNumber, e.what()));
+                state.AddError(format("({:d}): {}", state.LineNumber, e.what()));
                 break;
             }
         }
 
-        if (error_list.empty())
+        if (state.errors.empty())
         {
             if (const auto reference = state.GetUndefinedMacroReference())
             {
-                error_list.push_back(format("({:d}): undefined STR: ${}$", reference->LineNumber, reference->Name));
+                state.AddError(format("({:d}): undefined STR: ${}$", reference->LineNumber, ErrorExcerpt(reference->Name.begin(), reference->Name.end())));
             }
         }
 
         // エラーリストが空でない場合は例外をthrow
-        if (error_list.size() > 0)
+        if (!state.errors.empty())
         {
             // 改行区切りで連結
-            auto msg = accumulate(
-                error_list.begin(),
-                error_list.end(),
-                string(filename),
-                [](const string& acc, const string& str)
-                {
-                    return format("{}\n{}", acc, str);
-                });
+            string msg(filename);
+            for (const auto& error : state.errors)
+            {
+                msg += '\n';
+                msg += error;
+            }
+            if (state.omitted_errors != 0)
+                msg += format("\n{} additional errors omitted", state.omitted_errors);
 
             throw std::runtime_error(msg);
-            return nullptr;
         }
 
-        return pMusicData.release();
+        return pMusicData;
     }
 
 } // namespace MusicCom

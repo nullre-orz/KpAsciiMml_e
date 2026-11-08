@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <array>
 #include <cassert>
 #include <list>
 #include <string>
@@ -40,37 +41,27 @@ namespace MusicCom
     class Command
     {
     public:
-        Command()
-        {
-            type = CommandType::TYPE_UNKNOWN;
-            std::memset(args, 0, sizeof(args));
-        }
+        Command() = default;
         Command(CommandType t, int arg0 = 0, int arg1 = 0, int arg2 = 0)
+            : type(t)
         {
-            SetType(t);
             SetArg(0, arg0);
             SetArg(1, arg1);
             SetArg(2, arg2);
         }
         Command(CommandType t, std::string arg)
+            : type(t)
         {
-            SetType(t);
-            std::memset(args, 0, sizeof(args));
             SetStrArg(arg);
         }
         template<class InIt>
         Command(CommandType t, InIt first, InIt last)
+            : type(t)
         {
-            SetType(t);
-            std::memset(args, 0, sizeof(args));
-            for (int i = 0; i < sizeof(args) / sizeof(args[0]) && first != last; i++, first++)
+            for (int i = 0; i < static_cast<int>(args.size()) && first != last; i++, first++)
             {
                 SetArg(i, *first);
             }
-        }
-        void SetType(CommandType t)
-        {
-            type = t;
         }
         CommandType GetType() const
         {
@@ -78,12 +69,12 @@ namespace MusicCom
         }
         void SetArg(int index, int val)
         {
-            assert(0 <= index && index < 3);
+            assert(0 <= index && index < static_cast<int>(args.size()));
             args[index] = val;
         }
         int GetArg(int index) const
         {
-            assert(0 <= index && index < 3);
+            assert(0 <= index && index < static_cast<int>(args.size()));
             return args[index];
         }
 
@@ -98,9 +89,9 @@ namespace MusicCom
         }
 
     private:
-        CommandType type;
-        int args[3];
-        std::string strarg;
+        CommandType type = CommandType::TYPE_UNKNOWN;
+        std::array<int, 3> args{};
+        std::string strarg{};
     };
 
     using CommandList = std::list<Command>;

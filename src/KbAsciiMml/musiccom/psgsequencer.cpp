@@ -1,28 +1,29 @@
 ﻿#include "psgsequencer.h"
-#include "fmwrap.h"
+#include "musdata.h"
+#include "ssgwrap.h"
 #include <algorithm>
+#include <array>
 
 namespace MusicCom
 {
     // clang-format off
     // O1におけるトーン周期
-    const int SSG_TONE_PERIOD[12] = {
+    const std::array<int, 12> SSG_TONE_PERIOD = {
         // C,  C#,   D,  D#,   E,   F,  F#,   G,  G#,   A,  A#,   B
         3816,3602,3400,3209,3029,2859,2698,2547,2404,2269,2142,2022
     };
 
     // N/Iからトーン周期補正値を求める係数
-    const int SSG_TONE_ADJUST_COEFFICIENT[13] = {
+    const std::array<int, 13> SSG_TONE_ADJUST_COEFFICIENT = {
         // C-,  C, C#,  D, D#,  E,  F, F#,  G, G#,  A, A#,  B
           228,214,202,191,180,170,161,151,143,135,127,120,114
     };
     // clang-format on
 
     PsgSequencer::PsgSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, int channel, int rate)
-        : PartSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),
-          channel_(channel - 3),
+        : ToneSequencerBase(register_writer, music, music.GetChannelTail(channel), rate),
+          channel_(channel - MUSIC_CHANNEL_SSG_A),
           ssgwrap_(ssgwrap),
-          current_note_(0),
           last_period_(SSG_TONE_PERIOD[0]),
           current_period_(SSG_TONE_PERIOD[0])
     {
@@ -33,8 +34,8 @@ namespace MusicCom
     void PsgSequencer::InitializeImpl(PartData& part_data)
     {
         // 初手ポルタメント対応
-        part_data.LastOctave = 0;
-        part_data.LastTone = CalculateTone(0, 0, 0);
+        part_data.Note.LastOctave = 0;
+        part_data.Note.LastTone = CalculateTone(0, 0, 0);
         current_note_ = 0;
         last_period_ = SSG_TONE_PERIOD[0];
         current_period_ = SSG_TONE_PERIOD[0];
@@ -47,25 +48,25 @@ namespace MusicCom
         switch (command.GetType())
         {
         case CommandType::TYPE_TONE:
-            part_data.SoundNo = command.GetArg(0);
-            part_data.SSGEnvOn = part_data.SoundNo != 0;
-            if (part_data.SSGEnvOn)
+            part_data.Note.SoundNo = command.GetArg(0);
+            part_data.Note.SSGEnvOn = part_data.Note.SoundNo != 0;
+            if (part_data.Note.SSGEnvOn)
             {
                 ssgwrap_.SetEnv(channel_, false);
             }
             break;
         case CommandType::TYPE_ENV_FORM:
-            part_data.SSGEnvOn = false;
+            part_data.Note.SSGEnvOn = false;
             ssgwrap_.SetEnv(channel_, true);
             ssgwrap_.SetEnvForm(channel_, command.GetArg(0));
             break;
         case CommandType::TYPE_ENV_PERIOD:
-            part_data.SSGEnvOn = false;
+            part_data.Note.SSGEnvOn = false;
             ssgwrap_.SetEnv(channel_, true);
             ssgwrap_.SetEnvPeriod(command.GetArg(0));
             break;
         default:
-            return_ptr = PartSequencerBase::ProcessCommandImpl(ptr, current_frame, part_data);
+            return_ptr = ToneSequencerBase::ProcessCommandImpl(ptr, current_frame, part_data);
             break;
         }
         return return_ptr;
@@ -86,9 +87,9 @@ namespace MusicCom
     {
         last_period_ = current_period_;
         current_note_ = base_tone;
-        current_period_ = CalculateTonePeriod(base_tone, part_data.Detune);
-        part_data.Tone = ApplyOctave(current_period_, part_data.Octave);
-        SetTone(part_data.Octave, part_data.Tone);
+        current_period_ = CalculateTonePeriod(base_tone, part_data.Note.Detune);
+        part_data.Note.Tone = ApplyOctave(current_period_, part_data.Note.Octave);
+        SetTone(part_data.Note.Octave, part_data.Note.Tone);
     }
 
     void PsgSequencer::ApplyVibratoEffect(int octave, int tone, int depth)
@@ -97,24 +98,30 @@ namespace MusicCom
         SetTone(octave, ApplyOctave(period, octave));
     }
 
-    int PsgSequencer::AdjustVolume(int volume, int length, const PartData& part_data)
+    bool PsgSequencer::NeedsVolumeEffect(const PartData& part_data) const
     {
-        int adjust_volume = volume;
-        if (part_data.SSGEnvOn)
+        return part_data.Effect.TremoloDepth != 0 || part_data.Note.SSGEnvOn;
+    }
+
+    int PsgSequencer::AdjustVolumeEffect(int volume, int keyon_length, const PartData& part_data)
+    {
+        int adjusted_volume = volume;
+        if (part_data.Note.SSGEnvOn)
         {
-            auto env = GetMusicData().GetSSGEnv(part_data.SoundNo);
+            const auto& env = GetMusicData().GetSSGEnv(part_data.Note.SoundNo);
             if (env.Env.empty())
             {
-                return adjust_volume;
+                return adjusted_volume;
             }
-            size_t pos = length / env.Unit;
+
+            size_t pos = keyon_length / env.Unit;
             if (pos >= env.Env.size())
             {
                 pos = env.Env.size() - 1;
             }
-            adjust_volume = std::max(((volume + env.Env[pos]) & 0xff) - 15, 0);
+            adjusted_volume = std::max(((volume + env.Env[pos]) & 0xff) - 15, 0);
         }
-        return adjust_volume;
+        return adjusted_volume;
     }
 
     void PsgSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length)
@@ -145,9 +152,9 @@ namespace MusicCom
         ssgwrap_.SetVolume(channel_, volume);
     }
 
-    const CommandIterator PsgSequencer::GetHead() const
+    CommandIterator PsgSequencer::GetHead() const
     {
-        return GetMusicData().GetChannelHead(channel_ + 3);
+        return GetMusicData().GetChannelHead(channel_ + MUSIC_CHANNEL_SSG_A);
     }
 
     int PsgSequencer::CalculateTone(int base_octave, int base_tone, int detune) const

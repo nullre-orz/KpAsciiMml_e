@@ -1,31 +1,32 @@
 ﻿#pragma once
 
-#include "partsequencerbase.h"
+#include "tonesequencerbase.h"
 
 namespace MusicCom
 {
     class SSGWrap;
     class MusicData;
-    class PsgSequencer : public PartSequencerBase
+    class PsgSequencer : public ToneSequencerBase
     {
     public:
         PsgSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, int channel, int rate);
-        ~PsgSequencer();
+        ~PsgSequencer() override;
 
     protected: // for PartSequencerBase
-        virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
+        CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data) override;
 
     private: // for PartSequencerBase
-        virtual void InitializeImpl(PartData& part_data);
-        virtual void KeyOn();
-        virtual void KeyOff();
-        virtual void UpdateTone(int base_tone, PartData& part_data);
-        virtual int AdjustVolume(int volume, int length, const PartData& part_data);
-        virtual void ApplyVibratoEffect(int octave, int tone, int depth);
-        virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length);
-        virtual void SetTone(int octave, int tone);
-        virtual void SetVolume(int volume);
-        virtual const CommandIterator GetHead() const;
+        void InitializeImpl(PartData& part_data) override;
+        void KeyOn() override;
+        void KeyOff() override;
+        void UpdateTone(int base_tone, PartData& part_data) override;
+        bool NeedsVolumeEffect(const PartData& part_data) const override;
+        int AdjustVolumeEffect(int volume, int keyon_length, const PartData& part_data) override;
+        void ApplyVibratoEffect(int octave, int tone, int depth) override;
+        void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length) override;
+        void SetTone(int octave, int tone) override;
+        void SetVolume(int volume) override;
+        CommandIterator GetHead() const override;
 
     private:
         int CalculateTone(int base_octave, int base_tone, int detune) const;
@@ -35,7 +36,7 @@ namespace MusicCom
 
         int channel_;
         SSGWrap& ssgwrap_;
-        int current_note_;
+        int current_note_ = 0;
         int last_period_;
         int current_period_;
     };

@@ -1,12 +1,15 @@
 ﻿#include "soundsequencer.h"
-#include "fmwrap.h"
+#include "musdata.h"
+#include "ssgwrap.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <limits>
 
 namespace MusicCom
 {
     // clang-format off
-    const int NOTE_SOUND_MAP[] = {
+    const std::array<int, 12> NOTE_SOUND_MAP = {
          2, // C
         -1, // C#
          3, // D
@@ -26,10 +29,7 @@ namespace MusicCom
         : PartSequencerBase(register_writer, music, music.GetRhythmPartTail(), rate),
           ssgwrap_(ssgwrap),
           sound_(sound),
-          current_sound_data_(std::nullopt),
-          sound_interrupt_enabled_(false),
-          sound_interrupt_per_frame_(CalculatePerFrame(soundtempo)),
-          sound_interrupt_left_(0)
+          sound_interrupt_per_frame_(CalculatePerFrame(soundtempo))
     {
     }
 
@@ -106,29 +106,19 @@ namespace MusicCom
     CommandIterator SoundSequencer::ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data)
     {
         // 原則基底クラスではなく本クラスで処理する
-        static auto get_length = [](const PartData& part_data, int base_length)
-        {
-            return (base_length == 0) ? part_data.DefaultNoteLength : base_length;
-        };
-
-        static auto update_note_frames = [](PartData& part_data, int current_frame, int length)
-        {
-            part_data.NoteBeginFrame = current_frame;
-            part_data.NoteEndFrame = current_frame + length;
-        };
-
         auto return_ptr = CommandIterator(ptr);
         const Command& command = *return_ptr++;
         switch (command.GetType())
         {
         case CommandType::TYPE_NOTE:
         {
-            part_data.KeyOnFrame = current_frame;
+            part_data.Note.KeyOnFrame = current_frame;
 
             // 効果音の設定
             auto sound_no = NOTE_SOUND_MAP[command.GetArg(0)];
             auto& sound_data = sound_.GetRhythm(sound_no);
-            if (sound_data.length() > 0)
+            const auto sound_length = sound_data.length();
+            if (sound_length > 0)
             {
                 ssgwrap_.BeginEffect();
                 current_sound_data_ = {sound_data.begin(), sound_data.end()};
@@ -136,33 +126,32 @@ namespace MusicCom
                 KeyOn();
             }
 
-            int length = get_length(part_data, command.GetArg(1));
-            update_note_frames(part_data, current_frame, length);
+            int length = ResolveNoteLength(part_data, command.GetArg(1));
+            UpdateNoteFrames(part_data, current_frame, length);
 
-            part_data.KeyOffFrame = sound_data.length();
+            part_data.Note.KeyOffFrame = static_cast<int>(std::min(sound_length, static_cast<std::uint64_t>(std::numeric_limits<int>::max())));
             break;
         }
         case CommandType::TYPE_REST:
         case CommandType::TYPE_WAIT:
         {
-            part_data.KeyOnFrame = current_frame;
+            part_data.Note.KeyOnFrame = current_frame;
 
-            int length = get_length(part_data, command.GetArg(0));
-            update_note_frames(part_data, current_frame, length);
+            int length = ResolveNoteLength(part_data, command.GetArg(0));
+            UpdateNoteFrames(part_data, current_frame, length);
 
-            part_data.KeyOffFrame = part_data.NoteEndFrame;
+            part_data.Note.KeyOffFrame = part_data.Note.EndFrame;
             break;
         }
         case CommandType::TYPE_LENGTH:
-            part_data.DefaultNoteLength = command.GetArg(0);
+            part_data.Note.DefaultLength = command.GetArg(0);
+            break;
+        case CommandType::TYPE_DIRECT:
+            // MUSIC.COMではDパートからのYも共通のレジスタ書込みとして実行する
+            register_writer_(command.GetArg(0), command.GetArg(1));
             break;
         }
         return return_ptr;
-    }
-
-    void SoundSequencer::ProcessEffect(int current_frame)
-    {
-        // nothing todo.
     }
 
     void SoundSequencer::KeyOn()
@@ -188,27 +177,7 @@ namespace MusicCom
         sound_interrupt_enabled_ = on;
     }
 
-    void SoundSequencer::UpdateTone(int base_tone, PartData& part_data)
-    {
-        // nothing todo.
-    }
-
-    void SoundSequencer::ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length)
-    {
-        // nothing todo.
-    }
-
-    void SoundSequencer::SetTone(int octave, int tone)
-    {
-        // nothing todo.
-    }
-
-    void SoundSequencer::SetVolume(int volume)
-    {
-        // nothing todo.
-    }
-
-    const CommandIterator SoundSequencer::GetHead() const
+    CommandIterator SoundSequencer::GetHead() const
     {
         return GetMusicData().GetRhythmPartHead();
     }

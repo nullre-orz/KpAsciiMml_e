@@ -5,6 +5,7 @@
 #include <boost/spirit/include/classic_file_iterator.hpp>
 #include <filesystem>
 #include <format>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <stdexcept>
@@ -15,6 +16,21 @@ namespace MusicCom
 {
     namespace
     {
+        constexpr std::size_t MAX_ERROR_DETAILS = 100;
+        constexpr std::size_t MAX_ERROR_EXCERPT = 256;
+
+        // 入力抜粋は256バイトに制限し、長い場合は末尾に...を付ける
+        template<typename Iterator>
+        std::string ErrorExcerpt(Iterator first, Iterator last)
+        {
+            std::string result;
+            while (first != last && result.size() < MAX_ERROR_EXCERPT)
+                result.push_back(*first++);
+            if (first != last)
+                result += "...";
+            return result;
+        }
+
         enum SoundArgument : int
         {
             SOUND_LENGTH_ARGUMENT,
@@ -106,37 +122,39 @@ Noise:	3, 20 ,-5 ,4,0
     struct SoundParserState
     {
         SoundParserState(SoundData& container)
-            : sound_data(container),
-              editing_data(),
-              line(FIRST_LINE_NUMBER),
-              current_sound(NO_SOUND_NUMBER),
-              channel(FIRST_CHANNEL_INDEX),
-              tone_multiplier(DEFAULT_MULTIPLIER),
-              volume_multiplier(DEFAULT_MULTIPLIER),
-              args(),
-              errors(),
-              finished(false)
+            : sound_data(container)
         {
         }
 
-        std::vector<Block>& GetEditingBlocks() const
+        std::vector<Block>& GetEditingBlocks()
         {
             return editing_data->blocks_;
         }
 
         SoundData& sound_data;
-        std::unique_ptr<RhythmData> editing_data;
+        std::unique_ptr<RhythmData> editing_data{};
 
-        int line;
+        int line = FIRST_LINE_NUMBER;
 
-        int current_sound;
-        int channel;
-        int tone_multiplier;
-        int volume_multiplier;
-        std::vector<int> args;
-        std::vector<std::string> errors;
+        int current_sound = NO_SOUND_NUMBER;
+        int channel = FIRST_CHANNEL_INDEX;
+        int tone_multiplier = DEFAULT_MULTIPLIER;
+        int volume_multiplier = DEFAULT_MULTIPLIER;
+        std::vector<int> args{};
+        std::vector<std::string> errors{};
+        std::size_t omitted_errors = 0;
 
-        bool finished;
+        // エラー詳細は先頭100件まで保持し、それ以降は省略件数を数える
+        void AddError(std::string message)
+        {
+            if (errors.size() < MAX_ERROR_DETAILS)
+                errors.push_back(std::move(message));
+            else if (omitted_errors != (std::numeric_limits<std::size_t>::max)())
+                ++omitted_errors;
+        }
+
+
+        bool finished = false;
     };
 
     static void update_rhythm_data(SoundParserState& state)
@@ -202,11 +220,21 @@ Noise:	3, 20 ,-5 ,4,0
             {
                 return [](auto& ctx)
                 {
-                    auto arg = x3::_attr(ctx);
-                    SoundParserState& state = x3::get<SoundParserState>(ctx);
-                    state.args.push_back(arg);
+                    const auto& text = x3::_attr(ctx);
+                    unsigned int value = 0;
+                    bool negative = false;
+                    for (char c : text)
+                    {
+                        if (c == '-')
+                            negative = true;
+                        else if ('0' <= c && c <= '9')
+                            value = (value * 10 + static_cast<unsigned int>(c - '0')) & 0xffff;
+                    }
+                    if (negative)
+                        value = (0u - value) & 0xffff;
+                    x3::get<SoundParserState>(ctx).args.push_back(static_cast<int>(value));
                 };
-            };
+            }
 
             static decltype(auto) set_sound()
             {
@@ -251,8 +279,15 @@ Noise:	3, 20 ,-5 ,4,0
                         auto& tone = target.tone[state.channel];
                         tone.enabled = true;
                         tone.initial_value = state.args[TONE_INITIAL_VALUE_ARGUMENT];
-                        tone.final_value = state.args[TONE_INITIAL_VALUE_ARGUMENT] + state.args[TONE_INCREMENT_ARGUMENT];
-                        tone.period = (state.args[TONE_PERIOD_ARGUMENT] == USE_DEFAULT_VALUE ? DEFAULT_PERIOD : state.args[TONE_PERIOD_ARGUMENT]) * state.tone_multiplier;
+                        const int change = state.args[TONE_INCREMENT_ARGUMENT] < 0x8000 ? state.args[TONE_INCREMENT_ARGUMENT] : state.args[TONE_INCREMENT_ARGUMENT] - 0x10000;
+                        tone.final_value = tone.initial_value + change;
+                        tone.period = ((state.args[TONE_PERIOD_ARGUMENT] == USE_DEFAULT_VALUE ? DEFAULT_PERIOD : state.args[TONE_PERIOD_ARGUMENT]) * static_cast<unsigned int>(state.tone_multiplier)) & 0xffff;
+                        const int divisor = tone.period < 0x8000 ? tone.period : tone.period - 0x10000;
+                        if (divisor == 0 || (change == -32768 && divisor == -1))
+                        {
+                            state.AddError(std::format("({:d}): invalid tone period or increment", state.line));
+                            tone.period = 1;
+                        }
                         tone.loop = (state.args[TONE_LOOP_ARGUMENT] == LOOP_ENABLED_VALUE);
                     }
                 };
@@ -275,8 +310,15 @@ Noise:	3, 20 ,-5 ,4,0
                         auto& target = editing_blocks.back();
                         auto& volume = target.volume[state.channel];
                         volume.initial_value = state.args[VOLUME_INITIAL_VALUE_ARGUMENT];
-                        volume.final_value = state.args[VOLUME_INITIAL_VALUE_ARGUMENT] + state.args[VOLUME_INCREMENT_ARGUMENT];
-                        volume.period = (state.args[VOLUME_PERIOD_ARGUMENT] == USE_DEFAULT_VALUE ? DEFAULT_PERIOD : state.args[VOLUME_PERIOD_ARGUMENT]) * state.volume_multiplier;
+                        const int change = state.args[VOLUME_INCREMENT_ARGUMENT] & 0xff;
+                        volume.final_value = volume.initial_value + (change < 0x80 ? change : change - 0x100);
+                        volume.period = ((state.args[VOLUME_PERIOD_ARGUMENT] == USE_DEFAULT_VALUE ? DEFAULT_PERIOD : state.args[VOLUME_PERIOD_ARGUMENT]) * static_cast<unsigned int>(state.volume_multiplier)) & 0xffff;
+                        const int divisor = volume.period < 0x8000 ? volume.period : volume.period - 0x10000;
+                        if (divisor == 0 || (change == 0x80 && divisor == -1))
+                        {
+                            state.AddError(std::format("({:d}): invalid volume period or increment", state.line));
+                            volume.period = 1;
+                        }
                         volume.loop = (state.args[VOLUME_LOOP_ARGUMENT] == LOOP_ENABLED_VALUE);
                     }
                 };
@@ -300,8 +342,15 @@ Noise:	3, 20 ,-5 ,4,0
                         auto& noise = target.noise;
                         noise.channel_type = state.args[NOISE_CHANNEL_TYPE_ARGUMENT];
                         noise.initial_value = state.args[NOISE_INITIAL_VALUE_ARGUMENT];
-                        noise.final_value = state.args[NOISE_INITIAL_VALUE_ARGUMENT] + state.args[NOISE_INCREMENT_ARGUMENT];
-                        noise.period = (state.args[NOISE_PERIOD_ARGUMENT] == USE_DEFAULT_VALUE ? DEFAULT_PERIOD : state.args[NOISE_PERIOD_ARGUMENT]) * state.tone_multiplier;
+                        const int change = state.args[NOISE_INCREMENT_ARGUMENT] & 0xff;
+                        noise.final_value = noise.initial_value + (change < 0x80 ? change : change - 0x100);
+                        noise.period = ((state.args[NOISE_PERIOD_ARGUMENT] == USE_DEFAULT_VALUE ? DEFAULT_PERIOD : state.args[NOISE_PERIOD_ARGUMENT]) * static_cast<unsigned int>(state.tone_multiplier)) & 0xffff;
+                        const int divisor = noise.period < 0x8000 ? noise.period : noise.period - 0x10000;
+                        if (divisor == 0 || (change == 0x80 && divisor == -1))
+                        {
+                            state.AddError(std::format("({:d}): invalid noise period or increment", state.line));
+                            noise.period = 1;
+                        }
                         noise.loop = (state.args[NOISE_LOOP_ARGUMENT] == LOOP_ENABLED_VALUE);
                     }
                 };
@@ -333,7 +382,8 @@ Noise:	3, 20 ,-5 ,4,0
         const x3::rule<class blank_line, std::string> blank_line = "blank";
 
         // カンマは単なる区切りとして扱い、省略された末尾引数は処理側で0補完する
-        const auto arguments = *x3::lit(',') >> *((x3::int_)[detail::append_arg()] >> *x3::lit(','));
+        const auto word_argument = x3::raw[x3::lexeme[-x3::char_("+-") >> +x3::digit]][detail::append_arg()];
+        const auto arguments = *x3::lit(',') >> *(word_argument >> *x3::lit(','));
         const auto trailing_text = x3::lexeme[*(x3::char_ - x3::eol)];
 
         const auto line_def =
@@ -374,7 +424,7 @@ Noise:	3, 20 ,-5 ,4,0
     } // namespace grammer
 
     template<typename Iterator>
-    SoundData* ParseSoundImpl(const Iterator begin, const Iterator end, const std::string& source_name)
+    std::unique_ptr<SoundData> ParseSoundImpl(const Iterator begin, const Iterator end, const std::string& source_name)
     {
         auto data = std::make_unique<SoundData>();
         SoundParserState state(*data);
@@ -389,28 +439,28 @@ Noise:	3, 20 ,-5 ,4,0
             {
                 const auto line_end = std::find_if(line_begin, end, [](char c)
                                                    { return c == '\r' || c == '\n'; });
-                state.errors.push_back(std::format("({:d}): parse error at \"{}\"", state.line, std::string(line_begin, line_end)));
+                state.AddError(std::format("({:d}): parse error at \"{}\"", state.line, ErrorExcerpt(line_begin, line_end)));
                 current = line_end;
             }
         }
 
         if (!state.errors.empty())
         {
-            const auto message = std::accumulate(
-                state.errors.begin(),
-                state.errors.end(),
-                source_name,
-                [](const std::string& accumulated, const std::string& error)
-                {
-                    return std::format("{}\n{}", accumulated, error);
-                });
+            std::string message(source_name);
+            for (const auto& error : state.errors)
+            {
+                message += '\n';
+                message += error;
+            }
+            if (state.omitted_errors != 0)
+                message += std::format("\n{} additional errors omitted", state.omitted_errors);
             throw std::runtime_error(message);
         }
 
-        return data.release();
+        return data;
     }
 
-    static SoundData* ParseDefaultSound()
+    static std::unique_ptr<SoundData> ParseDefaultSound()
     {
         auto begin(std::cbegin(DEFAULT_SOUND_DAT));
         const auto end(std::cend(DEFAULT_SOUND_DAT));
@@ -418,7 +468,7 @@ Noise:	3, 20 ,-5 ,4,0
         return ParseSoundImpl(begin, end, "embedded SOUND.DAT");
     }
 
-    SoundData* ParseSound(const std::string& mml_filename)
+    std::unique_ptr<SoundData> ParseSound(const std::string& mml_filename)
     {
         using path = std::filesystem::path;
         using file_iterator = boost::spirit::classic::file_iterator<char>;

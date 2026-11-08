@@ -13,27 +13,22 @@ namespace MusicCom
     {
     public:
         SoundSequencer(const RegisterWriter& register_writer, SSGWrap& ssgwrap, const MusicData& music, const SoundData& sound, int soundtempo, int rate);
-        ~SoundSequencer();
+        ~SoundSequencer() override;
 
     protected: // for PartSequencerBase
-        virtual int GetRemainFrameSizeImpl();
-        virtual void IncreaseFrameImpl(int frame_size);
-        virtual CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data);
+        int GetRemainFrameSizeImpl() override;
+        void IncreaseFrameImpl(int frame_size) override;
+        CommandIterator ProcessCommandImpl(CommandIterator ptr, int current_frame, PartData& part_data) override;
 
     private:
         void NextSoundFrame();
 
     private: // for PartSequencerBase
-        virtual void InitializeImpl(PartData& part_data);
-        virtual void PreProcess(int current_frame);
-        virtual void ProcessEffect(int current_frame);
-        virtual void KeyOn();
-        virtual void KeyOff();
-        virtual void UpdateTone(int base_tone, PartData& part_data);
-        virtual void ApplyPortamentoEffect(int octave, int tone, int last_octave, int last_tone, int tick, int length);
-        virtual void SetTone(int octave, int tone);
-        virtual void SetVolume(int volume);
-        virtual const CommandIterator GetHead() const;
+        void InitializeImpl(PartData& part_data) override;
+        void PreProcess(int current_frame) override;
+        void KeyOn() override;
+        void KeyOff() override;
+        CommandIterator GetHead() const override;
 
         void KeyOnOffImpl(bool on);
 
@@ -46,11 +41,11 @@ namespace MusicCom
             RhythmData::const_iterator ptr;
             RhythmData::const_iterator end_ptr;
         };
-        std::optional<CurrentSoundData> current_sound_data_;
+        std::optional<CurrentSoundData> current_sound_data_{};
 
         // 効果音フレーム
-        bool sound_interrupt_enabled_;
+        bool sound_interrupt_enabled_ = false;
         int sound_interrupt_per_frame_;
-        int sound_interrupt_left_;
+        int sound_interrupt_left_ = 0;
     };
 } // namespace MusicCom

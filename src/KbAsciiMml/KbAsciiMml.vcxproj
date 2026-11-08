@@ -29,26 +29,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -171,14 +171,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\tests\MusicComTests.vcxproj">
+      <Project>{edca828b-a941-4ea1-b5cd-71f447ca0745}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ClInclude Include="musiccom\command.h" />
     <ClInclude Include="musiccom\fmsequencer.h" />
     <ClInclude Include="musiccom\fmwrap.h" />
+    <ClInclude Include="musiccom\ssgwrap.h" />
     <ClInclude Include="musiccom\mmlparser.h" />
     <ClInclude Include="musiccom\musdata.h" />
     <ClInclude Include="musiccom\musiccom.h" />
     <ClInclude Include="musiccom\partdata.h" />
     <ClInclude Include="musiccom\partsequencerbase.h" />
+    <ClInclude Include="musiccom\tonesequencerbase.h" />
     <ClInclude Include="musiccom\psgsequencer.h" />
     <ClInclude Include="musiccom\sequencer.h" />
     <ClInclude Include="musiccom\sounddata.h" />
@@ -250,10 +256,12 @@
     <ClCompile Include="KbAsciiMml.cpp" />
     <ClCompile Include="musiccom\fmsequencer.cpp" />
     <ClCompile Include="musiccom\fmwrap.cpp" />
+    <ClCompile Include="musiccom\ssgwrap.cpp" />
     <ClCompile Include="musiccom\mmlparser.cpp" />
     <ClCompile Include="musiccom\musdata.cpp" />
     <ClCompile Include="musiccom\musiccom.cpp" />
     <ClCompile Include="musiccom\partsequencerbase.cpp" />
+    <ClCompile Include="musiccom\tonesequencerbase.cpp" />
     <ClCompile Include="musiccom\psgsequencer.cpp" />
     <ClCompile Include="musiccom\sequencer.cpp" />
     <ClCompile Include="musiccom\sounddata.cpp" />
@@ -263,6 +271,15 @@
   <ItemGroup>
     <ResourceCompile Include="KbAsciiMml.rc" />
   </ItemGroup>
+  <ItemDefinitionGroup>
+    <PostBuildEvent>
+      <Command>if not exist &quot;$(WorkTreeRoot)tests\result&quot; mkdir &quot;$(WorkTreeRoot)tests\result&quot;
+set &quot;MUSICCOM_TEST_REPORT=$(WorkTreeRoot)tests\result\MusicComTests-$(Platform)-$(Configuration).md&quot;
+&quot;$(WorkTreeRoot)bin\MusicComTests\$(Platform)\$(Configuration)\MusicComTests.exe&quot;
+</Command>
+      <Message>MusicComTests を実行しています</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

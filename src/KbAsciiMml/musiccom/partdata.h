@@ -9,76 +9,66 @@ namespace MusicCom
 {
     struct PartData
     {
-        PartData() : CallStack(),
-                     LoopStack(),
-                     CommandPtr(),
-                     NoteBeginFrame(0),
-                     NoteEndFrame(0),
-                     KeyOnFrame(0),
-                     KeyOffFrame(0),
-                     Octave(4),
-                     LastOctave(4),
-                     ReservedOctave(4),
-                     Volume(15),
-                     Tone(0),
-                     LastTone(0),
-                     SSGEnvOn(false),
-                     SoundNo(0),
-                     DefaultNoteLength(64),
-                     Detune(0),
-                     GateTime(8),
-                     PLength(0),
-                     ILength(0),
-                     IDepth(0),
-                     IDelay(0),
-                     ULength(0),
-                     UDepth(0),
-                     UDelay(0),
-                     LinkedItem(std::nullopt),
-                     HasPreviousNote(false),
-                     Playing(false),
-                     InfiniteLooping(false)
+        struct CommandState
         {
-        }
+            CommandState() = default;
 
-        std::stack<CommandIterator> CallStack;
-        std::stack<std::pair<CommandIterator, int>> LoopStack;
-        CommandIterator CommandPtr;
+            std::stack<CommandIterator> CallStack{};
+            std::stack<std::pair<CommandIterator, int>> LoopStack{};
+            CommandIterator CommandPtr{};
+            std::optional<CommandType> LinkedItem{};
+        };
 
-        int NoteBeginFrame;
-        int NoteEndFrame;
-        int KeyOnFrame;
-        int KeyOffFrame;
+        struct NoteState
+        {
+            NoteState() = default;
 
-        int Octave;
-        int LastOctave;
-        int ReservedOctave;
-        int Volume;
-        int Tone;
-        int LastTone;
+            int BeginFrame = 0;
+            int EndFrame = 0;
+            int KeyOnFrame = 0;
+            int KeyOffFrame = 0;
+            int Octave = 4;
+            int LastOctave = 4;
+            int ReservedOctave = 4;
+            int Volume = 15;
+            int Tone = 0;
+            int LastTone = 0;
+            bool SSGEnvOn = false;
+            int SoundNo = 0;
+            int DefaultLength = 64;
+            int Detune = 0;
+            int GateTime = 8;
+        };
 
-        bool SSGEnvOn;
-        int SoundNo;
-        int DefaultNoteLength;
-        int Detune;
-        int GateTime;
+        struct EffectState
+        {
+            EffectState() = default;
 
-        // いい加減適当
-        int PLength;
+            int PortamentoLength = 0;
+            int VibratoLength = 0;
+            int VibratoDepth = 0;
+            int VibratoDelay = 0;
+            int TremoloLength = 0;
+            int TremoloDepth = 0;
+            int TremoloDelay = 0;
+        };
 
-        int ILength;
-        int IDepth;
-        int IDelay;
+        struct PlaybackState
+        {
+            PlaybackState() = default;
 
-        int ULength;
-        int UDepth;
-        int UDelay;
+            bool HasPreviousNote = false;
+            bool Playing = false;
+            // 無限ループ検出
+            bool InfiniteLooping = false;
+        };
 
-        std::optional<CommandType> LinkedItem;
-        bool HasPreviousNote;
-        bool Playing;
-        // 無限ループ検出
-        bool InfiniteLooping;
+        PartData() = default;
+
+        CommandState Commands;
+        NoteState Note;
+        EffectState Effect;
+        PlaybackState Playback;
     };
 
 } // namespace MusicCom
