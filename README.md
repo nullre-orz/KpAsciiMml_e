@@ -30,9 +30,9 @@ SOUNDコマンドのLFOに対応しました。
 
 ビルドに使用した環境は次の通りです。
 
-- Visual Studio Community 2026 Version 18.9.12112.369 (MSVC v145、「C++ ネイティブ開発」ワークロードあり)
+- Visual Studio Community 2026 Version 18.11.3 (MSVC v145、「C++ ネイティブ開発」ワークロードあり)
 - Boost 1.92.0 (ヘッダーファイルのみ)
-- KbMedia PlayerプラグインSDK 2024/07/12版
+- KbMedia PlayerプラグインSDK 2026/10/13版
 
 なお、動作確認には KbMedia Player 3.15 を使用しています。
 
